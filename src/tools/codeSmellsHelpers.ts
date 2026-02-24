@@ -120,13 +120,13 @@ export async function processFileForSmells(
     // Detect code-based smells (AST patterns)
     const codeTypesToDetect = typesToDetect.filter((t) => CODE_SMELL_TYPES.includes(t));
     if (codeTypesToDetect.length > 0 && (language === "typescript" || language === "javascript")) {
-      const codeSmells = await detectCodeBasedSmells(
+      const codeSmells = await detectCodeBasedSmells({
         content,
         language,
-        relativePath,
-        codeTypesToDetect,
-        includeText
-      );
+        filePath: relativePath,
+        typesToDetect: codeTypesToDetect,
+        includeText,
+      });
       smells.push(...codeSmells);
     }
 
@@ -162,17 +162,21 @@ export function detectSmellsInComments(
   return smells;
 }
 
+/** Options for detecting code-based smells. */
+interface DetectCodeSmellsOptions {
+  content: string;
+  language: "typescript" | "javascript";
+  filePath: string;
+  typesToDetect: CodeSmellType[];
+  includeText: boolean;
+}
+
 /**
  * Detects code-based smells using AST analysis.
  * Currently detects: unsafe_cast ("as unknown as" pattern in TypeScript)
  */
-async function detectCodeBasedSmells(
-  content: string,
-  language: "typescript" | "javascript",
-  filePath: string,
-  typesToDetect: CodeSmellType[],
-  includeText: boolean
-): Promise<CodeSmell[]> {
+async function detectCodeBasedSmells(options: DetectCodeSmellsOptions): Promise<CodeSmell[]> {
+  const { content, language, filePath, typesToDetect, includeText } = options;
   const smells: CodeSmell[] = [];
 
   if (typesToDetect.includes("unsafe_cast")) {

@@ -14,7 +14,7 @@ Most tools share these parameters:
 | `extensions`      | string[] | Filter by file extensions (e.g., `[".ts", ".js"]`) |
 | `max_depth`       | integer  | (When supported) Maximum directory depth to traverse|
 | `max_files`       | integer  | (When supported) Maximum number of files to scan    |
-| `grep`            | string   | Filter results by keyword (case-insensitive substring match) |
+| `grep`            | string   | (When supported) Filter results by keyword (case-insensitive substring match) |
 | `limit`           | integer  | (When supported) Maximum number of items/files to return (default: 20; meaning varies by tool) |
 
 ### Grep Filtering
@@ -83,4 +83,4 @@ Examples omit `_meta` for brevity.
 
 - [Core Analysis Tools](./tools-core.md) - Line counts, function counts
 - [Codebase Health Tools](./tools-health.md) - Thresholds, inventory, complexity
-- [Code Quality Tools](./tools-quality.md) - Documentation coverage, code smells
+- [Code Quality Tools](./tools-quality.md) - Documentation coverage, code smells, prop drilling

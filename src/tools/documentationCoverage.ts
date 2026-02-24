@@ -112,13 +112,13 @@ async function analyzeCoverage(
       const tree = await parseCode(code, language);
       if (!tree) continue;
 
-      const { documented, undocumented, items } = analyzeFileDocumentation(
-        tree.rootNode,
+      const { documented, undocumented, items } = analyzeFileDocumentation({
+        rootNode: tree.rootNode,
         lines,
         language,
-        relativePath,
-        minLines
-      );
+        filePath: relativePath,
+        minLines,
+      });
 
       totalDocumented += documented;
       totalUndocumented += undocumented;

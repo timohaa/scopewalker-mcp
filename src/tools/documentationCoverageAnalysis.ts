@@ -89,14 +89,18 @@ export function hasDocumentation(
   return hasDocInPrecedingLines(node, lines, language);
 }
 
+/** Options for analyzing documentation coverage of a single file. */
+export interface FileAnalysisOptions {
+  rootNode: Parser.SyntaxNode;
+  lines: string[];
+  language: SupportedLanguage;
+  filePath: string;
+  minLines: number;
+}
+
 /** Analyzes a file's AST and returns documentation coverage stats. */
-export function analyzeFileDocumentation(
-  rootNode: Parser.SyntaxNode,
-  lines: string[],
-  language: SupportedLanguage,
-  filePath: string,
-  minLines: number
-): FileAnalysis {
+export function analyzeFileDocumentation(options: FileAnalysisOptions): FileAnalysis {
+  const { rootNode, lines, language, filePath, minLines } = options;
   let documented = 0;
   let undocumented = 0;
   const items: UndocumentedItem[] = [];

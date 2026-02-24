@@ -17,6 +17,7 @@ export type {
   CoverageConfig,
   CoverageData,
   FileAnalysis,
+  FileAnalysisOptions,
 } from "./documentationCoverageAnalysis.js";
 export {
   hasDocumentation,
