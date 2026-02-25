@@ -21,7 +21,7 @@ Use the project's own MCP tools to understand and validate code:
 | `get_code_inventory` | Classes, functions, exports |
 | `get_complexity_metrics` | Nesting depth, params, cognitive complexity |
 | `get_documentation_coverage` | Find undocumented functions/classes |
-| `get_code_smells` | TODO, FIXME, HACK markers and unsafe casts |
+| `get_code_smells` | TODO, FIXME, HACK, XXX, BUG, UNUSED, DEPRECATED markers and unsafe casts |
 | `get_prop_drilling` | Detect parameter threading across function chains (`summary_only`, `min_occurrences`) |
 
 Run `check_thresholds` before committing.
