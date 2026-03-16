@@ -49,7 +49,6 @@ export interface GlobOptions {
 export async function findFiles(options: GlobOptions): Promise<string[]> {
   const { cwd, includeHidden = false, ignorePatterns = [], extensions, maxDepth } = options;
 
-  // Build glob pattern
   let pattern = "**/*";
   if (extensions && extensions.length > 0) {
     const exts = extensions.map((e) => (e.startsWith(".") ? e.slice(1) : e));

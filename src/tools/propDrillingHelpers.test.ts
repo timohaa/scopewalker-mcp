@@ -1,12 +1,13 @@
 import type Parser from "tree-sitter";
 import { describe, expect, it } from "vitest";
 import { parseCode } from "../lib/treeSitter.js";
+import type { SupportedLanguage } from "../types/index.js";
 import { extractParameterNames, detectForwardedParameters } from "./propDrillingHelpers.js";
 
 /** Parses code and returns the first function node, throwing if not found. */
 async function getFirstFunction(
   code: string,
-  language: "typescript" | "javascript" | "python" | "go" | "java"
+  language: SupportedLanguage
 ): Promise<Parser.SyntaxNode> {
   const tree = await parseCode(code, language);
   if (tree === null) throw new Error("Failed to parse code");
@@ -20,7 +21,6 @@ async function getFirstFunction(
     "function_expression",
   ];
 
-  /** Recursively searches for the first function node in the AST. */
   function find(node: Parser.SyntaxNode): Parser.SyntaxNode | null {
     if (funcTypes.includes(node.type)) return node;
     for (const child of node.children) {
@@ -38,13 +38,12 @@ async function getFirstFunction(
 /** Finds first node of a specific type in the AST, throwing if not found. */
 async function findNodeByType(
   code: string,
-  language: "typescript" | "javascript" | "python" | "go" | "java",
+  language: SupportedLanguage,
   nodeType: string
 ): Promise<Parser.SyntaxNode> {
   const tree = await parseCode(code, language);
   if (tree === null) throw new Error("Failed to parse code");
 
-  /** Recursively searches for the first node matching nodeType in the AST. */
   function find(node: Parser.SyntaxNode): Parser.SyntaxNode | null {
     if (node.type === nodeType) return node;
     for (const child of node.children) {
@@ -124,6 +123,47 @@ describe("extractParameterNames", () => {
     const names = extractParameterNames(func, "typescript");
     expect(names).toEqual([]);
   });
+
+  it("extracts array destructuring parameters", async () => {
+    const func = await getFirstFunction(
+      `function swap([first, second]: string[]): void {}`,
+      "typescript"
+    );
+    const names = extractParameterNames(func, "typescript");
+    expect(names).toContain("first");
+    expect(names).toContain("second");
+  });
+
+  it("extracts renamed destructuring parameters: { userId: id }", async () => {
+    const func = await getFirstFunction(
+      `function render({ userId: id, theme: t }: Props): void {}`,
+      "typescript"
+    );
+    const names = extractParameterNames(func, "typescript");
+    expect(names).toContain("id");
+    expect(names).toContain("t");
+  });
+
+  it("extracts Rust parameter names", async () => {
+    const func = await findNodeByType(
+      `fn handle(user_id: String, count: u32) -> bool { true }`,
+      "rust",
+      "function_item"
+    );
+    const names = extractParameterNames(func, "rust");
+    expect(names).toContain("user_id");
+    expect(names).toContain("count");
+  });
+
+  it("extracts optional TS parameter names", async () => {
+    const func = await getFirstFunction(
+      `function greet(name: string, title?: string): void {}`,
+      "typescript"
+    );
+    const names = extractParameterNames(func, "typescript");
+    expect(names).toContain("name");
+    expect(names).toContain("title");
+  });
 });
 
 describe("detectForwardedParameters", () => {
@@ -140,15 +180,23 @@ describe("detectForwardedParameters", () => {
     expect(forwarded).toContain("theme");
   });
 
-  it("detects JSX attribute forwarding", async () => {
+  it("detects JSX attribute forwarding via member expression", async () => {
     const code = `function Layout(props: { userId: string }) {
       return <Sidebar userId={props.userId} />;
     }`;
     const funcNode = await getFirstFunction(code, "typescript");
 
-    // The parameter "props" is used via member expression — not a bare identifier forwarding
     const forwarded = detectForwardedParameters(funcNode, ["props"], "typescript");
-    expect(forwarded).toEqual([]);
+    expect(forwarded).toContain("props");
+  });
+
+  it("detects member expression forwarding in call arguments", async () => {
+    const code = `function wrapper(config: Config): void {
+      init(config.apiKey);
+    }`;
+    const func = await getFirstFunction(code, "typescript");
+    const forwarded = detectForwardedParameters(func, ["config"], "typescript");
+    expect(forwarded).toContain("config");
   });
 
   it("detects spread attribute forwarding", async () => {
@@ -172,5 +220,30 @@ describe("detectForwardedParameters", () => {
     // userId is used via method call on itself, not passed as argument to another function
     const forwarded = detectForwardedParameters(func, ["userId"], "typescript");
     expect(forwarded).toEqual([]);
+  });
+
+  it("returns empty array when paramNames is empty", async () => {
+    const func = await getFirstFunction(
+      `function noParams(): void { doSomething(); }`,
+      "typescript"
+    );
+    const forwarded = detectForwardedParameters(func, [], "typescript");
+    expect(forwarded).toEqual([]);
+  });
+
+  it("detects forwarding in arrow function with expression body", async () => {
+    const code = `const fn = (userId: string) => process(userId);`;
+    const arrowNode = await findNodeByType(code, "typescript", "arrow_function");
+    const forwarded = detectForwardedParameters(arrowNode, ["userId"], "typescript");
+    expect(forwarded).toContain("userId");
+  });
+
+  it("detects JSX direct attribute forwarding: prop={prop}", async () => {
+    const code = `function Widget({ userId }: Props) {
+      return <Child userId={userId} />;
+    }`;
+    const funcNode = await getFirstFunction(code, "typescript");
+    const forwarded = detectForwardedParameters(funcNode, ["userId"], "typescript");
+    expect(forwarded).toContain("userId");
   });
 });

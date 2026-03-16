@@ -74,12 +74,11 @@ export function registerComplexityMetricsTool(server: McpServer): void {
       const allFiles = await analyzeComplexity(filePaths, resolvedPath, isDirectory);
       const summary = calculateSummary(allFiles);
 
-      // Sort by cognitive complexity (highest first) for limiting
+      // Sort by cognitive complexity so the highest-complexity files appear first after slicing
       const sortedFiles = [...allFiles].sort(
         (a, b) => b.metrics.cognitive_complexity - a.metrics.cognitive_complexity
       );
 
-      // Apply limit (default: 20)
       const limit = args.limit ?? DEFAULT_LIMIT;
       const limitedFiles = sortedFiles.slice(0, limit);
 

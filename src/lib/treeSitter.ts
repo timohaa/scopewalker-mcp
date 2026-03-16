@@ -9,7 +9,6 @@ export { getComments, type CommentInfo } from "./treeSitterComments.js";
 
 const parsers = new Map<SupportedLanguage, Parser>();
 
-// Extension to language mapping
 const EXTENSION_MAP: Record<string, SupportedLanguage> = {
   ".ts": "typescript",
   ".tsx": "typescript",
@@ -30,7 +29,6 @@ const EXTENSION_MAP: Record<string, SupportedLanguage> = {
   ".rb": "ruby",
 };
 
-// Tree-sitter queries for finding functions per language
 const FUNCTION_QUERIES: Record<SupportedLanguage, string> = {
   typescript: `
     (function_declaration name: (identifier) @name) @func

@@ -33,7 +33,9 @@ export function extractParameterNames(
   if (language === "python") {
     extractPythonParamNames(paramListNode, names);
   } else {
-    extractGenericParamNames(paramListNode, names, language);
+    for (const child of paramListNode.namedChildren) {
+      extractNamesFromParamNode(child, names, language);
+    }
   }
 
   return names;
@@ -59,17 +61,6 @@ function extractPythonParamNames(paramListNode: Parser.SyntaxNode, names: string
       const id = child.namedChildren.find((c) => c.type === "identifier");
       if (id !== undefined) names.push(id.text);
     }
-  }
-}
-
-/** Extracts parameter names for TS/JS/Go/Rust/Java/C/C++/Ruby. */
-function extractGenericParamNames(
-  paramListNode: Parser.SyntaxNode,
-  names: string[],
-  language: SupportedLanguage
-): void {
-  for (const child of paramListNode.namedChildren) {
-    extractNamesFromParamNode(child, names, language);
   }
 }
 
@@ -184,6 +175,24 @@ function findDeepIdentifier(node: Parser.SyntaxNode): string | null {
   return null;
 }
 
+/** Checks if an identifier or member_expression node forwards a tracked parameter. */
+function checkNodeForwarding(
+  node: Parser.SyntaxNode,
+  paramSet: Set<string>,
+  forwarded: Set<string>
+): void {
+  if (node.type === "identifier" && paramSet.has(node.text)) {
+    forwarded.add(node.text);
+    return;
+  }
+  if (node.type === "member_expression" && node.namedChildren.length > 0) {
+    const obj = node.namedChildren[0];
+    if (obj.type === "identifier" && paramSet.has(obj.text)) {
+      forwarded.add(obj.text);
+    }
+  }
+}
+
 /**
  * Detects which received parameters are forwarded to child calls or JSX attributes.
  * Returns the subset of paramNames that appear as arguments in call expressions
@@ -203,32 +212,44 @@ export function detectForwardedParameters(
   if (body === null) return [];
 
   walkNode(body, (node) => {
-    // Check call expression arguments: someFunc(userId)
+    // "arguments" node covers call expressions: someFunc(userId)
     if (node.type === "arguments") {
-      for (const child of node.namedChildren) {
-        if (child.type === "identifier" && paramSet.has(child.text)) {
-          forwarded.add(child.text);
-        }
-      }
+      for (const child of node.namedChildren) checkNodeForwarding(child, paramSet, forwarded);
     }
 
-    // Check JSX attributes: <Child userId={userId} />
+    // JSX attribute value forwarding: <Child userId={userId} />
     if (node.type === "jsx_attribute") {
       checkJsxAttributeForwarding(node, paramSet, forwarded);
     }
 
-    // Check JSX spread: <Child {...props} />
-    // tree-sitter parses this as jsx_expression > spread_element > identifier
+    // Check JSX spread: <Child {...props} /> — jsx_expression > spread_element > identifier
     if (node.type === "spread_element") {
       for (const child of node.namedChildren) {
-        if (child.type === "identifier" && paramSet.has(child.text)) {
-          forwarded.add(child.text);
-        }
+        if (child.type === "identifier" && paramSet.has(child.text)) forwarded.add(child.text);
       }
     }
   });
 
   return [...forwarded];
+}
+
+/** Checks if a JSX expression node forwards tracked parameters, including shorthand {prop}. */
+function checkJsxExpressionForwarding(
+  jsxExprNode: Parser.SyntaxNode,
+  attrName: string | null,
+  paramSet: Set<string>,
+  forwarded: Set<string>
+): void {
+  for (const exprChild of jsxExprNode.namedChildren) {
+    checkNodeForwarding(exprChild, paramSet, forwarded);
+  }
+  // Shorthand: <Child userId={userId} /> where attr name matches expr identifier
+  if (attrName !== null && paramSet.has(attrName) && jsxExprNode.namedChildren.length === 1) {
+    const exprChild = jsxExprNode.namedChildren[0];
+    if (exprChild.type === "identifier" && exprChild.text === attrName) {
+      forwarded.add(attrName);
+    }
+  }
 }
 
 /** Checks if a JSX attribute forwards a parameter: propName={paramName}. */
@@ -244,41 +265,27 @@ function checkJsxAttributeForwarding(
       attrName = child.text;
     }
     if (child.type === "jsx_expression") {
-      for (const exprChild of child.namedChildren) {
-        if (exprChild.type === "identifier" && paramSet.has(exprChild.text)) {
-          forwarded.add(exprChild.text);
-        }
-      }
-      if (attrName !== null && paramSet.has(attrName) && child.namedChildren.length === 1) {
-        const exprChild = child.namedChildren[0];
-        if (exprChild.type === "identifier" && exprChild.text === attrName) {
-          forwarded.add(attrName);
-        }
-      }
+      checkJsxExpressionForwarding(child, attrName, paramSet, forwarded);
     }
   }
 }
 
 /** Finds the body/block node of a function. */
 function findFunctionBody(funcNode: Parser.SyntaxNode): Parser.SyntaxNode | null {
+  const BODY_TYPES = new Set([
+    "statement_block",
+    "block",
+    "function_body",
+    "body",
+    "compound_statement",
+  ]);
   for (const child of funcNode.children) {
-    if (
-      child.type === "statement_block" ||
-      child.type === "block" ||
-      child.type === "function_body" ||
-      child.type === "body" ||
-      child.type === "compound_statement"
-    ) {
-      return child;
-    }
+    if (BODY_TYPES.has(child.type)) return child;
   }
   // Arrow functions may have expression bodies
   if (funcNode.type === "arrow_function") {
-    const namedChildren = funcNode.namedChildren;
-    const lastIdx = namedChildren.length - 1;
-    if (lastIdx >= 0 && namedChildren[lastIdx].type !== "formal_parameters") {
-      return namedChildren[lastIdx];
-    }
+    const last = funcNode.namedChildren.at(-1);
+    if (last !== undefined && last.type !== "formal_parameters") return last;
   }
   return null;
 }

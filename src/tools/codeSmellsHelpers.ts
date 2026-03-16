@@ -43,6 +43,7 @@ export const SMELL_PATTERNS: Record<string, RegExp> = {
   deprecated: /\bDEPRECATED\b/i,
 };
 
+/** All supported smell types, combining comment-based and code-based detections. */
 export const ALL_SMELL_TYPES: CodeSmellType[] = [
   "todo",
   "fixme",
@@ -236,8 +237,6 @@ function walkTreeForUnsafeCasts(
         innerNamedChildren.length > 0 &&
         isUnknownOrAnyType(innerNamedChildren[innerNamedChildren.length - 1])
       ) {
-        // This is an "as unknown as T" pattern
-        // Get the text of the full expression
         const lineStart = node.startPosition.row;
         const lineEnd = node.endPosition.row;
         const lines = content.split("\n").slice(lineStart, lineEnd + 1);

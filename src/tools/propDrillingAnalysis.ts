@@ -131,7 +131,6 @@ export function aggregateParameters(
   fileAnalyses: FileParameterAnalysis[],
   minOccurrences: number
 ): ThreadedParameter[] {
-  // Group by parameter name
   const paramMap = new Map<
     string,
     { files: Set<string>; functions: string[]; forwardedCount: number; totalCount: number }
@@ -175,6 +174,7 @@ export function aggregateParameters(
 /** Assigns risk level based on occurrence count and forwarding ratio. */
 function assignRisk(occurrences: number, forwardingRatio: number): RiskLevel {
   if (occurrences >= 4 && forwardingRatio > 0.5) return "high";
-  if (occurrences >= 3 || (occurrences >= 2 && forwardingRatio > 0.5)) return "medium";
+  if (forwardingRatio > 0 && (occurrences >= 3 || (occurrences >= 2 && forwardingRatio > 0.5)))
+    return "medium";
   return "low";
 }

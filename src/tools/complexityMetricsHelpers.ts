@@ -5,8 +5,11 @@ import { countImports } from "../lib/treeSitter.js";
 import type { SupportedLanguage } from "../types/index.js";
 export { findHotspots, calculateSummary } from "./complexityMetricsHotspots.js";
 
+/** Nesting depth above which a function is flagged as a hotspot. */
 export const HIGH_NESTING_THRESHOLD = 4;
+/** Parameter count above which a function is flagged as a hotspot. */
 export const HIGH_PARAMS_THRESHOLD = 5;
+/** Cognitive complexity score above which a file is counted as high-complexity. */
 export const HIGH_COMPLEXITY_THRESHOLD = 20;
 
 /**
@@ -26,7 +29,6 @@ function isElseIf(node: Parser.SyntaxNode): boolean {
   const siblings = parent.children;
   const nodeIndex = siblings.indexOf(node);
 
-  // Check if the previous sibling is an 'else' keyword
   if (nodeIndex > 0 && siblings[nodeIndex - 1].type === "else") {
     return true;
   }
@@ -133,7 +135,6 @@ function countActualParameters(
     return count;
   }
 
-  // For other languages, use namedChildCount directly
   return children.length;
 }
 
@@ -204,13 +205,20 @@ export function countJsxProps(node: Parser.SyntaxNode): number | null {
   const tagName = extractJsxComponentName(node);
   if (tagName === null) return null;
 
-  // Skip HTML elements (lowercase first character)
+  // HTML elements start with lowercase; only React components (PascalCase) have meaningful prop counts
   if (/^[a-z]/.test(tagName)) return null;
 
   let count = 0;
   for (const child of node.children) {
     if (child.type === "jsx_attribute") {
       count++;
+    }
+    if (child.type === "jsx_expression") {
+      for (const exprChild of child.namedChildren) {
+        if (exprChild.type === "spread_element") {
+          count++;
+        }
+      }
     }
   }
   return count;

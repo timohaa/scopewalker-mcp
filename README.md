@@ -25,13 +25,13 @@ Scopewalker MCP provides 8 tools organized into three categories:
 ### Codebase Health
 
 - `check_thresholds` - Find oversized files and functions
-- `get_code_inventory` - Classes, functions, and exports inventory
+- `get_code_inventory` - Classes, methods, functions, and exports inventory
 - `get_complexity_metrics` - Nesting depth, parameters, cognitive complexity
 
 ### Code Quality
 
 - `get_documentation_coverage` - Undocumented symbol detection
-- `get_code_smells` - Detect TODO, FIXME, HACK, and other code markers
+- `get_code_smells` - Detect TODO, FIXME, HACK, BUG, and other markers plus unsafe casts
 - `get_prop_drilling` - Detect parameter threading (prop drilling) across function chains
 
 See [TOOLS.md](TOOLS.md) for detailed parameter and response documentation.

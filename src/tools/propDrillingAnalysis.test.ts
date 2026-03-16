@@ -62,7 +62,7 @@ describe("aggregateParameters", () => {
     expect(result.length).toBe(0); // Only 2 occurrences, threshold is 3
   });
 
-  it("assigns medium risk for 3 occurrences", () => {
+  it("assigns low risk for 3 occurrences with no forwarding", () => {
     const analyses: FileParameterAnalysis[] = [
       {
         path: "a.ts",
@@ -73,6 +73,30 @@ describe("aggregateParameters", () => {
         path: "b.ts",
         language: "typescript",
         parameters: [{ name: "token", functionName: "fn2", line: 1, isForwarded: false }],
+      },
+      {
+        path: "c.ts",
+        language: "typescript",
+        parameters: [{ name: "token", functionName: "fn3", line: 1, isForwarded: false }],
+      },
+    ];
+
+    const result = aggregateParameters(analyses, 3);
+    expect(result.length).toBe(1);
+    expect(result[0].risk).toBe("low");
+  });
+
+  it("assigns medium risk for 3 occurrences with forwarding evidence", () => {
+    const analyses: FileParameterAnalysis[] = [
+      {
+        path: "a.ts",
+        language: "typescript",
+        parameters: [{ name: "token", functionName: "fn1", line: 1, isForwarded: true }],
+      },
+      {
+        path: "b.ts",
+        language: "typescript",
+        parameters: [{ name: "token", functionName: "fn2", line: 1, isForwarded: true }],
       },
       {
         path: "c.ts",

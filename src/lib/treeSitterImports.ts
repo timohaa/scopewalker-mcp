@@ -2,8 +2,7 @@ import type Parser from "tree-sitter";
 import type { SupportedLanguage } from "../types/index.js";
 import { parseCode } from "./treeSitter.js";
 
-// AST node types representing imports/dependencies per language
-// Only top-level import nodes are counted (not nested clauses)
+// Only top-level import nodes are counted (not nested clauses like import_spec)
 const IMPORT_NODE_TYPES: Record<SupportedLanguage, string[]> = {
   typescript: ["import_statement", "call_expression"],
   javascript: ["import_statement", "call_expression"],

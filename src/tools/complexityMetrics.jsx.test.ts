@@ -157,6 +157,23 @@ export function App() {
     expect(jsxHotspots.length).toBeGreaterThanOrEqual(1);
   });
 
+  it("counts spread props in addition to regular props", async () => {
+    await writeFile(
+      join(testDir, "spreadProps.tsx"),
+      `export function App() {
+  return <MyComponent a={1} b={2} c={3} d={4} e={5} {...extra} />;
+}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "spreadProps.tsx") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
+    expect(hotspots).toHaveLength(1);
+    expect(hotspots[0].value).toBe(6); // 5 attributes + 1 spread
+  });
+
   it("counts props on Namespace.Component (member_expression)", async () => {
     await writeFile(
       join(testDir, "namespaced.tsx"),
