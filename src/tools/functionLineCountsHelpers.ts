@@ -13,19 +13,16 @@ export function calculateFunctionLineStats(
   const functionLines = allLines.slice(fn.startLine - 1, fn.endLine);
   let blank = 0;
 
-  // Count blank lines
   for (const line of functionLines) {
     if (line.trim() === "") {
       blank++;
     }
   }
 
-  // Count comment lines within function range using AST data
+  // Use AST-parsed comments to accurately count multi-line comment blocks within the function
   const commentLinesInFunction = new Set<number>();
   for (const comment of comments) {
-    // Check if comment overlaps with function
     if (comment.endLine >= fn.startLine && comment.startLine <= fn.endLine) {
-      // Add all lines covered by this comment
       const start = Math.max(comment.startLine, fn.startLine);
       const end = Math.min(comment.endLine, fn.endLine);
       for (let line = start; line <= end; line++) {
@@ -46,7 +43,6 @@ export function sortFiles(
   files: FileFunctionLineCount[],
   sortBy: "lines_desc" | "lines_asc" | "name"
 ): FileFunctionLineCount[] {
-  // Sort functions within each file
   for (const file of files) {
     switch (sortBy) {
       case "lines_desc":
@@ -61,7 +57,6 @@ export function sortFiles(
     }
   }
 
-  // Sort files by their largest function
   const sorted = [...files];
   switch (sortBy) {
     case "lines_desc":

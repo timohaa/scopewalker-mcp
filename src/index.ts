@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { z } from "zod";
 import { toJSONSchema } from "zod";
@@ -17,7 +16,7 @@ import { registerPropDrillingTool } from "./tools/propDrilling.js";
 const server = new McpServer(
   {
     name: "scopewalker-mcp",
-    version: "1.0.0",
+    version: "1.0.1",
   },
   {
     capabilities: {
@@ -26,7 +25,6 @@ const server = new McpServer(
   }
 );
 
-// Register all tools
 registerLineCountsTool(server);
 registerFunctionsTool(server);
 registerCheckThresholdsTool(server);
@@ -47,20 +45,13 @@ interface McpRegisteredTool {
 const registeredTools = (
   server as unknown as { _registeredTools: Record<string, McpRegisteredTool> }
 )._registeredTools;
-server.server.setRequestHandler(
-  ListToolsRequestSchema,
-  () =>
-    ({
-      tools: Object.entries(registeredTools).map(([name, tool]) => {
-        const schema = toJSONSchema(tool.inputSchema, { target: "draft-7" }) as Record<
-          string,
-          unknown
-        >;
-        delete schema.$schema;
-        return { name, description: tool.description, inputSchema: schema };
-      }),
-    }) as z.infer<typeof ListToolsResultSchema>
-);
+server.server.setRequestHandler(ListToolsRequestSchema, () => ({
+  tools: Object.entries(registeredTools).map(([name, tool]) => {
+    const schema = toJSONSchema(tool.inputSchema, { target: "draft-7" }) as Record<string, unknown>;
+    delete schema.$schema;
+    return { name, description: tool.description, inputSchema: schema };
+  }),
+}));
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();

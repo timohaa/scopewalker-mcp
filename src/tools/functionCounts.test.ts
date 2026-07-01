@@ -6,17 +6,16 @@ import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { FunctionCountsResult } from "../types/index.js";
 import { registerFunctionCountsTool } from "./functionCounts.js";
 
-describe("functionCounts tool", () => {
-  let testDir: string;
-  const handler = getToolHandler(registerFunctionCountsTool, "get_function_counts");
+let testDir: string;
+const handler = getToolHandler(registerFunctionCountsTool, "get_function_counts");
 
-  beforeAll(async () => {
-    testDir = join(tmpdir(), `scopewalker-func-test-${String(Date.now())}`);
-    await mkdir(testDir, { recursive: true });
+beforeAll(async () => {
+  testDir = join(tmpdir(), `scopewalker-func-test-${String(Date.now())}`);
+  await mkdir(testDir, { recursive: true });
 
-    await writeFile(
-      join(testDir, "utils.ts"),
-      `export function add(a: number, b: number): number {
+  await writeFile(
+    join(testDir, "utils.ts"),
+    `export function add(a: number, b: number): number {
   return a + b;
 }
 
@@ -30,14 +29,14 @@ export class Calculator {
   }
 }
 `
-    );
+  );
 
-    await writeFile(join(testDir, "README.md"), "# Test");
+  await writeFile(join(testDir, "README.md"), "# Test");
 
-    // File with no functions - only types and exports
-    await writeFile(
-      join(testDir, "types.ts"),
-      `export interface User {
+  // File with no functions - only types and exports
+  await writeFile(
+    join(testDir, "types.ts"),
+    `export interface User {
   name: string;
   age: number;
 }
@@ -46,13 +45,14 @@ export type Status = "active" | "inactive";
 
 export const DEFAULT_VALUE = 42;
 `
-    );
-  });
+  );
+});
 
-  afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
+afterAll(async () => {
+  await rm(testDir, { recursive: true, force: true });
+});
 
+describe("counting behavior", () => {
   it("returns function counts with language metadata", async () => {
     const response = await handler({ path: testDir, sort_by: "name" });
     const result = parseContent<FunctionCountsResult>(response);
@@ -105,7 +105,9 @@ export const DEFAULT_VALUE = 42;
     const mdFile = result.files.find((f) => f.path.endsWith("README.md"));
     expect(mdFile).toBeUndefined();
   });
+});
 
+describe("path handling and filtering", () => {
   it("handles single file path", async () => {
     const response = await handler({ path: join(testDir, "utils.ts") });
     const result = parseContent<FunctionCountsResult>(response);

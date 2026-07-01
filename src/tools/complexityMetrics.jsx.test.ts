@@ -6,19 +6,19 @@ import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { ComplexityMetricsResult } from "../types/index.js";
 import { registerComplexityMetricsTool } from "./complexityMetrics.js";
 
-describe("complexityMetrics JSX props", () => {
-  let testDir: string;
-  const handler = getToolHandler(registerComplexityMetricsTool, "get_complexity_metrics");
+let testDir: string;
+const handler = getToolHandler(registerComplexityMetricsTool, "get_complexity_metrics");
 
-  beforeAll(async () => {
-    testDir = join(tmpdir(), `scopewalker-jsx-test-${String(Date.now())}`);
-    await mkdir(testDir, { recursive: true });
-  });
+beforeAll(async () => {
+  testDir = join(tmpdir(), `scopewalker-jsx-test-${String(Date.now())}`);
+  await mkdir(testDir, { recursive: true });
+});
 
-  afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
+afterAll(async () => {
+  await rm(testDir, { recursive: true, force: true });
+});
 
+describe("complexityMetrics JSX props - detection thresholds", () => {
   it("reports jsx_props hotspot for PascalCase component with >5 props", async () => {
     await writeFile(
       join(testDir, "manyProps.tsx"),
@@ -88,7 +88,9 @@ describe("complexityMetrics JSX props", () => {
     const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
     expect(hotspots).toHaveLength(0);
   });
+});
 
+describe("complexityMetrics JSX props - metrics integration", () => {
   it("includes JSX props in max_parameters and avg_parameters metrics", async () => {
     await writeFile(
       join(testDir, "propsMetrics.tsx"),
@@ -156,7 +158,9 @@ export function App() {
     expect(paramHotspots.length).toBeGreaterThanOrEqual(1);
     expect(jsxHotspots.length).toBeGreaterThanOrEqual(1);
   });
+});
 
+describe("complexityMetrics JSX props - additional patterns", () => {
   it("counts spread props in addition to regular props", async () => {
     await writeFile(
       join(testDir, "spreadProps.tsx"),

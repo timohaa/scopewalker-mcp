@@ -85,7 +85,9 @@ describe("aggregateParameters", () => {
     expect(result.length).toBe(1);
     expect(result[0].risk).toBe("low");
   });
+});
 
+describe("aggregateParameters - risk scoring and ordering", () => {
   it("assigns medium risk for 3 occurrences with forwarding evidence", () => {
     const analyses: FileParameterAnalysis[] = [
       {

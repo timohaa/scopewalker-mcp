@@ -27,6 +27,7 @@ export type TokeiOutput = Record<string, TokeiLanguageStats>;
 export interface TokeiOptions {
   extensions?: string[];
   exclude?: string[];
+  includeHidden?: boolean;
 }
 
 /**
@@ -166,6 +167,10 @@ function buildArgs(path: string, options: TokeiOptions): string[] {
     for (const pattern of options.exclude) {
       args.push("-e", pattern);
     }
+  }
+
+  if (options.includeHidden === true) {
+    args.push("--hidden");
   }
 
   return args;

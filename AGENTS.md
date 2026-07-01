@@ -1,8 +1,14 @@
 # AGENTS.md
 
+## What
+
 MCP server providing codebase analysis tools for AI assistants. Thin orchestration layer over `tree-sitter` (parsing), `tokei` (line counting), and `fast-glob` (file discovery).
 
-## Commands
+## Why
+
+Gives AI coding agents quantitative visibility into codebases — complexity, prop drilling, documentation coverage, code smells — so they can make informed refactoring and review decisions.
+
+## How
 
 ```bash
 npm run build          # Build
@@ -11,31 +17,21 @@ npm run test           # Run tests
 npm run test:coverage  # Tests with coverage
 ```
 
-## Scopewalker MCP Tools
-
 Use the project's own MCP tools to understand and validate code. Run `check_thresholds` before committing.
 
-See [TOOLS.md](./TOOLS.md) for the full tool reference and [docs/](./docs/) for detailed documentation.
+Prefer LSP over Grep/Read for code navigation (`workspaceSymbol`, `findReferences`, `goToDefinition`, `hover`). Use Grep only for text/pattern searches.
 
-## Code Standards
+## Behavior
 
-- Files <300 lines, functions <100 lines
-- Functional style: pure functions preferred, minimal classes
-- Interface-level tests; mock dependencies, no external services
-- Avoid parameter threading through multiple function layers; use module-scoped config or direct imports instead
-- JSDoc on exported functions
+- **Think before coding.** If a request is ambiguous, sketch a short plan and surface assumptions/tradeoffs before editing.
+- **Minimum footprint.** Write the minimum code that solves the problem — no speculative abstractions, no drive-by renames, no unrelated cleanup bundled into the same change.
+- **Verify, don't trust.** Define a success criterion before starting and loop until it's met. `npm run check` is necessary but not sufficient to confirm a tool's actual output — verify behavior with the tool itself or its tests.
+- **Never create `_enhanced`, `_v2`, or `_new` duplicate file variants** — edit the original file.
 
-## Key Patterns
+## Reference Docs
 
-See [docs/patterns.md](./docs/patterns.md) for code examples (tool registration, error handling, testing).
-
-### Code Intelligence
-
-Prefer LSP over Grep/Read for code navigation:
-
-- `workspaceSymbol` to find definitions
-- `findReferences` for all usages
-- `goToDefinition` / `goToImplementation` to jump to source
-- `hover` for type info without reading the file
-
-Use Grep only for text/pattern searches (comments, strings, config). Check LSP diagnostics after editing code.
+- [TOOLS.md](./TOOLS.md) — tool reference
+- [docs/](./docs/) — detailed tool documentation
+- `.claude/skills/create-tool`, `.claude/skills/create-test` — workflows and code examples for adding tools/tests
+- `/polish`, `/review-changes`, `/check-quality`, `/run-tests` — quality-pipeline slash commands (see `.claude/skills/` for the rest)
+- `.claude/agents/` — specialized agents for standards, testing, docs, and code-quality enforcement (see directory for the full list)

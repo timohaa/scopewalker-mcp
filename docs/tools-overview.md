@@ -6,15 +6,15 @@ Scopewalker MCP provides 8 tools for codebase analysis.
 
 Most tools share these parameters:
 
-| Name              | Type     | Description                                        |
-|-------------------|----------|----------------------------------------------------|
-| `path`            | string   | Path to file or directory (required)               |
-| `include_hidden`  | boolean  | Include hidden files (default: false)              |
-| `ignore_patterns` | string[] | Glob patterns to exclude                           |
-| `extensions`      | string[] | Filter by file extensions (e.g., `[".ts", ".js"]`) |
-| `max_depth`       | integer  | (When supported) Maximum directory depth to traverse|
-| `max_files`       | integer  | (When supported) Maximum number of files to scan    |
-| `grep`            | string   | (When supported) Filter results by keyword (case-insensitive substring match) |
+| Name              | Type     | Description                                                                                    |
+|-------------------|----------|------------------------------------------------------------------------------------------------|
+| `path`            | string   | Path to file or directory (required)                                                           |
+| `include_hidden`  | boolean  | Include hidden files (default: false)                                                          |
+| `ignore_patterns` | string[] | Glob patterns to exclude                                                                       |
+| `extensions`      | string[] | Filter by file extensions (e.g., `[".ts", ".js"]`)                                             |
+| `max_depth`       | integer  | (When supported) Maximum directory depth to traverse                                           |
+| `max_files`       | integer  | (When supported) Maximum number of files to scan                                               |
+| `grep`            | string   | (When supported) Filter results by keyword (case-insensitive substring match)                  |
 | `limit`           | integer  | (When supported) Maximum number of items/files to return (default: 20; meaning varies by tool) |
 
 ### Grep Filtering
@@ -35,7 +35,7 @@ Tools supporting grep: `get_line_counts`, `get_functions`, `get_code_inventory`
 
 **Path scoping:** All tools resolve paths with `realpath` and will reject requests outside allowed roots. Defaults: current working directory and system temp. Override with `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`.
 
-**Default ignores:** File discovery skips common build artifacts, caches, and lock files (e.g., `node_modules`, `dist`, `package-lock.json`). Directory-scanning tools also respect `.gitignore`; tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) do not read `.gitignore` and only use ignore lists.
+**Default ignores:** File discovery skips common build artifacts, caches, and lock files (e.g., `node_modules`, `dist`, `package-lock.json`). Directory-scanning tools respect `.gitignore` via the `ignore` library; tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) respect `.gitignore` through tokei's built-in ignore handling, in addition to those explicit ignore lists.
 
 **Resource guardrails:** AST-based tools skip files over 1 MB to prevent runaway memory/CPU usage. Tokei-based line counts do not enforce this limit. Use extension filters, `ignore_patterns`, and `limit` to reduce scan size further. Most directory-scanning tools also accept `max_depth` and `max_files` to bound traversal.
 
@@ -57,16 +57,16 @@ Function detection and parsing support:
 
 All tools return structured errors:
 
-| Code                   | Description                               |
-|------------------------|-------------------------------------------|
-| `PATH_NOT_FOUND`       | Path does not exist                       |
-| `NOT_A_DIRECTORY`      | Expected directory, got file              |
-| `NOT_A_FILE`           | Expected file, got directory              |
-| `PERMISSION_DENIED`    | Cannot read path                          |
-| `UNSUPPORTED_LANGUAGE` | Cannot parse functions for this file type |
-| `PARSE_ERROR`          | Failed to parse source file               |
-| `TOOL_NOT_AVAILABLE`   | Requested tool is not registered or usable |
-| `GIT_NOT_FOUND`        | Git executable not found (reserved)       |
+| Code                   | Description                                    |
+|------------------------|------------------------------------------------|
+| `PATH_NOT_FOUND`       | Path does not exist                            |
+| `NOT_A_DIRECTORY`      | Expected directory, got file                   |
+| `NOT_A_FILE`           | Expected file, got directory                   |
+| `PERMISSION_DENIED`    | Cannot read path                               |
+| `UNSUPPORTED_LANGUAGE` | Cannot parse functions for this file type      |
+| `PARSE_ERROR`          | Failed to parse source file                    |
+| `TOOL_NOT_AVAILABLE`   | Requested tool is not registered or usable     |
+| `GIT_NOT_FOUND`        | Git executable not found (reserved)            |
 | `NOT_A_GIT_REPO`       | Path is not inside a git repository (reserved) |
 
 ## Response Format

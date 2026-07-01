@@ -1,5 +1,7 @@
 # Scopewalker MCP
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/thaanpaa)
+
 An MCP (Model Context Protocol) server providing codebase analysis tools for AI assistants.
 
 ## Why Scopewalker?
@@ -10,8 +12,6 @@ AI coding agents perform better on codebases that follow complexity standards. S
 - Identify complex code that needs refactoring before modification
 - Find undocumented code that may cause misunderstanding
 - Navigate unfamiliar codebases efficiently
-
-See [AGENTS.md](AGENTS.md) for a sample integration.
 
 ## Features
 
@@ -38,6 +38,7 @@ See [TOOLS.md](TOOLS.md) for detailed parameter and response documentation.
 
 ## Safety Defaults
 
+- **No network access:** All analysis runs locally over stdio — no data leaves your machine, no API keys or external services involved.
 - **Path scoping:** All tools only operate inside allowed roots (defaults: current working directory and system temp). Override with `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`.
 - **Large file guard:** AST-based tools skip files larger than 1 MB to avoid excessive memory/CPU use. Tokei-based line counts do not enforce this limit.
 - **Output limits:** Tools default to returning 20 files/items unless `limit` is set.
@@ -78,7 +79,7 @@ Or use the CLI:
 claude mcp add scopewalker-mcp --scope user -- node /path/to/scopewalker-mcp/dist/index.js
 ```
 
-See [Claude Code MCP documentation](https://docs.claude.com/en/docs/claude-code/mcp) for details.
+See [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp) for details.
 
 ### Cursor
 
@@ -97,7 +98,7 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 
 Or configure via File > Preferences > Cursor Settings > MCP.
 
-See [Cursor MCP documentation](https://docs.cursor.com/context/model-context-protocol) for details.
+See [Cursor MCP documentation](https://cursor.com/docs/mcp) for details.
 
 ### VS Code (GitHub Copilot)
 
@@ -116,7 +117,7 @@ Add to `.vscode/mcp.json` in your workspace:
 
 Requires VS Code 1.102+ with Agent Mode enabled.
 
-See [VS Code MCP documentation](https://code.visualstudio.com/docs/copilot/customization/mcp-servers) for details.
+See [VS Code MCP documentation](https://code.visualstudio.com/docs/agent-customization/mcp-servers) for details.
 
 ### Windsurf
 
@@ -135,7 +136,7 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 
 Or configure via Windsurf Settings > Cascade > Manage MCPs.
 
-See [Windsurf MCP documentation](https://docs.windsurf.com/windsurf/cascade/mcp) for details.
+See [Windsurf MCP documentation](https://docs.devin.ai/desktop/cascade/mcp) for details.
 
 ### Gemini CLI
 
@@ -172,6 +173,24 @@ codex mcp add scopewalker-mcp -- node /path/to/scopewalker-mcp/dist/index.js
 
 See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for details.
 
+## Usage
+
+Once configured, your AI assistant calls Scopewalker's tools on its own while it works — there's no special syntax to learn. Just ask naturally:
+
+- "Check this repo against our size thresholds before I commit"
+- "Which functions in `src/` have the highest cognitive complexity?"
+- "Find undocumented exports in `src/auth`"
+- "Are there any TODO/FIXME/HACK markers left in this module?"
+- "Show me functions that take more than 5 parameters"
+
+The assistant picks the right tool (`check_thresholds`, `get_complexity_metrics`, `get_documentation_coverage`, `get_code_smells`, etc.) and parameters based on your request. See [TOOLS.md](TOOLS.md) for the quick reference and [docs/](docs/) for per-tool parameters and example responses.
+
+This repo also dogfoods its own tools via Claude Code skills and agents:
+
+- [`.claude/skills/check-quality/SKILL.md`](.claude/skills/check-quality/SKILL.md) — runs `check_thresholds` and `get_code_smells` as part of the quality gate
+- [`.claude/agents/standards-enforcer.md`](.claude/agents/standards-enforcer.md) — uses the full tool set to find and fix standards violations
+- [`.claude/agents/docs-reality-sync.md`](.claude/agents/docs-reality-sync.md) — uses `get_documentation_coverage`, `get_code_inventory`, and `get_functions` to keep docs in sync with code
+
 ## Development
 
 ```bash
@@ -181,7 +200,7 @@ npm run test           # Run tests
 npm run test:coverage  # Run tests with coverage
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [docs/patterns.md](docs/patterns.md) for tool registration, error handling, and testing patterns.
 
 ## Supported Languages
 

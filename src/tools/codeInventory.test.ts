@@ -6,18 +6,17 @@ import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { CodeInventoryResult } from "../types/index.js";
 import { registerCodeInventoryTool } from "./codeInventory.js";
 
-describe("codeInventory tool", () => {
-  let testDir: string;
-  const handler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
+let testDir: string;
+const handler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
 
-  beforeAll(async () => {
-    testDir = join(tmpdir(), `scopewalker-inv-test-${String(Date.now())}`);
-    await mkdir(testDir, { recursive: true });
+beforeAll(async () => {
+  testDir = join(tmpdir(), `scopewalker-inv-test-${String(Date.now())}`);
+  await mkdir(testDir, { recursive: true });
 
-    // TypeScript file with class and functions
-    await writeFile(
-      join(testDir, "service.ts"),
-      `/**
+  // TypeScript file with class and functions
+  await writeFile(
+    join(testDir, "service.ts"),
+    `/**
  * Authentication service
  */
 export class AuthService {
@@ -43,11 +42,11 @@ export enum Status {
   Inactive
 }
 `
-    );
+  );
 
-    await writeFile(
-      join(testDir, "private.ts"),
-      `class Internal {
+  await writeFile(
+    join(testDir, "private.ts"),
+    `class Internal {
   private token: string;
 
   _inferredPrivate(): void {}
@@ -55,13 +54,14 @@ export enum Status {
 
 function _internalUtility(): void {}
 `
-    );
-  });
+  );
+});
 
-  afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
+afterAll(async () => {
+  await rm(testDir, { recursive: true, force: true });
+});
 
+describe("codeInventory tool", () => {
   it("indexes exported symbols and methods by file", async () => {
     const response = await handler({ path: testDir });
     const result = parseContent<CodeInventoryResult>(response);
@@ -107,7 +107,9 @@ function _internalUtility(): void {}
     const errorPayload = parseContent<{ error: { code: string } }>(response);
     expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
   });
+});
 
+describe("codeInventory tool - filtering", () => {
   it("handles files with only type exports", async () => {
     // Create file with only type exports
     await writeFile(
@@ -159,15 +161,15 @@ export enum Color {
 });
 
 describe("codeInventory tool - Python", () => {
-  let testDir: string;
-  const handler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
+  let pyTestDir: string;
+  const pyHandler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
 
   beforeAll(async () => {
-    testDir = join(tmpdir(), `scopewalker-inv-py-test-${String(Date.now())}`);
-    await mkdir(testDir, { recursive: true });
+    pyTestDir = join(tmpdir(), `scopewalker-inv-py-test-${String(Date.now())}`);
+    await mkdir(pyTestDir, { recursive: true });
 
     await writeFile(
-      join(testDir, "module.py"),
+      join(pyTestDir, "module.py"),
       `"""Module docstring."""
 
 def public_function():
@@ -187,11 +189,11 @@ def _private_function():
   });
 
   afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
+    await rm(pyTestDir, { recursive: true, force: true });
   });
 
   it("indexes Python module-level symbols as exported", async () => {
-    const response = await handler({ path: testDir });
+    const response = await pyHandler({ path: pyTestDir });
     const result = parseContent<CodeInventoryResult>(response);
 
     const pyFile = result.inventory.find((f) => f.file.endsWith("module.py"));

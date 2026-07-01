@@ -35,12 +35,13 @@ export function registerLineCountsTool(server: McpServer): void {
 
       const { resolvedPath, isDirectory } = pathValidation;
 
-      // Normalize extensions (remove dots if present)
+      // tokei's -t flag expects bare names (e.g. "ts"), not dot-prefixed extensions
       const extensions = args.extensions?.map((e) => (e.startsWith(".") ? e.slice(1) : e));
 
       const tokeiResult = await analyze(resolvedPath, {
         extensions,
         exclude: [...DEFAULT_IGNORE_PATTERNS, ...(args.ignore_patterns ?? [])],
+        includeHidden: args.include_hidden,
       });
 
       if (!tokeiResult.success) {
@@ -49,7 +50,6 @@ export function registerLineCountsTool(server: McpServer): void {
 
       let files = transformTokeiOutput(tokeiResult.data, resolvedPath);
 
-      // Apply grep filter if provided
       if (args.grep !== undefined && args.grep !== "") {
         const pattern = args.grep.toLowerCase();
         files = files.filter((file) => file.path.toLowerCase().includes(pattern));

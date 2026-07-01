@@ -6,18 +6,17 @@ import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { DocumentationCoverageResult } from "../types/index.js";
 import { registerDocumentationCoverageTool } from "./documentationCoverage.js";
 
-describe("documentationCoverage tool", () => {
-  let testDir: string;
-  const handler = getToolHandler(registerDocumentationCoverageTool, "get_documentation_coverage");
+let testDir: string;
+const handler = getToolHandler(registerDocumentationCoverageTool, "get_documentation_coverage");
 
-  beforeAll(async () => {
-    testDir = join(tmpdir(), `scopewalker-doc-test-${String(Date.now())}`);
-    await mkdir(testDir, { recursive: true });
+beforeAll(async () => {
+  testDir = join(tmpdir(), `scopewalker-doc-test-${String(Date.now())}`);
+  await mkdir(testDir, { recursive: true });
 
-    // TypeScript file with JSDoc
-    await writeFile(
-      join(testDir, "documented.ts"),
-      `/**
+  // TypeScript file with JSDoc
+  await writeFile(
+    join(testDir, "documented.ts"),
+    `/**
  * Calculates the sum of two numbers.
  * @param a First number
  * @param b Second number
@@ -37,12 +36,12 @@ export class UserService {
   getUser(id: string): void {}
 }
 `
-    );
+  );
 
-    // TypeScript file without documentation
-    await writeFile(
-      join(testDir, "undocumented.ts"),
-      `export function subtract(a: number, b: number): number {
+  // TypeScript file without documentation
+  await writeFile(
+    join(testDir, "undocumented.ts"),
+    `export function subtract(a: number, b: number): number {
   return a - b;
 }
 
@@ -51,13 +50,14 @@ export class DataService {
   save(): void {}
 }
 `
-    );
-  });
+  );
+});
 
-  afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
+afterAll(async () => {
+  await rm(testDir, { recursive: true, force: true });
+});
 
+describe("documentationCoverage tool", () => {
   it("calculates documentation coverage and lists gaps", async () => {
     const response = await handler({ path: testDir });
     const result = parseContent<DocumentationCoverageResult>(response);

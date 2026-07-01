@@ -36,7 +36,6 @@ export function createSuccessResponse(
   const jsonString = JSON.stringify(data);
   const responseSize = jsonString.length;
 
-  // Build response with _meta if we have item count info
   if (options?.itemCount !== undefined) {
     const meta: ResponseMeta = {
       item_count: options.itemCount,

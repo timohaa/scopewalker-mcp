@@ -52,18 +52,18 @@ Generates a comprehensive inventory of classes, methods, functions, and exports.
 
 **Parameters:**
 
-| Name              | Type     | Required | Description                                           |
-|-------------------|----------|----------|-------------------------------------------------------|
-| `path`            | string   | Yes      | Path to file or directory                             |
-| `include_hidden`  | boolean  | No       | Include hidden files                                  |
-| `ignore_patterns` | string[] | No       | Glob patterns to exclude                              |
-| `extensions`      | string[] | No       | Filter by extensions                                  |
-| `max_depth`       | integer  | No       | Maximum directory depth to traverse                   |
-| `max_files`       | integer  | No       | Maximum number of files to scan                       |
-| `include_private` | boolean  | No       | Include private/internal symbols (default: false)     |
+| Name              | Type     | Required | Description                                                       |
+|-------------------|----------|----------|-------------------------------------------------------------------|
+| `path`            | string   | Yes      | Path to file or directory                                         |
+| `include_hidden`  | boolean  | No       | Include hidden files                                              |
+| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                          |
+| `extensions`      | string[] | No       | Filter by extensions                                              |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse                               |
+| `max_files`       | integer  | No       | Maximum number of files to scan                                   |
+| `include_private` | boolean  | No       | Include private/internal symbols (default: false)                 |
 | `group_by`        | string   | No       | Grouping method: `file`, `type`, or `directory` (default: `file`) |
-| `limit`           | integer  | No       | Maximum number of files to return (default: 20)       |
-| `grep`            | string   | No       | Filter results by keyword (case-insensitive substring match) |
+| `limit`           | integer  | No       | Maximum number of files to return (default: 20)                   |
+| `grep`            | string   | No       | Filter results by keyword (case-insensitive substring match)      |
 
 **Supported Symbol Types:** Classes, Functions, Interfaces/Types, Enums, Constants (each item includes an `exported` flag)
 
@@ -105,26 +105,28 @@ Returns code complexity metrics to identify code that may need refactoring.
 
 **Parameters:**
 
-| Name              | Type     | Required | Description                                              |
-|-------------------|----------|----------|----------------------------------------------------------|
-| `path`            | string   | Yes      | Path to file or directory                                |
-| `include_hidden`  | boolean  | No       | Include hidden files                                     |
-| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                 |
-| `extensions`      | string[] | No       | Filter by extensions                                     |
-| `max_depth`       | integer  | No       | Maximum directory depth to traverse                      |
-| `max_files`       | integer  | No       | Maximum number of files to scan                          |
-| `metrics`         | string[] | No       | Which metrics to calculate (default: all)                |
-| `summary_only`    | boolean  | No       | Return only summary, no per-file details (default: false)|
-| `limit`           | integer  | No       | Max files to return, sorted by complexity (default: 20)  |
+| Name              | Type     | Required | Description                                               |
+|-------------------|----------|----------|-----------------------------------------------------------|
+| `path`            | string   | Yes      | Path to file or directory                                 |
+| `include_hidden`  | boolean  | No       | Include hidden files                                      |
+| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                  |
+| `extensions`      | string[] | No       | Filter by extensions                                      |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse                       |
+| `max_files`       | integer  | No       | Maximum number of files to scan                           |
+| `metrics`         | string[] | No       | Which metrics to calculate (default: all)                 |
+| `summary_only`    | boolean  | No       | Return only summary, no per-file details (default: false) |
+| `limit`           | integer  | No       | Max files to return, sorted by complexity (default: 20)   |
 
 Note: All metrics are currently calculated; the `metrics` parameter is accepted for forward compatibility.
 
 **Available Metrics:**
 
 - `nesting_depth`: Maximum nesting level (loops, conditionals, callbacks)
-- `parameters`: Function parameter counts
+- `parameters`: Function parameter counts; also counts props passed to React/JSX components (PascalCase elements) so heavily-propped components surface alongside high-arity functions
 - `dependencies`: Import/require count per file
 - `cognitive`: Simplified cognitive complexity score
+
+Each hotspot's `issue` field is one of `nesting_depth`, `parameters`, or `jsx_props` (a JSX component receiving more than 5 props).
 
 **Response:**
 

@@ -68,16 +68,13 @@ export function registerCodeInventoryTool(server: McpServer): void {
         args.include_private ?? false
       );
 
-      // Apply grep filter if provided
       if (args.grep !== undefined && args.grep !== "") {
         const pattern = args.grep.toLowerCase();
         inventory = inventory
           .map((file) => {
-            // If file path matches, include all items
             if (file.file.toLowerCase().includes(pattern)) {
               return file;
             }
-            // Otherwise filter items by name
             return {
               ...file,
               items: file.items.filter((item) => item.name.toLowerCase().includes(pattern)),
@@ -86,7 +83,6 @@ export function registerCodeInventoryTool(server: McpServer): void {
           .filter((file) => file.file.toLowerCase().includes(pattern) || file.items.length > 0);
       }
 
-      // Apply file limit (default: 20)
       const limit = args.limit ?? DEFAULT_LIMIT;
       const limitedInventory = inventory.slice(0, limit);
 

@@ -46,7 +46,6 @@ export function handleFileSystemError(err: unknown, path: string): ErrorResponse
       return createError("NOT_A_FILE", `Not a file: ${path}`, { path });
     }
   }
-  // Log unexpected errors but return generic message
   console.error("Unexpected error:", err);
   return createError("PARSE_ERROR", "An unexpected error occurred", { path });
 }

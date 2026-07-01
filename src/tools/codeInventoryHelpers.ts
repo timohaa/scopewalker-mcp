@@ -67,10 +67,12 @@ export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | nu
 
 const IDENTIFIER_TYPES = ["identifier", "type_identifier", "property_identifier"];
 
+/** Checks if a node is one of the identifier types that can hold a symbol name. */
 function isIdentifierNode(node: Parser.SyntaxNode): boolean {
   return IDENTIFIER_TYPES.includes(node.type);
 }
 
+/** Extracts the identifier name from a variable_declarator node. */
 function extractIdentifierFromDeclarator(declarator: Parser.SyntaxNode): string | null {
   const identifier = declarator.children.find((child) => child.type === "identifier");
   return identifier?.text ?? null;

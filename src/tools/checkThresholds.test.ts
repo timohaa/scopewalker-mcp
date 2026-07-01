@@ -12,104 +12,104 @@ vi.mock("../lib/tokei.js", () => ({
   analyze: vi.fn(),
 }));
 
-describe("checkThresholds tool", () => {
-  let testDir: string;
-  const handler = getToolHandler(registerCheckThresholdsTool, "check_thresholds");
-  const analyzeMock = vi.mocked(analyze);
+let testDir: string;
+const handler = getToolHandler(registerCheckThresholdsTool, "check_thresholds");
+const analyzeMock = vi.mocked(analyze);
 
-  beforeAll(async () => {
-    const tempPath = join(tmpdir(), `scopewalker-thresh-test-${String(Date.now())}`);
-    await mkdir(tempPath, { recursive: true });
-    testDir = await realpath(tempPath);
+beforeAll(async () => {
+  const tempPath = join(tmpdir(), `scopewalker-thresh-test-${String(Date.now())}`);
+  await mkdir(tempPath, { recursive: true });
+  testDir = await realpath(tempPath);
 
-    await writeFile(
-      join(testDir, "small.ts"),
-      `export const x = 1;
+  await writeFile(
+    join(testDir, "small.ts"),
+    `export const x = 1;
 export const y = 2;
 `
-    );
+  );
 
-    // File with a large function (>100 lines)
-    const longFunctionLines = Array.from(
-      { length: 120 },
-      (_, i) => `  const line${String(i)} = ${String(i)};`
-    );
-    await writeFile(
-      join(testDir, "bigFunc.ts"),
-      `export function oversizedFunction() {
+  // File with a large function (>100 lines)
+  const longFunctionLines = Array.from(
+    { length: 120 },
+    (_, i) => `  const line${String(i)} = ${String(i)};`
+  );
+  await writeFile(
+    join(testDir, "bigFunc.ts"),
+    `export function oversizedFunction() {
 ${longFunctionLines.join("\n")}
   return line0;
 }
 `
-    );
+  );
 
-    // Second large function for testing limit
-    const anotherLongFunc = Array.from(
-      { length: 110 },
-      (_, i) => `  const val${String(i)} = ${String(i)};`
-    );
-    await writeFile(
-      join(testDir, "anotherBig.ts"),
-      `export function anotherOversizedFunction() {
+  // Second large function for testing limit
+  const anotherLongFunc = Array.from(
+    { length: 110 },
+    (_, i) => `  const val${String(i)} = ${String(i)};`
+  );
+  await writeFile(
+    join(testDir, "anotherBig.ts"),
+    `export function anotherOversizedFunction() {
 ${anotherLongFunc.join("\n")}
   return val0;
 }
 `
-    );
+  );
 
-    // Unsupported language file
-    await writeFile(
-      join(testDir, "data.txt"),
-      `This is a plain text file.
+  // Unsupported language file
+  await writeFile(
+    join(testDir, "data.txt"),
+    `This is a plain text file.
 It has multiple lines.
 But no functions to parse.
 `
-    );
-  });
+  );
+});
 
-  afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
+afterAll(async () => {
+  await rm(testDir, { recursive: true, force: true });
+});
 
-  beforeEach(() => {
-    analyzeMock.mockReset();
-    analyzeMock.mockResolvedValue({
-      success: true,
-      data: {
-        TypeScript: {
-          blanks: 0,
-          code: 0,
-          comments: 0,
-          reports: [
-            {
-              name: join(testDir, "small.ts"),
-              stats: { blanks: 1, code: 2, comments: 0 },
-            },
-            {
-              name: join(testDir, "bigFunc.ts"),
-              stats: { blanks: 10, code: 310, comments: 5 },
-            },
-            {
-              name: join(testDir, "anotherBig.ts"),
-              stats: { blanks: 8, code: 305, comments: 2 },
-            },
-          ],
-        },
-        Text: {
-          blanks: 0,
-          code: 0,
-          comments: 0,
-          reports: [
-            {
-              name: join(testDir, "data.txt"),
-              stats: { blanks: 0, code: 4, comments: 0 },
-            },
-          ],
-        },
+beforeEach(() => {
+  analyzeMock.mockReset();
+  analyzeMock.mockResolvedValue({
+    success: true,
+    data: {
+      TypeScript: {
+        blanks: 0,
+        code: 0,
+        comments: 0,
+        reports: [
+          {
+            name: join(testDir, "small.ts"),
+            stats: { blanks: 1, code: 2, comments: 0 },
+          },
+          {
+            name: join(testDir, "bigFunc.ts"),
+            stats: { blanks: 10, code: 310, comments: 5 },
+          },
+          {
+            name: join(testDir, "anotherBig.ts"),
+            stats: { blanks: 8, code: 305, comments: 2 },
+          },
+        ],
       },
-    });
+      Text: {
+        blanks: 0,
+        code: 0,
+        comments: 0,
+        reports: [
+          {
+            name: join(testDir, "data.txt"),
+            stats: { blanks: 0, code: 4, comments: 0 },
+          },
+        ],
+      },
+    },
   });
+});
 
+describe("violation detection", () => {
   it("flags oversized files and functions", async () => {
     const response = await handler({ path: testDir });
     const result = parseContent<CheckThresholdsResult>(response);
@@ -157,6 +157,16 @@ But no functions to parse.
     expect(errorPayload.error.code).toBe("TOOL_NOT_AVAILABLE");
   });
 
+  it("forwards include_hidden to the tokei analyzer", async () => {
+    await handler({ path: testDir, include_hidden: true });
+    expect(analyzeMock).toHaveBeenCalledWith(
+      testDir,
+      expect.objectContaining({ includeHidden: true })
+    );
+  });
+});
+
+describe("path handling and limits", () => {
   it("handles single file path", async () => {
     analyzeMock.mockResolvedValueOnce({
       success: true,

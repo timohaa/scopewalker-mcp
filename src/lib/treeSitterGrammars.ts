@@ -1,10 +1,8 @@
 import type Parser from "tree-sitter";
 import type { SupportedLanguage } from "../types/index.js";
 
-// Cached grammar instances
 const grammarCache = new Map<SupportedLanguage, Parser.Language>();
 
-// Grammar loader definitions - maps language to import function and extractor
 type GrammarLoader = () => Promise<Parser.Language | undefined>;
 
 const grammarLoaders: Record<SupportedLanguage, GrammarLoader> = {

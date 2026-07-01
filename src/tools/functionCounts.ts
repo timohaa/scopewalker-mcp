@@ -61,16 +61,13 @@ export function registerFunctionCountsTool(server: McpServer): void {
 
       let files = await analyzeFiles(filePaths, resolvedPath, isDirectory);
 
-      // Apply grep filter if provided
       if (args.grep !== undefined && args.grep !== "") {
         const pattern = args.grep.toLowerCase();
         files = files
           .map((file) => {
-            // If file path matches, include all functions
             if (file.path.toLowerCase().includes(pattern)) {
               return file;
             }
-            // Otherwise filter functions by name
             const filteredFunctions = file.functions.filter((fn) =>
               fn.name.toLowerCase().includes(pattern)
             );
@@ -140,7 +137,6 @@ async function analyzeFiles(
         functions,
       });
     } catch (err) {
-      // File read error - skip silently
       console.error(`Failed to read ${fullPath}:`, err);
     }
   }

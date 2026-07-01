@@ -94,9 +94,7 @@ async function handleCountsMode(
     const pattern = args.grep.toLowerCase();
     files = files
       .map((file) => {
-        if (file.path.toLowerCase().includes(pattern)) {
-          return file;
-        }
+        if (file.path.toLowerCase().includes(pattern)) return file;
         const filteredFunctions = file.functions.filter((fn) =>
           fn.name.toLowerCase().includes(pattern)
         );

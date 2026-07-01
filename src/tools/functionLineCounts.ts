@@ -71,16 +71,13 @@ export function registerFunctionLineCountsTool(server: McpServer): void {
 
       let files = await analyzeFiles(filePaths, resolvedPath, isDirectory, args.min_lines);
 
-      // Apply grep filter if provided
       if (args.grep !== undefined && args.grep !== "") {
         const pattern = args.grep.toLowerCase();
         files = files
           .map((file) => {
-            // If file path matches, include all functions
             if (file.path.toLowerCase().includes(pattern)) {
               return file;
             }
-            // Otherwise filter functions by name
             return {
               ...file,
               functions: file.functions.filter((fn) => fn.name.toLowerCase().includes(pattern)),

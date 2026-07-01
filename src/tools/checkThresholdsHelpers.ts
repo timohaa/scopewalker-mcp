@@ -92,7 +92,7 @@ export async function findOversizedFunctions(
         }
       }
     } catch {
-      // Skip files that can't be read
+      // Skip unreadable files without failing the whole scan
     }
   }
 

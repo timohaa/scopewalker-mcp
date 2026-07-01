@@ -49,6 +49,7 @@ export function registerCheckThresholdsTool(server: McpServer): void {
       const tokeiResult = await analyze(resolvedPath, {
         extensions,
         exclude: [...DEFAULT_IGNORE_PATTERNS, ...(args.ignore_patterns ?? [])],
+        includeHidden: args.include_hidden,
       });
 
       if (!tokeiResult.success) {

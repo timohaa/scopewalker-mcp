@@ -6,19 +6,19 @@ import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { CodeSmellsResult } from "../types/index.js";
 import { registerCodeSmellsTool } from "./codeSmells.js";
 
-describe("get_code_smells - unsafe_cast detection", () => {
-  const handler = getToolHandler(registerCodeSmellsTool, "get_code_smells");
-  let testDir: string;
+const handler = getToolHandler(registerCodeSmellsTool, "get_code_smells");
+let testDir: string;
 
-  beforeAll(async () => {
-    testDir = join(tmpdir(), `scopewalker-smells-unsafe-test-${String(Date.now())}`);
-    await mkdir(testDir, { recursive: true });
-  });
+beforeAll(async () => {
+  testDir = join(tmpdir(), `scopewalker-smells-unsafe-test-${String(Date.now())}`);
+  await mkdir(testDir, { recursive: true });
+});
 
-  afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
+afterAll(async () => {
+  await rm(testDir, { recursive: true, force: true });
+});
 
+describe("get_code_smells - unsafe_cast detection - patterns", () => {
   it("detects 'as unknown as' pattern", async () => {
     await writeFile(
       join(testDir, "unsafe_casts.ts"),
@@ -81,7 +81,9 @@ const str = "hello" as string; // Simple assertion
 
     expect(result.summary.by_type.unsafe_cast).toBe(0);
   });
+});
 
+describe("get_code_smells - unsafe_cast detection - text handling", () => {
   it("includes text when requested", async () => {
     await writeFile(
       join(testDir, "cast_with_text.ts"),

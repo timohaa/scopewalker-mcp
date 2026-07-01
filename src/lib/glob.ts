@@ -55,7 +55,6 @@ export async function findFiles(options: GlobOptions): Promise<string[]> {
     pattern = exts.length === 1 ? `**/*.${exts[0]}` : `**/*.{${exts.join(",")}}`;
   }
 
-  // Create ignore filter from .gitignore and user patterns
   const ig = await createIgnoreFilter(cwd, ignorePatterns);
 
   const files = await fg(pattern, {
@@ -66,7 +65,6 @@ export async function findFiles(options: GlobOptions): Promise<string[]> {
     ignore: [...DEFAULT_IGNORE_PATTERNS],
   });
 
-  // Filter results using the ignore library for proper gitignore semantics
   return files.filter((file) => !ig.ignores(file)).sort();
 }
 
@@ -78,7 +76,6 @@ export async function findEntries(
 ): Promise<{ files: string[]; directories: string[] }> {
   const { cwd, includeHidden = false, ignorePatterns = [], maxDepth } = options;
 
-  // Create ignore filter from .gitignore and user patterns
   const ig = await createIgnoreFilter(cwd, ignorePatterns);
 
   const [files, directories] = await Promise.all([
@@ -98,8 +95,7 @@ export async function findEntries(
     }),
   ]);
 
-  // Filter results using the ignore library for proper gitignore semantics
-  // For directories, append trailing slash for correct gitignore matching
+  // Append trailing slash for directories so gitignore directory-only patterns (e.g. "dist/") match correctly
   return {
     files: files.filter((file) => !ig.ignores(file)).sort(),
     directories: directories.filter((dir) => !ig.ignores(dir) && !ig.ignores(dir + "/")).sort(),
@@ -117,15 +113,13 @@ async function createIgnoreFilter(
 ): Promise<ReturnType<typeof ignore>> {
   const ig = ignore();
 
-  // Load .gitignore if it exists
   try {
     const content = await readFile(join(cwd, ".gitignore"), "utf-8");
     ig.add(content);
   } catch {
-    // No .gitignore file, continue without it
+    // No .gitignore present — proceed without it
   }
 
-  // Add user-provided patterns
   if (userPatterns.length > 0) {
     ig.add(userPatterns);
   }

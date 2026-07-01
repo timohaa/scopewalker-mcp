@@ -6,14 +6,7 @@ export interface CodeSmell {
 }
 
 export type CodeSmellType =
-  | "todo"
-  | "fixme"
-  | "hack"
-  | "xxx"
-  | "bug"
-  | "unused"
-  | "deprecated"
-  | "unsafe_cast";
+  "todo" | "fixme" | "hack" | "xxx" | "bug" | "unused" | "deprecated" | "unsafe_cast";
 
 export interface FileSmells {
   path: string;

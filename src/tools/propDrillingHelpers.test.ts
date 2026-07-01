@@ -58,7 +58,7 @@ async function findNodeByType(
   return result;
 }
 
-describe("extractParameterNames", () => {
+describe("extractParameterNames - common cases", () => {
   it("extracts simple typed TS parameters", async () => {
     const func = await getFirstFunction(
       `function greet(name: string, age: number): void {}`,
@@ -109,7 +109,9 @@ describe("extractParameterNames", () => {
     expect(names).toContain("w");
     expect(names).toContain("r");
   });
+});
 
+describe("extractParameterNames - additional languages and patterns", () => {
   it("extracts Java parameter names", async () => {
     const code = `class Foo { void process(String userId, int count) {} }`;
     const methodNode = await findNodeByType(code, "java", "method_declaration");
