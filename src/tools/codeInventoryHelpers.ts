@@ -46,7 +46,7 @@ export function extractItem(
 
 /** Maps AST node types to inventory item types (class, function, interface, etc.). */
 export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | null {
-  const typeMap: Record<string, InventoryItem["type"]> = {
+  const typeMap: Partial<Record<string, InventoryItem["type"]>> = {
     class_declaration: "class",
     class_definition: "class",
     class: "class",
@@ -62,10 +62,23 @@ export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | nu
     variable_declaration: "constant",
   };
 
-  return typeMap[node.type] ?? null;
+  const mapped = typeMap[node.type];
+  if (mapped) return mapped;
+
+  // Ruby has no distinct top-level function node type: "method"/"singleton_method"
+  // covers both module-level defs and class members, distinguished only by parent.
+  if (
+    (node.type === "method" || node.type === "singleton_method") &&
+    node.parent?.type !== "body_statement"
+  ) {
+    return "function";
+  }
+
+  return null;
 }
 
-const IDENTIFIER_TYPES = ["identifier", "type_identifier", "property_identifier"];
+// "constant" covers Ruby class/module names, which use a distinct node type from other languages.
+const IDENTIFIER_TYPES = ["identifier", "type_identifier", "property_identifier", "constant"];
 
 /** Checks if a node is one of the identifier types that can hold a symbol name. */
 function isIdentifierNode(node: Parser.SyntaxNode): boolean {
@@ -168,6 +181,8 @@ export function isMethodNode(node: Parser.SyntaxNode): boolean {
     "method_declaration",
     "function_definition",
     "public_method_definition",
+    "method",
+    "singleton_method",
   ];
   return methodTypes.includes(node.type);
 }

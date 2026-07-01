@@ -17,7 +17,7 @@ export function getDocumentableNode(node: Parser.SyntaxNode): DocumentableNode |
   ];
 
   const classTypes = ["class_declaration", "class_definition", "class"];
-  const methodTypes = ["method_definition", "method_declaration"];
+  const methodTypes = ["method_definition", "method_declaration", "method", "singleton_method"];
 
   let type: "function" | "class" | "method" | null = null;
 
@@ -66,7 +66,8 @@ export function extractName(node: Parser.SyntaxNode): string | null {
     if (
       child.type === "identifier" ||
       child.type === "property_identifier" ||
-      child.type === "type_identifier"
+      child.type === "type_identifier" ||
+      child.type === "constant" // Ruby class/module names
     ) {
       return child.text;
     }

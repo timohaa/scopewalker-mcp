@@ -111,4 +111,96 @@ describe("documentationCoverage tool", () => {
     const errorPayload = parseContent<{ error: { code: string } }>(response);
     expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
   });
+
+  it("caps scanned files with max_files", async () => {
+    const response = await handler({ path: testDir, max_files: 1 });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    expect(result.by_file).toHaveLength(1);
+  });
+});
+
+describe("documentationCoverage tool - multi-language", () => {
+  let langTestDir: string;
+  const langHandler = getToolHandler(
+    registerDocumentationCoverageTool,
+    "get_documentation_coverage"
+  );
+
+  beforeAll(async () => {
+    langTestDir = join(tmpdir(), `scopewalker-doc-lang-test-${String(Date.now())}`);
+    await mkdir(langTestDir, { recursive: true });
+
+    await writeFile(
+      join(langTestDir, "module.py"),
+      `def add(a, b):
+    """Adds two numbers."""
+    return a + b
+
+
+def subtract(a, b):
+    x = a - b
+    return x
+`
+    );
+
+    await writeFile(
+      join(langTestDir, "math.go"),
+      `package main
+
+// Add adds two numbers.
+func Add(a int, b int) int {
+	return a + b
+}
+
+func Subtract(a int, b int) int {
+	return a - b
+}
+`
+    );
+
+    await writeFile(
+      join(langTestDir, "calculator.rb"),
+      `# Adds two numbers.
+def add(a, b)
+  a + b
+end
+
+def subtract(a, b)
+  a - b
+end
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(langTestDir, { recursive: true, force: true });
+  });
+
+  it("recognizes Python docstrings, including non-string first statements", async () => {
+    const response = await langHandler({ path: join(langTestDir, "module.py") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    const names = result.undocumented_items.map((i) => i.name);
+    expect(names).toContain("subtract");
+    expect(names).not.toContain("add");
+  });
+
+  it("recognizes Go line-comment doc conventions", async () => {
+    const response = await langHandler({ path: join(langTestDir, "math.go") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    const names = result.undocumented_items.map((i) => i.name);
+    expect(names).toContain("Subtract");
+    expect(names).not.toContain("Add");
+  });
+
+  it("recognizes Ruby line-comment doc conventions and top-level defs", async () => {
+    const response = await langHandler({ path: join(langTestDir, "calculator.rb") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    const names = result.undocumented_items.map((i) => i.name);
+    expect(names).toContain("subtract");
+    expect(names).not.toContain("add");
+  });
 });

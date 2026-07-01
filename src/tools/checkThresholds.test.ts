@@ -164,6 +164,14 @@ describe("violation detection", () => {
       expect.objectContaining({ includeHidden: true })
     );
   });
+
+  it("strips a leading dot from extensions before forwarding to the analyzer", async () => {
+    await handler({ path: testDir, extensions: [".ts", "js"] });
+    expect(analyzeMock).toHaveBeenCalledWith(
+      testDir,
+      expect.objectContaining({ extensions: ["ts", "js"] })
+    );
+  });
 });
 
 describe("path handling and limits", () => {
@@ -201,6 +209,27 @@ describe("path handling and limits", () => {
     expect(result.violations.oversized_files).toHaveLength(1);
     // The one returned should be the largest (bigFunc.ts with 325 lines)
     expect(result.violations.oversized_files[0]?.path).toBe("bigFunc.ts");
+  });
+
+  it("returns error for nonexistent path", async () => {
+    const response = await handler({ path: join(testDir, "nonexistent-12345") });
+    expect(response.isError).toBe(true);
+
+    const errorPayload = parseContent<{ error: { code: string } }>(response);
+    expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
+  });
+
+  it("caps scanned files with max_files", async () => {
+    const full = await handler({ path: testDir });
+    const fullResult = parseContent<CheckThresholdsResult>(full);
+
+    const response = await handler({ path: testDir, max_files: 1 });
+    const result = parseContent<CheckThresholdsResult>(response);
+
+    // files_checked comes from tokei (unaffected by max_files); functions_checked
+    // is scanned from the max_files-limited file list, so it drops.
+    expect(result.summary.files_checked).toBe(fullResult.summary.files_checked);
+    expect(result.summary.functions_checked).toBeLessThan(fullResult.summary.functions_checked);
   });
 
   it("skips unsupported language files for function analysis", async () => {

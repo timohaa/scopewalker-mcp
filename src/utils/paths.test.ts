@@ -15,6 +15,7 @@ vi.mock("node:fs/promises", async () => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  delete process.env.SCOPEWALKER_ALLOWED_ROOTS;
 });
 
 describe("validatePath", () => {
@@ -67,6 +68,38 @@ describe("validatePath", () => {
     if (!result.valid) {
       expect(result.error.error.code).toBe("PARSE_ERROR");
     }
+  });
+});
+
+describe("validatePath - SCOPEWALKER_ALLOWED_ROOTS", () => {
+  it("rejects paths outside the configured allowed roots", async () => {
+    process.env.SCOPEWALKER_ALLOWED_ROOTS = resolve("./src");
+
+    const result = await validatePath("./package.json");
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.error.error.code).toBe("PERMISSION_DENIED");
+    }
+  });
+
+  it("accepts paths inside the configured allowed roots", async () => {
+    process.env.SCOPEWALKER_ALLOWED_ROOTS = resolve("./src");
+
+    const result = await validatePath("./src/index.ts");
+    expect(result.valid).toBe(true);
+  });
+
+  it("parses comma-separated roots, trimming whitespace and dropping empty entries", async () => {
+    process.env.SCOPEWALKER_ALLOWED_ROOTS = ` ${resolve("./src")} , ,${resolve("./dist")} `;
+
+    const srcResult = await validatePath("./src/index.ts");
+    expect(srcResult.valid).toBe(true);
+
+    const distResult = await validatePath("./dist");
+    expect(distResult.valid).toBe(true);
+
+    const outsideResult = await validatePath("./package.json");
+    expect(outsideResult.valid).toBe(false);
   });
 });
 

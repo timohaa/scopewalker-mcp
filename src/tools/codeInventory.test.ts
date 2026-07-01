@@ -107,6 +107,16 @@ describe("codeInventory tool", () => {
     const errorPayload = parseContent<{ error: { code: string } }>(response);
     expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
   });
+
+  it("caps scanned files with max_files", async () => {
+    const full = await handler({ path: testDir });
+    const fullResult = parseContent<CodeInventoryResult>(full);
+
+    const response = await handler({ path: testDir, max_files: 1 });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    expect(result.inventory.length).toBeLessThan(fullResult.inventory.length);
+  });
 });
 
 describe("codeInventory tool - filtering", () => {
@@ -205,5 +215,62 @@ def _private_function():
       expect(publicFunc?.exported).toBe(true);
       expect(publicClass?.exported).toBe(true);
     }
+  });
+});
+
+describe("codeInventory tool - Ruby", () => {
+  let rbTestDir: string;
+  const rbHandler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
+
+  beforeAll(async () => {
+    rbTestDir = join(tmpdir(), `scopewalker-inv-rb-test-${String(Date.now())}`);
+    await mkdir(rbTestDir, { recursive: true });
+
+    await writeFile(
+      join(rbTestDir, "calculator.rb"),
+      `def add(a, b)
+  a + b
+end
+
+class Calculator
+  def multiply(a, b)
+    a * b
+  end
+
+  def _internal(a, b)
+    a - b
+  end
+end
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(rbTestDir, { recursive: true, force: true });
+  });
+
+  it("indexes Ruby module-level defs as functions, distinct from class methods", async () => {
+    const response = await rbHandler({ path: rbTestDir });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const rbFile = result.inventory.find((f) => f.file.endsWith("calculator.rb"));
+    const addFn = rbFile?.items.find((i) => i.name === "add");
+    expect(addFn?.type).toBe("function");
+
+    const calculatorClass = rbFile?.items.find((i) => i.name === "Calculator");
+    expect(calculatorClass?.type).toBe("class");
+    expect(calculatorClass?.methods?.map((m) => m.name)).toContain("multiply");
+    // Class methods must not also appear as standalone top-level items
+    expect(rbFile?.items.some((i) => i.name === "multiply")).toBe(false);
+  });
+
+  it("treats underscore-prefixed Ruby methods as private", async () => {
+    const response = await rbHandler({ path: rbTestDir, include_private: true });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const rbFile = result.inventory.find((f) => f.file.endsWith("calculator.rb"));
+    const calculatorClass = rbFile?.items.find((i) => i.name === "Calculator");
+    const internalMethod = calculatorClass?.methods?.find((m) => m.name === "_internal");
+    expect(internalMethod?.visibility).toBe("private");
   });
 });
