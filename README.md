@@ -2,37 +2,20 @@
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/thaanpaa)
 
-An MCP (Model Context Protocol) server providing codebase analysis tools for AI assistants.
+AI agents will happily create 1000+ line source files and add a 20th parameter to a function call, even if there's a rule file telling them not to. Scopewalker exists to enforce stricter codebase standards.
 
-## Why Scopewalker?
+It's a local MCP server (open source, runs over stdio, makes no network calls) that exposes 8 read-only tools:
 
-AI coding agents perform better on codebases that follow complexity standards. Small, focused files and functions are easier to understand, modify safely, and fit within context windows. Scopewalker gives agents visibility into code health metrics, enabling them to:
+- `get_line_counts` - line counts
+- `get_functions` - function counts and per-function line metrics
+- `get_complexity_metrics` - cognitive complexity, nesting depth, parameter counts
+- `check_thresholds` - oversized-file/function checker against configurable thresholds
+- `get_code_inventory` - classes, methods, functions, and exports inventory
+- `get_documentation_coverage` - doc coverage
+- `get_code_smells` - TODO/FIXME/HACK/BUG markers in comments, plus unsafe casts
+- `get_prop_drilling` - parameter threading across function chains
 
-- Verify size limits before committing (default: files <300 lines, functions <100 lines, configurable)
-- Identify complex code that needs refactoring before modification
-- Find undocumented code that may cause misunderstanding
-- Navigate unfamiliar codebases efficiently
-
-## Features
-
-Scopewalker MCP provides 8 tools organized into three categories:
-
-### Core Analysis
-
-- `get_line_counts` - Line count metrics via tokei
-- `get_functions` - Function counts and per-function line metrics
-
-### Codebase Health
-
-- `check_thresholds` - Find oversized files and functions
-- `get_code_inventory` - Classes, methods, functions, and exports inventory
-- `get_complexity_metrics` - Nesting depth, parameters, cognitive complexity
-
-### Code Quality
-
-- `get_documentation_coverage` - Undocumented symbol detection
-- `get_code_smells` - Detect TODO, FIXME, HACK, BUG, and other markers plus unsafe casts
-- `get_prop_drilling` - Detect parameter threading (prop drilling) across function chains
+It's tree-sitter + tokei + fast-glob under the hood; nothing is custom-parsed. Tested on macOS with Claude Code, but should work with Cursor, VS Code, Windsurf, Gemini CLI, Codex, or anything else that speaks MCP.
 
 See [TOOLS.md](TOOLS.md) for detailed parameter and response documentation.
 
@@ -175,7 +158,7 @@ See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for deta
 
 ## Usage
 
-Once configured, your AI assistant calls Scopewalker's tools on its own while it works — there's no special syntax to learn. Just ask naturally:
+Once configured, the assistant calls Scopewalker's tools on its own — no special syntax needed. Ask things like:
 
 - "Check this repo against our size thresholds before I commit"
 - "Which functions in `src/` have the highest cognitive complexity?"
@@ -183,7 +166,7 @@ Once configured, your AI assistant calls Scopewalker's tools on its own while it
 - "Are there any TODO/FIXME/HACK markers left in this module?"
 - "Show me functions that take more than 5 parameters"
 
-The assistant picks the right tool (`check_thresholds`, `get_complexity_metrics`, `get_documentation_coverage`, `get_code_smells`, etc.) and parameters based on your request. See [TOOLS.md](TOOLS.md) for the quick reference and [docs/](docs/) for per-tool parameters and example responses.
+It picks the right tool (`check_thresholds`, `get_complexity_metrics`, `get_documentation_coverage`, `get_code_smells`, etc.) and parameters for the request. See [TOOLS.md](TOOLS.md) for the quick reference and [docs/](docs/) for per-tool parameters and example responses.
 
 This repo also dogfoods its own tools via Claude Code skills and agents:
 
@@ -215,8 +198,6 @@ Function detection and parsing support:
 - Ruby
 
 ## Architecture
-
-Scopewalker MCP is a thin orchestration layer over battle-tested libraries:
 
 | Task             | Library     |
 |------------------|-------------|
