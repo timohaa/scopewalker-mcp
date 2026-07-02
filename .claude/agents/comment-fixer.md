@@ -41,7 +41,7 @@ Most files need few or no changes. A run that rewrites a large share of the comm
 
 ### Declaration / Field Comments (treat like JSDoc, NOT as "WHAT" violations)
 
-Comments on type/interface fields, enum members, config constants, and similar declarations document **domain meaning**, not implementation. A comment like `exceeds_by: number; // lines over the configured limit` (see `OversizedFile` in `src/types/thresholds.ts`) is valuable documentation even though it reads as "what" — the redundancy rule does NOT apply to it.
+Comments on type/interface fields, enum members, config constants, and similar declarations document **domain meaning**, not implementation. A comment like `exceeds_by: number; // lines over the configured limit` is valuable documentation even though it reads as "what" — the redundancy rule does NOT apply to it.
 
 - **Preserve and improve** these; do not delete them as redundant.
 - Only change one if it is **factually wrong** about what the field means.

@@ -17,7 +17,7 @@ the current violation set, then use the rest as needed:
 ```text
 check_thresholds           → oversized files and functions
 get_complexity_metrics     → deep nesting, many params, high cognitive complexity
-get_code_smells            → TODO, FIXME, HACK, BUG, UNUSED, DEPRECATED markers and unsafe casts
+get_code_smells            → TODO, FIXME, HACK, XXX, BUG, UNUSED, DEPRECATED markers and unsafe casts
 get_functions detail=lines → per-function line counts
 get_line_counts            → file line metrics (code/blank/comment)
 get_code_inventory         → classes, functions, methods, and exports overview
@@ -48,7 +48,7 @@ Before any major refactoring (splitting files, extracting functions, reorganizin
 - **Deep nesting** — apply guard clauses and extract nested logic into named functions.
 - **Excessive parameters** — group related params into an options object with a TypeScript interface.
 - **Code smells (TODO/FIXME/HACK)** — evaluate if still relevant; implement the fix or remove the stale comment. For complex TODOs, create a tracking issue and reference it.
-- **Prop drilling** — run `get_prop_drilling` to detect parameters threaded through 3+ function levels; recommend module-scoped config, dependency injection, or direct imports instead.
+- **Prop drilling** — run `get_prop_drilling` to detect parameters appearing in 3+ functions (`min_occurrences`, default 3); recommend module-scoped config, dependency injection, or direct imports instead.
 
 ## Verification
 
