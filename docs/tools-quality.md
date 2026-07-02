@@ -6,31 +6,31 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 
 **Parameters:**
 
-| Name                  | Type     | Required | Description                                                        |
-|-----------------------|----------|----------|--------------------------------------------------------------------|
-| `path`                | string   | Yes      | Path to file or directory                                          |
-| `include_hidden`      | boolean  | No       | Include hidden files                                               |
-| `ignore_patterns`     | string[] | No       | Glob patterns to exclude                                           |
-| `extensions`          | string[] | No       | Filter by extensions                                               |
-| `max_depth`           | integer  | No       | Maximum directory depth to traverse                                |
-| `max_files`           | integer  | No       | Maximum number of files to scan                                    |
+| Name                  | Type     | Required | Description                                                                    |
+|-----------------------|----------|----------|--------------------------------------------------------------------------------|
+| `path`                | string   | Yes      | Path to file or directory                                                      |
+| `include_hidden`      | boolean  | No       | Include hidden files                                                           |
+| `ignore_patterns`     | string[] | No       | Glob patterns to exclude                                                       |
+| `extensions`          | string[] | No       | Filter by extensions                                                           |
+| `max_depth`           | integer  | No       | Maximum directory depth to traverse                                            |
+| `max_files`           | integer  | No       | Maximum number of files to scan                                                |
 | `require_param_docs`  | boolean  | No       | Reserved flag for parameter docs enforcement (accepted, no extra checks today) |
 | `require_return_docs` | boolean  | No       | Reserved flag for return docs enforcement (accepted, no extra checks today)    |
-| `min_lines`           | integer  | No       | Only check functions with at least this many lines (default: 1)    |
-| `summary_only`        | boolean  | No       | Return only summary, no detailed item lists (default: false)       |
-| `limit`               | integer  | No       | Max undocumented items to return (default: 20)                     |
+| `min_lines`           | integer  | No       | Only check functions with at least this many lines (default: 1)                |
+| `summary_only`        | boolean  | No       | Return only summary, no detailed item lists (default: false)                   |
+| `limit`               | integer  | No       | Max undocumented items to return (default: 20)                                 |
 
 **Documentation Detection:**
 
-| Language              | Recognized Formats                      |
-|-----------------------|-----------------------------------------|
-| JavaScript/TypeScript | JSDoc (`/** */`), TSDoc                 |
-| Python                | Docstrings (`"""`, `'''`)               |
-| Go                    | Godoc comments (`//`)                   |
-| Rust                  | Doc comments (`///`, `//!`)             |
-| Java                  | Javadoc (`/** */`)                      |
-| C/C++                 | JSDoc-style (`/** */`)                  |
-| Ruby                  | Line comments (`#`)                     |
+| Language              | Recognized Formats          |
+|-----------------------|-----------------------------|
+| JavaScript/TypeScript | JSDoc (`/** */`), TSDoc     |
+| Python                | Docstrings (`"""`, `'''`)   |
+| Go                    | Godoc comments (`//`)       |
+| Rust                  | Doc comments (`///`, `//!`) |
+| Java                  | Javadoc (`/** */`)          |
+| C/C++                 | JSDoc-style (`/** */`)      |
+| Ruby                  | Line comments (`#`)         |
 
 **Response:**
 
@@ -75,17 +75,17 @@ Detects code smells like TODO, FIXME, HACK, XXX, BUG, UNUSED, and DEPRECATED com
 
 **Parameters:**
 
-| Name              | Type     | Required | Description                                      |
-|-------------------|----------|----------|--------------------------------------------------|
-| `path`            | string   | Yes      | Path to file or directory                        |
-| `include_hidden`  | boolean  | No       | Include hidden files                             |
-| `ignore_patterns` | string[] | No       | Glob patterns to exclude                         |
-| `extensions`      | string[] | No       | Filter by extensions                             |
-| `max_depth`       | integer  | No       | Maximum directory depth to traverse              |
-| `max_files`       | integer  | No       | Maximum number of files to scan                  |
-| `types`           | string[] | No       | Which smell types to detect (default: all)       |
-| `limit`           | integer  | No       | Max files with smells to return (default: 20)    |
-| `include_text`    | boolean  | No       | Include matching comment text (default: redacted)|
+| Name              | Type     | Required | Description                                       |
+|-------------------|----------|----------|---------------------------------------------------|
+| `path`            | string   | Yes      | Path to file or directory                         |
+| `include_hidden`  | boolean  | No       | Include hidden files                              |
+| `ignore_patterns` | string[] | No       | Glob patterns to exclude                          |
+| `extensions`      | string[] | No       | Filter by extensions                              |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse               |
+| `max_files`       | integer  | No       | Maximum number of files to scan                   |
+| `types`           | string[] | No       | Which smell types to detect (default: all)        |
+| `limit`           | integer  | No       | Max files with smells to return (default: 20)     |
+| `include_text`    | boolean  | No       | Include matching comment text (default: redacted) |
 
 **Available Smell Types:** `todo`, `fixme`, `hack`, `xxx`, `bug`, `unused`, `deprecated`, `unsafe_cast`
 
@@ -134,18 +134,18 @@ Detects parameter threading (prop drilling) by finding parameter names passed th
 
 **Parameters:**
 
-| Name                | Type     | Required | Description                                                                            |
-|---------------------|----------|----------|----------------------------------------------------------------------------------------|
-| `path`              | string   | Yes      | Path to file or directory                                                              |
-| `include_hidden`    | boolean  | No       | Include hidden files                                                                   |
-| `ignore_patterns`   | string[] | No       | Glob patterns to exclude                                                               |
-| `extensions`        | string[] | No       | Filter by file extensions                                                              |
-| `max_depth`         | integer  | No       | Maximum directory depth to traverse                                                    |
-| `max_files`         | integer  | No       | Maximum number of files to scan                                                        |
-| `limit`             | integer  | No       | Maximum number of threaded parameters to return (default: 20)                          |
-| `min_occurrences`   | integer  | No       | Minimum function occurrences to flag a parameter (default: 3)                          |
-| `exclude_common`    | boolean  | No       | Exclude common parameter names like `id`, `key`, `className` (default: false)          |
-| `summary_only`      | boolean  | No       | Return only summary without per-parameter details (default: false)                     |
+| Name              | Type     | Required | Description                                                                   |
+|-------------------|----------|----------|-------------------------------------------------------------------------------|
+| `path`            | string   | Yes      | Path to file or directory                                                     |
+| `include_hidden`  | boolean  | No       | Include hidden files                                                          |
+| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                                      |
+| `extensions`      | string[] | No       | Filter by file extensions                                                     |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse                                           |
+| `max_files`       | integer  | No       | Maximum number of files to scan                                               |
+| `limit`           | integer  | No       | Maximum number of threaded parameters to return (default: 20)                 |
+| `min_occurrences` | integer  | No       | Minimum function occurrences to flag a parameter (default: 3)                 |
+| `exclude_common`  | boolean  | No       | Exclude common parameter names like `id`, `key`, `className` (default: false) |
+| `summary_only`    | boolean  | No       | Return only summary without per-parameter details (default: false)            |
 
 **Risk Levels:** Each threaded parameter is assigned a risk level (`high`, `medium`, `low`) based on occurrence count and forwarding evidence.
 

@@ -14,17 +14,17 @@ Each step builds on the previous one, so they run **sequentially, not in paralle
 Run these subagents **in this exact order**, one at a time, using the Agent tool with the
 `subagent_type` shown below. Wait for each to complete before starting the next.
 
-| Step | `subagent_type`          | Purpose                                                                              |
-|------|--------------------------|--------------------------------------------------------------------------------------|
-| 1    | `lint-type-format-fixer` | Fix all lint errors, type errors, and formatting issues so later agents work on clean code. |
-| 2    | `smart-test-fixer`       | Run tests and fix any failures. Working on code that already passes lint/type checks avoids churn. |
-| 3    | `standards-enforcer`     | Scan for coding standards violations (file length <300 lines, function length <100 lines, nesting depth, too many parameters) and fix them. |
-| 4    | `comment-fixer`          | Clean up comments (remove redundant, fix misleading, ensure comments explain WHY not WHAT). |
-| 5    | `lint-type-format-fixer` | **Second pass.** Re-run after standards-enforcer — skip if steps 3–4 made no changes. |
-| 6    | `smart-test-fixer`       | **Second pass.** Re-run after standards-enforcer — skip if steps 3–4 made no changes. |
-| 7    | `docs-reality-sync`      | Audit and sync documentation (`TOOLS.md`, `docs/`, `AGENTS.md`) with the final codebase state. |
+| Step | `subagent_type`          | Purpose                                                                                                                                                                                   |
+|------|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1    | `lint-type-format-fixer` | Fix all lint errors, type errors, and formatting issues so later agents work on clean code.                                                                                               |
+| 2    | `smart-test-fixer`       | Run tests and fix any failures. Working on code that already passes lint/type checks avoids churn.                                                                                        |
+| 3    | `standards-enforcer`     | Scan for coding standards violations (file length <300 lines, function length <100 lines, nesting depth, too many parameters) and fix them.                                               |
+| 4    | `comment-fixer`          | Clean up comments (remove redundant, fix misleading, ensure comments explain WHY not WHAT).                                                                                               |
+| 5    | `lint-type-format-fixer` | **Second pass.** Re-run after standards-enforcer — skip if steps 3–4 made no changes.                                                                                                     |
+| 6    | `smart-test-fixer`       | **Second pass.** Re-run after standards-enforcer — skip if steps 3–4 made no changes.                                                                                                     |
+| 7    | `docs-reality-sync`      | Audit and sync documentation (`TOOLS.md`, `docs/`, `AGENTS.md`) with the final codebase state.                                                                                            |
 | 8    | `agents-md-enforcer`     | Audit `AGENTS.md` (and its `@path` imports) against Anthropic's Claude Code best practices: prune derivable, redundant, or platitudinous content; tighten vague rules; verify references. |
-| 9    | `markdown-quality-fixer` | Lint and format all modified markdown files. Runs last to catch `.md` changes from earlier steps (especially docs-reality-sync and agents-md-enforcer). |
+| 9    | `markdown-quality-fixer` | Lint and format all modified markdown files. Runs last to catch `.md` changes from earlier steps (especially docs-reality-sync and agents-md-enforcer).                                   |
 
 ## Workflow
 
@@ -39,17 +39,17 @@ After all steps, print a final summary:
 ```markdown
 ## Polish Complete
 
-| Step | Agent                         | Result |
-|------|-------------------------------|--------|
-| 1    | lint-type-format-fixer        | ...    |
-| 2    | smart-test-fixer              | ...    |
-| 3    | standards-enforcer            | ...    |
-| 4    | comment-fixer                 | ...    |
-| 5    | lint-type-format-fixer (2nd)  | ...    |
-| 6    | smart-test-fixer (2nd)        | ...    |
-| 7    | docs-reality-sync             | ...    |
-| 8    | agents-md-enforcer            | ...    |
-| 9    | markdown-quality-fixer        | ...    |
+| Step | Agent                        | Result |
+|------|------------------------------|--------|
+| 1    | lint-type-format-fixer       | ...    |
+| 2    | smart-test-fixer             | ...    |
+| 3    | standards-enforcer           | ...    |
+| 4    | comment-fixer                | ...    |
+| 5    | lint-type-format-fixer (2nd) | ...    |
+| 6    | smart-test-fixer (2nd)       | ...    |
+| 7    | docs-reality-sync            | ...    |
+| 8    | agents-md-enforcer           | ...    |
+| 9    | markdown-quality-fixer       | ...    |
 ```
 
 ## Notes

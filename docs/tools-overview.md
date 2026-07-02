@@ -57,17 +57,17 @@ Function detection and parsing support:
 
 All tools return structured errors:
 
-| Code                   | Description                                    |
-|------------------------|------------------------------------------------|
-| `PATH_NOT_FOUND`       | Path does not exist                            |
-| `NOT_A_DIRECTORY`      | Expected directory, got file                   |
-| `NOT_A_FILE`           | Expected file, got directory                   |
-| `PERMISSION_DENIED`    | Cannot read path, or path is outside allowed roots |
+| Code                   | Description                                                                                   |
+|------------------------|-----------------------------------------------------------------------------------------------|
+| `PATH_NOT_FOUND`       | Path does not exist                                                                           |
+| `NOT_A_DIRECTORY`      | Expected directory, got file                                                                  |
+| `NOT_A_FILE`           | Expected file, got directory                                                                  |
+| `PERMISSION_DENIED`    | Cannot read path, or path is outside allowed roots                                            |
 | `UNSUPPORTED_LANGUAGE` | Cannot parse this file type (reserved — unsupported files are currently skipped, not errored) |
-| `PARSE_ERROR`          | Unexpected analysis failure (e.g., tokei output could not be parsed) |
-| `TOOL_NOT_AVAILABLE`   | Requested tool is not registered or usable     |
-| `GIT_NOT_FOUND`        | Git executable not found (reserved)            |
-| `NOT_A_GIT_REPO`       | Path is not inside a git repository (reserved) |
+| `PARSE_ERROR`          | Unexpected analysis failure (e.g., tokei output could not be parsed)                          |
+| `TOOL_NOT_AVAILABLE`   | Requested tool is not registered or usable                                                    |
+| `GIT_NOT_FOUND`        | Git executable not found (reserved)                                                           |
+| `NOT_A_GIT_REPO`       | Path is not inside a git repository (reserved)                                                |
 
 ## Response Format
 

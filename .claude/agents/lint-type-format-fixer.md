@@ -50,13 +50,13 @@ Repeat until all three pass with zero errors.
 
 ## Available Scripts
 
-| Script | Command | Purpose |
-|--------|---------|---------|
-| `npm run check` | `lint:fix + typecheck` | Combined quality gate |
-| `npm run typecheck` | `tsc --noEmit` | Type checking only |
-| `npm run lint` | `eslint src` | Lint check only |
-| `npm run lint:fix` | `eslint src --fix` | Lint auto-fix |
-| `npm run format` | `prettier --write src` | Format all source |
+| Script              | Command                      | Purpose               |
+|---------------------|------------------------------|-----------------------|
+| `npm run check`     | `lint:fix + typecheck`       | Combined quality gate |
+| `npm run typecheck` | `tsc --noEmit`               | Type checking only    |
+| `npm run lint`      | `eslint src --ext .ts`       | Lint check only       |
+| `npm run lint:fix`  | `eslint src --ext .ts --fix` | Lint auto-fix         |
+| `npm run format`    | `prettier --write src`       | Format all source     |
 
 ## Key Guidelines
 

@@ -9,12 +9,12 @@ Run project tests using vitest.
 
 ## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `npm run test` | Run all tests once |
-| `npm run test:watch` | Run in watch mode |
-| `npm run test:coverage` | Run with coverage report |
-| `npx vitest run <file>` | Run a specific test file |
+| Command                         | Purpose                           |
+|---------------------------------|-----------------------------------|
+| `npm run test`                  | Run all tests once                |
+| `npm run test:watch`            | Run in watch mode                 |
+| `npm run test:coverage`         | Run with coverage report          |
+| `npx vitest run <file>`         | Run a specific test file          |
 | `npx vitest run -t "test name"` | Run tests matching a name pattern |
 
 ## Workflow
