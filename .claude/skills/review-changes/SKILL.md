@@ -12,9 +12,12 @@ Review all uncommitted changes against project standards before committing.
 ### 1. Get changed files
 
 ```bash
-git diff --name-only
-git diff --cached --name-only
+git status --porcelain
 ```
+
+Covers modified, staged, and untracked files — untracked new files
+must be reviewed too, or the missing-tests/missing-docs checks below
+can't catch them.
 
 ### 2. Review the diff
 

@@ -48,31 +48,35 @@ Framework: **vitest** (`describe`, `it`, `expect`, `vi`).
 
 ### Tool Test (uses MCP harness)
 
+Setup (temp dir, handler, `beforeAll`/`afterAll`) lives at module top
+level — `describe` blocks only group the `it` cases. Import `vi` only
+when the test actually mocks something.
+
 ```typescript
 import { mkdir, rm, writeFile, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { MyToolResult } from "../types/index.js";
 import { registerMyTool } from "./myTool.js";
 
+let testDir: string;
+const handler = getToolHandler(registerMyTool, "my_tool");
+
+beforeAll(async () => {
+  const tempPath = join(tmpdir(), `scopewalker-myTool-${String(Date.now())}`);
+  await mkdir(tempPath, { recursive: true });
+  testDir = await realpath(tempPath);
+
+  await writeFile(join(testDir, "sample.ts"), `export const x = 1;\n`);
+});
+
+afterAll(async () => {
+  await rm(testDir, { recursive: true, force: true });
+});
+
 describe("myTool", () => {
-  let testDir: string;
-  const handler = getToolHandler(registerMyTool, "my_tool");
-
-  beforeAll(async () => {
-    const tempPath = join(tmpdir(), `scopewalker-myTool-${String(Date.now())}`);
-    await mkdir(tempPath, { recursive: true });
-    testDir = await realpath(tempPath);
-
-    await writeFile(join(testDir, "sample.ts"), `export const x = 1;\n`);
-  });
-
-  afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
-
   it("returns expected result for a valid path", async () => {
     const response = await handler({ path: testDir });
     const result = parseContent<MyToolResult>(response);
@@ -111,9 +115,9 @@ describe("myHelper", () => {
   `"type": "module"`)
 - Use `vi.mock()` to stub external dependencies (`../lib/tokei.js`,
   filesystem boundaries)
-- Use a unique temp directory per test (`tmpdir() + Date.now()`) and
-  resolve it with `realpath` to avoid macOS `/private/var` vs `/var`
-  symlink issues
+- Use a unique temp directory per test file (`tmpdir() + Date.now()`,
+  created in `beforeAll`) and resolve it with `realpath` to avoid macOS
+  `/private/var` vs `/var` symlink issues
 - Test the **public** behavior of a module, not its internals
 - Cover both success and error paths for every tool
 
