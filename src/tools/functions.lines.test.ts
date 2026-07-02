@@ -4,10 +4,13 @@ import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { FunctionLineCountsResult } from "../types/index.js";
-import { registerFunctionLineCountsTool } from "./functionLineCounts.js";
+import { registerFunctionsTool } from "./functions.js";
 
 let testDir: string;
-const handler = getToolHandler(registerFunctionLineCountsTool, "get_function_line_counts");
+const linesHandler = getToolHandler(registerFunctionsTool, "get_functions");
+/** Invokes get_functions in lines mode, matching the per-function metrics this suite covers. */
+const handler = (args: Record<string, unknown>): ReturnType<typeof linesHandler> =>
+  linesHandler({ ...args, detail: "lines" });
 
 beforeAll(async () => {
   testDir = join(tmpdir(), `scopewalker-funclines-test-${String(Date.now())}`);

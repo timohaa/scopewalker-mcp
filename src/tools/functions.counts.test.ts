@@ -4,10 +4,10 @@ import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { FunctionCountsResult } from "../types/index.js";
-import { registerFunctionCountsTool } from "./functionCounts.js";
+import { registerFunctionsTool } from "./functions.js";
 
 let testDir: string;
-const handler = getToolHandler(registerFunctionCountsTool, "get_function_counts");
+const handler = getToolHandler(registerFunctionsTool, "get_functions");
 
 beforeAll(async () => {
   testDir = join(tmpdir(), `scopewalker-func-test-${String(Date.now())}`);
