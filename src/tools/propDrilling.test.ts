@@ -128,10 +128,17 @@ describe("filtering", () => {
   });
 
   it("applies limit parameter", async () => {
+    const unlimited = await handler({ path: testDir, min_occurrences: 3 });
+    const totalFound =
+      parseContent<PropDrillingResult>(unlimited).summary.threaded_parameters_found;
+    expect(totalFound).toBeGreaterThan(1);
+
     const response = await handler({ path: testDir, min_occurrences: 3, limit: 1 });
     const result = parseContent<PropDrillingResult>(response);
 
     expect(result.threaded_parameters.length).toBeLessThanOrEqual(1);
+    // Summary reflects the full result set, not the limited slice
+    expect(result.summary.threaded_parameters_found).toBe(totalFound);
   });
 });
 

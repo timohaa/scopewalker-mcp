@@ -90,25 +90,27 @@ export function registerPropDrillingTool(server: McpServer): void {
         threaded = threaded.filter((p) => !COMMON_PARAMETER_NAMES.has(p.name));
       }
 
-      const limit = args.limit ?? DEFAULT_LIMIT;
-      threaded = threaded.slice(0, limit);
-
+      // Summary uses the full list for accurate totals; limit only trims the returned details
+      const totalFound = threaded.length;
       const highest =
         threaded.length > 0 ? { name: threaded[0].name, count: threaded[0].occurrences } : null;
+
+      const limit = args.limit ?? DEFAULT_LIMIT;
+      const limited = threaded.slice(0, limit);
 
       const result: PropDrillingResult = {
         path: resolvedPath,
         is_directory: isDirectory,
-        threaded_parameters: args.summary_only === true ? [] : threaded,
+        threaded_parameters: args.summary_only === true ? [] : limited,
         summary: {
           files_analyzed: filePaths.length,
           total_parameters_scanned: totalParamsScanned,
-          threaded_parameters_found: threaded.length,
+          threaded_parameters_found: totalFound,
           highest_occurrence: highest,
         },
       };
 
-      return createSuccessResponse(result, { itemCount: threaded.length });
+      return createSuccessResponse(result, { itemCount: limited.length });
     }
   );
 }
