@@ -1,6 +1,6 @@
 ---
 name: comment-fixer
-description: "Use this agent to scan the codebase and fix code comments. Adds missing JSDoc to functions (every function should have at least a one-line JSDoc unless its name makes the purpose obvious), improves existing ones, and cleans up inline comments (WHY not WHAT, remove obvious/stale ones).\n\nExamples:\n\n<example>\nContext: The user wants to clean up comments across the codebase.\nuser: \"Go through the codebase and fix all the bad comments\"\nassistant: \"I'll launch the comment-fixer agent to scan and fix comments.\"\n<Task tool call to launch comment-fixer agent>\n</example>\n\n<example>\nContext: The user notices inconsistent comment quality.\nuser: \"Our comments are a mess - some describe the obvious, some are stale. Can you fix them?\"\nassistant: \"I'll use the comment-fixer agent to systematically fix comments across the codebase.\"\n<Task tool call to launch comment-fixer agent>\n</example>"
+description: Scans source files and fixes code comments — adds missing one-line JSDoc, improves existing JSDoc, and cleans up inline comments (WHY not WHAT, removes obvious or stale ones). Use when asked to clean up, fix, or standardize comments across the codebase.
 model: sonnet
 tools: Bash, Read, Edit, Glob, Grep
 ---

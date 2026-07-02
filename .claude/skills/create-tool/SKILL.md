@@ -1,6 +1,6 @@
 ---
 name: create-tool
-description: Scaffold a new MCP tool with types, implementation, tests, and registration
+description: Scaffold a new MCP tool with types, implementation, tests, and registration. Use when adding a new analysis tool to the server.
 ---
 
 # Create Tool

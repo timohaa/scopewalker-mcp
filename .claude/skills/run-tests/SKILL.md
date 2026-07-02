@@ -1,6 +1,6 @@
 ---
 name: run-tests
-description: Run tests with options for filtering, watch mode, and coverage
+description: Run tests with options for filtering, watch mode, and coverage. Use when asked to run or check tests.
 ---
 
 # Run Tests

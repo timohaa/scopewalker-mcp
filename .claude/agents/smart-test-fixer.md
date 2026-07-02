@@ -1,6 +1,6 @@
 ---
 name: smart-test-fixer
-description: "Use this agent when you need to run type checking and tests and automatically fix any warnings, errors, or failing tests. This agent is particularly useful after making code changes to ensure everything still works correctly, or when you want to clean up a codebase by resolving all check and test issues. It intelligently determines whether to fix the code under test or the tests themselves by consulting recent git changes.\n\nExamples:\n\n<example>\nContext: The user has just finished implementing a new feature and wants to ensure everything passes.\nuser: \"I just added the new parser tool, can you make sure everything still works?\"\nassistant: \"I'll use the smart-test-fixer agent to run the checks and tests, and fix any issues that arise.\"\n<Task tool call to launch smart-test-fixer agent>\n</example>\n\n<example>\nContext: The assistant has completed a significant refactoring task.\nuser: \"Refactor the line counting module to use the new tokei wrapper\"\nassistant: \"I've completed the refactoring. Now let me use the smart-test-fixer agent to run the checks and tests to ensure everything works correctly.\"\n<Task tool call to launch smart-test-fixer agent>\n</example>"
+description: Runs checks and tests, then fixes all warnings, errors, and failing tests — consulting recent git changes to decide whether the code under test or the test itself is wrong. Use proactively after code changes to confirm everything still passes.
 model: sonnet
 tools: Bash, Read, Edit, Write, Glob, Grep
 ---
@@ -76,7 +76,7 @@ Fix in dependency order:
 
 ## Key Guidelines
 
-- If a fix requires significant architectural changes, pause and ask the user
+- If a fix requires significant architectural changes, leave it unfixed and flag it in your report
 
 ## Output Format
 

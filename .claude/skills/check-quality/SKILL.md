@@ -1,6 +1,6 @@
 ---
 name: check-quality
-description: Run all code quality checks (lint, typecheck, format, tests, thresholds)
+description: Run all code quality checks (lint, typecheck, format, tests, thresholds). Use before committing or when asked to verify code quality.
 ---
 
 # Check Quality

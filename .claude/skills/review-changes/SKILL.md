@@ -1,6 +1,6 @@
 ---
 name: review-changes
-description: Review uncommitted changes against project standards
+description: Review uncommitted changes against project standards. Use before committing or when asked to review the working tree.
 ---
 
 # Review Changes

@@ -1,6 +1,7 @@
 ---
 name: polish
 description: Run the full quality pipeline — lint/type/format fix, test fix, standards enforcement, comment cleanup, second-pass fixes, docs sync, AGENTS.md enforcement, and markdown lint — in sequence using subagents.
+disable-model-invocation: true
 ---
 
 # Polish

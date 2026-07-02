@@ -1,6 +1,6 @@
 ---
 name: create-test
-description: Generate a vitest test file for an existing module following project testing patterns.
+description: Generate a vitest test file for an existing module following project testing patterns. Use when adding tests for a module that lacks them.
 argument-hint: <file-path>
 ---
 
