@@ -14,7 +14,7 @@ Identifies files and functions that exceed configurable size thresholds.
 | `include_hidden`     | boolean  | No       | Include hidden files                                |
 | `ignore_patterns`    | string[] | No       | Glob patterns to exclude                            |
 | `extensions`         | string[] | No       | Filter by extensions                                |
-| `max_depth`          | integer  | No       | Maximum directory depth to traverse                 |
+| `max_depth`          | integer  | No       | Maximum directory depth for the function scan       |
 | `max_files`          | integer  | No       | Maximum number of files to scan for functions       |
 | `limit`              | integer  | No       | Max violations to return per category (default: 20) |
 

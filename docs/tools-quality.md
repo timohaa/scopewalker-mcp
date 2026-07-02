@@ -29,7 +29,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 | Go                    | Godoc comments (`//`)                   |
 | Rust                  | Doc comments (`///`, `//!`)             |
 | Java                  | Javadoc (`/** */`)                      |
-| C/C++                 | JSDoc-style (`/** */`), Doxygen-style   |
+| C/C++                 | JSDoc-style (`/** */`)                  |
 | Ruby                  | Line comments (`#`)                     |
 
 **Response:**
@@ -148,6 +148,8 @@ Detects parameter threading (prop drilling) by finding parameter names passed th
 | `summary_only`      | boolean  | No       | Return only summary without per-parameter details (default: false)                     |
 
 **Risk Levels:** Each threaded parameter is assigned a risk level (`high`, `medium`, `low`) based on occurrence count and forwarding evidence.
+
+**Note:** `summary.threaded_parameters_found` is the total number of threaded parameters found; `limit` only trims the returned `threaded_parameters` details.
 
 **Response:**
 

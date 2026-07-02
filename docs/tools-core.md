@@ -81,7 +81,7 @@ Returns function/method information. Use `detail` parameter to control output le
 | `max_depth`       | integer  | No       | Maximum directory depth to traverse                                                  |
 | `max_files`       | integer  | No       | Maximum number of files to scan                                                      |
 | `min_lines`       | integer  | No       | Only include functions with at least this many lines (lines mode only)               |
-| `sort_by`         | string   | No       | `"count_desc"`, `"count_asc"`, `"lines_desc"`, `"lines_asc"`, `"name"`               |
+| `sort_by`         | string   | No       | `"count_desc"`, `"count_asc"`, `"lines_desc"`, `"lines_asc"`, `"name"`. Defaults: `"count_desc"` (counts mode), `"lines_desc"` (lines mode). `count_*` keys apply to counts mode and `lines_*` keys to lines mode; a key from the other mode falls back to that mode's default. |
 | `limit`           | integer  | No       | Maximum number of files to return (default: 20)                                       |
 | `grep`            | string   | No       | Filter by keyword                                                                    |
 

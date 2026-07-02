@@ -6,18 +6,18 @@ AI agents will happily create 1000+ line source files and add a 20th parameter t
 
 It's a local MCP server (open source, runs over stdio, makes no network calls) that exposes 8 read-only tools:
 
-- `get_line_counts` - line counts
-- `get_functions` - function counts and per-function line metrics
-- `get_complexity_metrics` - cognitive complexity, nesting depth, parameter counts
-- `check_thresholds` - oversized-file/function checker against configurable thresholds
-- `get_code_inventory` - classes, methods, functions, and exports inventory
-- `get_documentation_coverage` - doc coverage
-- `get_code_smells` - TODO/FIXME/HACK/BUG markers in comments, plus unsafe casts
-- `get_prop_drilling` - parameter threading across function chains
+- `get_line_counts` - per-file line counts (total, code, blank, comment) with sorting, extension filters, and project-wide totals
+- `get_functions` - function and method detection; per-file counts, or per-function line metrics via `detail=lines` with a `min_lines` filter for hunting oversized functions
+- `get_complexity_metrics` - max/average nesting depth and parameter counts (JSX props included), import counts, and a cognitive-complexity score per file, with hotspots flagged for deeply nested or over-parameterized functions
+- `check_thresholds` - flags files and functions exceeding size thresholds (defaults: 300 lines per file, 100 per function)
+- `get_code_inventory` - classes with their methods, functions, interfaces/types, enums, and constants, each marked exported or not; private symbols hidden by default
+- `get_documentation_coverage` - coverage percentage plus every function, class, or method missing a doc comment (JSDoc, Python docstrings, Rust `///`, and other per-language formats)
+- `get_code_smells` - TODO/FIXME/HACK/XXX/BUG/UNUSED/DEPRECATED markers found by scanning actual comments via the AST (no false positives from string literals), plus `as unknown as` casts in TypeScript
+- `get_prop_drilling` - parameter names threaded through many functions and files, with forwarding evidence and a high/medium/low risk rating
 
-It's tree-sitter + tokei + fast-glob under the hood; nothing is custom-parsed. Tested on macOS with Claude Code, but should work with Cursor, VS Code, Windsurf, Gemini CLI, Codex, or anything else that speaks MCP.
+It's tree-sitter (parsing) + tokei (line counting) + fast-glob (file discovery) under the hood; nothing is custom-parsed. Tested on macOS with Claude Code, but should work with Cursor, VS Code, Windsurf, Gemini CLI, Codex, or anything else that speaks MCP.
 
-See [TOOLS.md](TOOLS.md) for detailed parameter and response documentation.
+See [TOOLS.md](TOOLS.md) for the quick reference and [docs/](docs/) for per-tool parameters and example responses.
 
 ## Safety Defaults
 
@@ -166,13 +166,13 @@ Once configured, the assistant calls Scopewalker's tools on its own — no speci
 - "Are there any TODO/FIXME/HACK markers left in this module?"
 - "Show me functions that take more than 5 parameters"
 
-It picks the right tool (`check_thresholds`, `get_complexity_metrics`, `get_documentation_coverage`, `get_code_smells`, etc.) and parameters for the request. See [TOOLS.md](TOOLS.md) for the quick reference and [docs/](docs/) for per-tool parameters and example responses.
+It picks the right tool and parameters for the request.
 
 This repo also dogfoods its own tools via Claude Code skills and agents:
 
 - [`.claude/skills/check-quality/SKILL.md`](.claude/skills/check-quality/SKILL.md) — runs `check_thresholds` and `get_code_smells` as part of the quality gate
 - [`.claude/agents/standards-enforcer.md`](.claude/agents/standards-enforcer.md) — uses the full tool set to find and fix standards violations
-- [`.claude/agents/docs-reality-sync.md`](.claude/agents/docs-reality-sync.md) — uses `get_documentation_coverage`, `get_code_inventory`, and `get_functions` to keep docs in sync with code
+- [`.claude/agents/docs-reality-sync.md`](.claude/agents/docs-reality-sync.md) — uses `get_code_inventory` and `get_functions` to keep docs in sync with code
 
 ## Development
 
@@ -196,15 +196,6 @@ Function detection and parsing support:
 - Java
 - C/C++
 - Ruby
-
-## Architecture
-
-| Task             | Library     |
-|------------------|-------------|
-| Line counting    | tokei (CLI) |
-| Code parsing     | tree-sitter |
-| File discovery   | fast-glob   |
-| Input validation | zod         |
 
 ## License
 
