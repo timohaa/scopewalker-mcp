@@ -12,12 +12,12 @@ Generate tests for existing code following project conventions.
 
 Tests live **alongside** the source file:
 
-| Source                          | Test                                 |
-|---------------------------------|--------------------------------------|
-| `src/tools/<name>.ts`           | `src/tools/<name>.test.ts`           |
-| `src/lib/<name>.ts`             | `src/lib/<name>.test.ts`             |
-| `src/utils/<name>.ts`           | `src/utils/<name>.test.ts`           |
-| `src/tools/<name>Helpers.ts`    | `src/tools/<name>Helpers.test.ts`    |
+| Source                       | Test                              |
+|------------------------------|-----------------------------------|
+| `src/tools/<name>.ts`        | `src/tools/<name>.test.ts`        |
+| `src/lib/<name>.ts`          | `src/lib/<name>.test.ts`          |
+| `src/utils/<name>.ts`        | `src/utils/<name>.test.ts`        |
+| `src/tools/<name>Helpers.ts` | `src/tools/<name>Helpers.test.ts` |
 
 Variants (e.g., language-specific cases for a single tool) use a dotted
 suffix: `documentationCoverage.languages.test.ts`.
@@ -31,7 +31,7 @@ Framework: **vitest** (`describe`, `it`, `expect`, `vi`).
    - Happy path scenarios
    - Edge cases (empty input, missing fields, large input)
    - Error handling (invalid args, file not found, parse errors)
-   - Path-scoping behavior for tools that take a `root` parameter
+   - Path-scoping behavior for tools that take a `path` parameter
 3. **Choose the right harness**:
    - **Tools** (anything in `src/tools/` that registers via `register*Tool`)
      → use `getToolHandler` + `parseContent` from
@@ -73,15 +73,15 @@ describe("myTool", () => {
     await rm(testDir, { recursive: true, force: true });
   });
 
-  it("returns expected result for a valid root", async () => {
-    const response = await handler({ root: testDir });
+  it("returns expected result for a valid path", async () => {
+    const response = await handler({ path: testDir });
     const result = parseContent<MyToolResult>(response);
 
     expect(result.files).toHaveLength(1);
   });
 
   it("returns an error for a path outside allowed roots", async () => {
-    const response = await handler({ root: "/etc" });
+    const response = await handler({ path: "/etc" });
 
     expect(response.isError).toBe(true);
   });
