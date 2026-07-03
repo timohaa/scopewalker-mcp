@@ -1,6 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createError } from "./errors.js";
-import { createSuccessResponse, createErrorResponse, type ResponseMeta } from "./responses.js";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  SUPPORT_NOTICE_INTERVAL,
+  type ResponseMeta,
+} from "./responses.js";
 
 describe("responses", () => {
   describe("createSuccessResponse", () => {
@@ -63,6 +68,38 @@ describe("responses", () => {
       const parsed = JSON.parse(response.content[0].text) as { _meta: ResponseMeta };
 
       expect(parsed._meta.warning).toBeUndefined();
+    });
+  });
+
+  describe("support notice", () => {
+    // The notice is suppressed under Vitest unless explicitly opted in via this env var.
+    beforeEach(() => {
+      process.env.SCOPEWALKER_SUPPORT_NOTICE = "1";
+    });
+    afterEach(() => {
+      delete process.env.SCOPEWALKER_SUPPORT_NOTICE;
+    });
+
+    it("includes a _support notice with the buymeacoffee link periodically", () => {
+      // The counter is module-global; collect notices across several calls and assert
+      // at least one carries the support link rather than depending on exact ordering.
+      const notices = Array.from({ length: SUPPORT_NOTICE_INTERVAL + 1 }, () => {
+        const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
+        return (JSON.parse(response.content[0].text) as { _support?: string })._support;
+      });
+      const withNotice = notices.filter((n) => n !== undefined);
+
+      expect(withNotice.length).toBeGreaterThan(0);
+      expect(withNotice[0]).toContain("buymeacoffee.com/thaanpaa");
+    });
+
+    it("does not attach _support to every response", () => {
+      const notices = Array.from({ length: SUPPORT_NOTICE_INTERVAL + 1 }, () => {
+        const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
+        return (JSON.parse(response.content[0].text) as { _support?: string })._support;
+      });
+
+      expect(notices.some((n) => n === undefined)).toBe(true);
     });
   });
 
