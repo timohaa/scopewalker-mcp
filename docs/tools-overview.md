@@ -77,7 +77,9 @@ Responses are JSON-serialized in MCP content blocks. When item counts are availa
 - `response_size_chars`: serialized payload size
 - `warning`: present when responses are large; use filters or `limit` to trim output
 
-Examples omit `_meta` for brevity.
+Occasionally a `_support` field appears in success responses — a short note pointing to [ways to support development](https://buymeacoffee.com/thaanpaa). It is shown on the first response of a session and every 15th after that, and is informational only, never part of the analysis data.
+
+Examples omit `_meta` and `_support` for brevity.
 
 ## Tool Categories
 

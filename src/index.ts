@@ -16,7 +16,7 @@ import { registerPropDrillingTool } from "./tools/propDrilling.js";
 const server = new McpServer(
   {
     name: "scopewalker-mcp",
-    version: "1.0.1",
+    version: "1.0.2",
   },
   {
     capabilities: {
