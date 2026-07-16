@@ -48,3 +48,14 @@ npm run test:coverage  # Run tests with coverage report
 3. Run `npm run check` and fix any issues
 4. Submit PR with clear description of changes
 5. Ensure CI checks pass
+
+## Releasing (maintainers)
+
+Releases are automated by `.github/workflows/release.yml`, triggered by a version tag:
+
+```bash
+npm version patch   # or minor / major — bumps package.json and creates the tag
+git push --follow-tags
+```
+
+The workflow runs checks and tests, publishes to npm with provenance, publishes to the [MCP Registry](https://registry.modelcontextprotocol.io), builds the `.mcpb` bundle, and attaches it to a GitHub Release.

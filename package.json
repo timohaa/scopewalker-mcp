@@ -1,14 +1,29 @@
 {
   "name": "scopewalker-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP server for codebase analysis",
+  "mcpName": "io.github.timohaa/scopewalker-mcp",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "scopewalker-mcp": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timohaa/scopewalker-mcp.git"
+  },
+  "homepage": "https://github.com/timohaa/scopewalker-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/timohaa/scopewalker-mcp/issues"
+  },
   "scripts": {
     "build": "tsc",
+    "bundle:mcpb": "npx --yes @anthropic-ai/mcpb pack . scopewalker-mcp.mcpb",
+    "prepublishOnly": "npm run check && npm run test && npm run build",
     "check": "npm run lint:fix && npm run typecheck",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
@@ -24,7 +39,7 @@
     "analysis",
     "tree-sitter"
   ],
-  "author": "",
+  "author": "Timo Haanpää",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -43,7 +58,6 @@
     "tree-sitter-ruby": "^0.23.1",
     "tree-sitter-rust": "^0.24.0",
     "tree-sitter-typescript": "^0.23.2",
-    "typescript": "^5.9.3",
     "zod": "^4.1.13"
   },
   "overrides": {
@@ -59,7 +73,10 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
+    "markdown-table-formatter": "^1.7.0",
+    "markdownlint-cli": "^0.49.1",
     "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.48.1",
     "vitest": "^4.0.15"
   }

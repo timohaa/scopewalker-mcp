@@ -1,0 +1,53 @@
+{
+  "manifest_version": "0.3",
+  "name": "scopewalker-mcp",
+  "display_name": "Scopewalker",
+  "version": "1.0.2",
+  "description": "Codebase analysis tools for AI assistants: complexity, prop drilling, documentation coverage, code smells.",
+  "author": {
+    "name": "Timo Haanpää",
+    "url": "https://github.com/timohaa"
+  },
+  "homepage": "https://github.com/timohaa/scopewalker-mcp",
+  "documentation": "https://github.com/timohaa/scopewalker-mcp#readme",
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "SCOPEWALKER_ALLOWED_ROOTS": "${user_config.allowed_roots}"
+      }
+    }
+  },
+  "user_config": {
+    "allowed_roots": {
+      "type": "string",
+      "title": "Allowed roots",
+      "description": "Comma-separated absolute paths the analysis tools may access, e.g. /Users/me/projects. Leave empty to allow only the server's working directory and system temp.",
+      "required": false,
+      "default": ""
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=22.0.0"
+    }
+  },
+  "keywords": [
+    "mcp",
+    "codebase",
+    "analysis",
+    "tree-sitter",
+    "complexity"
+  ]
+}

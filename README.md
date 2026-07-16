@@ -34,35 +34,36 @@ See [TOOLS.md](TOOLS.md) for the quick reference and [docs/](docs/) for per-tool
 
 ## Installation
 
-```bash
-npm install
-npm run build
-```
+Scopewalker is published to npm as [`scopewalker-mcp`](https://www.npmjs.com/package/scopewalker-mcp) — no clone or build needed. Configure your MCP client to run it via `npx` (examples below), or install it globally with `npm install -g scopewalker-mcp`.
+
+To build from source instead, see [Development](#development).
 
 ## Configuration
 
 ### Claude Code
 
-Add to `~/.claude.json`:
+```bash
+claude mcp add scopewalker-mcp --scope user -- npx -y scopewalker-mcp
+```
+
+Or add to `~/.claude.json`:
 
 ```json
 {
   "mcpServers": {
     "scopewalker-mcp": {
-      "command": "node",
-      "args": ["/path/to/scopewalker-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "scopewalker-mcp"]
     }
   }
 }
 ```
 
-Or use the CLI:
-
-```bash
-claude mcp add scopewalker-mcp --scope user -- node /path/to/scopewalker-mcp/dist/index.js
-```
-
 See [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp) for details.
+
+### Claude Desktop
+
+Download `scopewalker-mcp.mcpb` from the [latest release](https://github.com/timohaa/scopewalker-mcp/releases/latest) and open it with Claude Desktop (or drag it into Settings > Extensions) for one-click installation.
 
 ### Cursor
 
@@ -72,8 +73,8 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 {
   "mcpServers": {
     "scopewalker-mcp": {
-      "command": "node",
-      "args": ["/path/to/scopewalker-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "scopewalker-mcp"]
     }
   }
 }
@@ -91,8 +92,8 @@ Add to `.vscode/mcp.json` in your workspace:
 {
   "servers": {
     "scopewalker-mcp": {
-      "command": "node",
-      "args": ["/path/to/scopewalker-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "scopewalker-mcp"]
     }
   }
 }
@@ -110,8 +111,8 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 {
   "mcpServers": {
     "scopewalker-mcp": {
-      "command": "node",
-      "args": ["/path/to/scopewalker-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "scopewalker-mcp"]
     }
   }
 }
@@ -129,8 +130,8 @@ Add to `~/.gemini/settings.json`:
 {
   "mcpServers": {
     "scopewalker-mcp": {
-      "command": "node",
-      "args": ["/path/to/scopewalker-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "scopewalker-mcp"]
     }
   }
 }
@@ -144,14 +145,14 @@ Add to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.scopewalker-mcp]
-command = "node"
-args = ["/path/to/scopewalker-mcp/dist/index.js"]
+command = "npx"
+args = ["-y", "scopewalker-mcp"]
 ```
 
 Or use the CLI:
 
 ```bash
-codex mcp add scopewalker-mcp -- node /path/to/scopewalker-mcp/dist/index.js
+codex mcp add scopewalker-mcp -- npx -y scopewalker-mcp
 ```
 
 See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for details.
@@ -175,6 +176,17 @@ This repo also dogfoods its own tools via Claude Code skills and agents:
 - [`.claude/agents/docs-reality-sync.md`](.claude/agents/docs-reality-sync.md) — uses `get_code_inventory` and `get_functions` to keep docs in sync with code
 
 ## Development
+
+To run from source instead of npm:
+
+```bash
+git clone https://github.com/timohaa/scopewalker-mcp.git
+cd scopewalker-mcp
+npm install
+npm run build
+```
+
+Then point your MCP client at the build output, e.g. `claude mcp add scopewalker-mcp --scope user -- node /path/to/scopewalker-mcp/dist/index.js`.
 
 ```bash
 npm run build          # Build the project
