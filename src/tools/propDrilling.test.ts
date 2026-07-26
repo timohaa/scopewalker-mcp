@@ -186,6 +186,20 @@ describe("edge cases", () => {
     expect(result.summary.threaded_parameters_found).toBe(0);
   });
 
+  it("counts only successfully analyzed files in files_analyzed", async () => {
+    const mixedDir = join(testDir, "mixed");
+    await mkdir(mixedDir, { recursive: true });
+
+    await writeFile(join(mixedDir, "code.ts"), `function a(x: string) { return b(x); }`);
+    await writeFile(join(mixedDir, "notes.txt"), `not source code`);
+
+    const response = await handler({ path: mixedDir });
+    const result = parseContent<PropDrillingResult>(response);
+
+    // notes.txt has no supported language, so it must not count as analyzed
+    expect(result.summary.files_analyzed).toBe(1);
+  });
+
   it("handles destructured props", async () => {
     const destructuredDir = join(testDir, "destructured");
     await mkdir(destructuredDir, { recursive: true });

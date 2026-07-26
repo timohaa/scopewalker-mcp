@@ -53,11 +53,19 @@ function hasDocInSiblings(node: Parser.SyntaxNode, language: SupportedLanguage):
       return true;
     }
     const isWhitespace = sibling.type.includes("newline") || sibling.text.trim() === "";
-    if (!isWhitespace && !isCommentNode(sibling)) break;
+    // TS decorators sit between the doc comment and the decorated node; walk past them
+    const isSkippable = isWhitespace || isCommentNode(sibling) || sibling.type === "decorator";
+    if (!isSkippable) break;
     sibling = sibling.previousSibling;
   }
   return false;
 }
+
+/**
+ * How many lines above a declaration the fallback scans for a doc comment.
+ * Must span multi-line JSDoc blocks plus interposed decorator lines.
+ */
+const MAX_LOOKBACK_LINES = 30;
 
 /** Fallback: checks preceding source lines for doc comments. */
 function hasDocInPrecedingLines(
@@ -66,9 +74,11 @@ function hasDocInPrecedingLines(
   lang: SupportedLanguage
 ): boolean {
   const startLine = node.startPosition.row;
-  for (let i = startLine - 1; i >= 0 && i >= startLine - 5; i--) {
+  for (let i = startLine - 1; i >= 0 && i >= startLine - MAX_LOOKBACK_LINES; i--) {
     const line = lines[i]?.trim() || "";
     if (line === "") continue;
+    // Decorator lines (@dec()) sit between the doc comment and the declaration; skip them
+    if (line.startsWith("@")) continue;
     if (isDocComment(line, lang)) return true;
     if (!isAnyComment(line)) break;
   }

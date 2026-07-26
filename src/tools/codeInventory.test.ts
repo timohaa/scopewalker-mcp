@@ -170,6 +170,33 @@ export enum Color {
   });
 });
 
+describe("codeInventory tool - const/let bindings", () => {
+  it("indexes exported const arrow functions with the declarator's name", async () => {
+    await writeFile(
+      join(testDir, "arrows.ts"),
+      `export const fetchData = async () => {
+  return 1;
+};
+
+export const MAX_SIZE = 100;
+`
+    );
+
+    const response = await handler({ path: join(testDir, "arrows.ts") });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const arrowsFile = result.inventory.find((f) => f.file.includes("arrows.ts"));
+    const fetchData = arrowsFile?.items.find((i) => i.name === "fetchData");
+    expect(fetchData?.type).toBe("function");
+    expect(fetchData?.exported).toBe(true);
+
+    // Plain const values appear as constants, consistent with variable_declaration
+    const maxSize = arrowsFile?.items.find((i) => i.name === "MAX_SIZE");
+    expect(maxSize?.type).toBe("constant");
+    expect(maxSize?.exported).toBe(true);
+  });
+});
+
 describe("codeInventory tool - Python", () => {
   let pyTestDir: string;
   const pyHandler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
@@ -196,6 +223,19 @@ def _private_function():
     pass
 `
     );
+
+    await writeFile(
+      join(pyTestDir, "widget.py"),
+      `def top_level():
+    pass
+
+class Widget:
+    def bar(self):
+        def inner():
+            pass
+        return inner
+`
+    );
   });
 
   afterAll(async () => {
@@ -215,6 +255,68 @@ def _private_function():
       expect(publicFunc?.exported).toBe(true);
       expect(publicClass?.exported).toBe(true);
     }
+  });
+
+  it("indexes Python module-level defs as functions, distinct from class methods", async () => {
+    const response = await pyHandler({ path: pyTestDir });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const pyFile = result.inventory.find((f) => f.file.endsWith("widget.py"));
+    const topLevelFn = pyFile?.items.find((i) => i.name === "top_level");
+    expect(topLevelFn?.type).toBe("function");
+
+    const widgetClass = pyFile?.items.find((i) => i.name === "Widget");
+    expect(widgetClass?.type).toBe("class");
+    expect(widgetClass?.methods?.map((m) => m.name)).toContain("bar");
+    // Class methods must not also appear as standalone top-level items
+    expect(pyFile?.items.some((i) => i.name === "bar")).toBe(false);
+  });
+
+  it("does not count defs nested inside method bodies as class methods", async () => {
+    const response = await pyHandler({ path: pyTestDir });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const pyFile = result.inventory.find((f) => f.file.endsWith("widget.py"));
+    const widgetClass = pyFile?.items.find((i) => i.name === "Widget");
+    expect(widgetClass?.methods?.map((m) => m.name)).toEqual(["bar"]);
+  });
+});
+
+describe("codeInventory tool - C", () => {
+  let cTestDir: string;
+  const cHandler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
+
+  beforeAll(async () => {
+    cTestDir = join(tmpdir(), `scopewalker-inv-c-test-${String(Date.now())}`);
+    await mkdir(cTestDir, { recursive: true });
+
+    await writeFile(
+      join(cTestDir, "math.c"),
+      `int add(int a, int b) {
+    return a + b;
+}
+
+void greet(void) {
+}
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(cTestDir, { recursive: true, force: true });
+  });
+
+  it("indexes C functions via their function_declarator names", async () => {
+    const response = await cHandler({ path: cTestDir });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const cFile = result.inventory.find((f) => f.file.endsWith("math.c"));
+    expect(cFile).toBeDefined();
+
+    const names = cFile?.items.map((i) => i.name);
+    expect(names).toEqual(expect.arrayContaining(["add", "greet"]));
+    expect(cFile?.items.every((i) => i.type === "function")).toBe(true);
+    expect(result.summary.total_functions).toBe(2);
   });
 });
 

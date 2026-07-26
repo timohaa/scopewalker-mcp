@@ -8,11 +8,14 @@ export interface DocumentableNode {
 
 /** Returns documentable info if node is a function, class, or method. */
 export function getDocumentableNode(node: Parser.SyntaxNode): DocumentableNode | null {
+  if (node.type === "arrow_function") {
+    return getNamedArrowFunction(node);
+  }
+
   const funcTypes = [
     "function_declaration",
     "function_definition",
     "function_item",
-    "arrow_function",
     "function_expression",
   ];
 
@@ -40,6 +43,22 @@ export function getDocumentableNode(node: Parser.SyntaxNode): DocumentableNode |
   const lineCount = node.endPosition.row - node.startPosition.row + 1;
 
   return { name, type, lineCount };
+}
+
+/**
+ * Returns a documentable item for an arrow function only when it is bound to a name
+ * (e.g. `const fn = () => {}`). Inline callback arrows (`items.map(item => item.id)`)
+ * are not documentable and must not be counted.
+ */
+function getNamedArrowFunction(node: Parser.SyntaxNode): DocumentableNode | null {
+  const parent = node.parent;
+  if (parent?.type !== "variable_declarator") return null;
+
+  const name = extractName(parent);
+  if (name === null) return null;
+
+  const lineCount = node.endPosition.row - node.startPosition.row + 1;
+  return { name, type: "function", lineCount };
 }
 
 /** Checks if a C/C++ declaration node contains a function declarator (i.e., is a function prototype). */

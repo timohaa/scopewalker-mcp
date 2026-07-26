@@ -44,8 +44,41 @@ export function extractItem(
   return item;
 }
 
+// Node types that can appear as the value of a const/let declarator and make it a function.
+const FUNCTION_VALUE_TYPES = [
+  "arrow_function",
+  "function_expression",
+  "function",
+  "generator_function",
+];
+
+/** Checks whether a const/let declaration binds a function value (arrow or function expression). */
+function hasFunctionInitializer(node: Parser.SyntaxNode): boolean {
+  return node.children.some(
+    (child) =>
+      child.type === "variable_declarator" &&
+      child.children.some((value) => FUNCTION_VALUE_TYPES.includes(value.type))
+  );
+}
+
 /** Maps AST node types to inventory item types (class, function, interface, etc.). */
 export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | null {
+  // Python defs directly inside a class body are methods of that class, not
+  // standalone functions (analogous to the Ruby guard below).
+  if (
+    node.type === "function_definition" &&
+    node.parent?.type === "block" &&
+    node.parent.parent?.type === "class_definition"
+  ) {
+    return null;
+  }
+
+  // TS/JS const/let: function-valued bindings are functions, plain values are
+  // constants (consistent with how variable_declaration is treated).
+  if (node.type === "lexical_declaration") {
+    return hasFunctionInitializer(node) ? "function" : "constant";
+  }
+
   const typeMap: Partial<Record<string, InventoryItem["type"]>> = {
     class_declaration: "class",
     class_definition: "class",
@@ -91,6 +124,16 @@ function extractIdentifierFromDeclarator(declarator: Parser.SyntaxNode): string 
   return identifier?.text ?? null;
 }
 
+/** Extracts the function name from a C/C++ function_declarator node. */
+function extractIdentifierFromFunctionDeclarator(declarator: Parser.SyntaxNode): string | null {
+  for (const child of declarator.children) {
+    if (child.type === "identifier" || child.type === "qualified_identifier") {
+      return child.text;
+    }
+  }
+  return null;
+}
+
 /** Extracts the name identifier from a declaration node. */
 export function extractName(node: Parser.SyntaxNode): string | null {
   for (const child of node.children) {
@@ -99,6 +142,9 @@ export function extractName(node: Parser.SyntaxNode): string | null {
     }
     if (child.type === "variable_declarator") {
       return extractIdentifierFromDeclarator(child);
+    }
+    if (child.type === "function_declarator") {
+      return extractIdentifierFromFunctionDeclarator(child);
     }
   }
   return null;
@@ -147,29 +193,38 @@ export function isExported(node: Parser.SyntaxNode, language: SupportedLanguage)
   return false;
 }
 
-/** Extracts method definitions from a class node. */
+// Node types that hold a class's direct member list, per language grammar
+// (TS/JS/Java: class_body, Python: block, Ruby: body_statement).
+const CLASS_BODY_TYPES = ["class_body", "block", "body_statement"];
+
+/**
+ * Extracts method definitions from a class node.
+ * Only direct class-body children count; defs nested inside method bodies do not.
+ */
 export function extractMethods(
   classNode: Parser.SyntaxNode,
   language: SupportedLanguage,
   includePrivate: boolean
 ): MethodInfo[] {
+  const body = classNode.children.find((child) => CLASS_BODY_TYPES.includes(child.type));
+  if (!body) return [];
+
   const methods: MethodInfo[] = [];
+  for (const node of body.children) {
+    if (!isMethodNode(node)) continue;
 
-  walkNode(classNode, (node) => {
-    if (isMethodNode(node)) {
-      const name = extractMethodName(node);
-      if (name === null) return;
+    const name = extractMethodName(node);
+    if (name === null) continue;
 
-      const isPrivate = isPrivateSymbol(name, node, language);
-      if (isPrivate && !includePrivate) return;
+    const isPrivate = isPrivateSymbol(name, node, language);
+    if (isPrivate && !includePrivate) continue;
 
-      methods.push({
-        name,
-        line: node.startPosition.row + 1,
-        visibility: isPrivate ? "private" : "public",
-      });
-    }
-  });
+    methods.push({
+      name,
+      line: node.startPosition.row + 1,
+      visibility: isPrivate ? "private" : "public",
+    });
+  }
 
   return methods;
 }

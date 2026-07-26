@@ -141,6 +141,71 @@ export const withParams = (a: number, b: number) => a + b;
     expect(paramHotspots).toHaveLength(0);
   });
 
+  it("counts one parameter for unparenthesized single-param arrows", async () => {
+    await writeFile(join(testDir, "bareArrow.ts"), `export const dbl = x => x * 2;\n`);
+
+    const response = await handler({ path: join(testDir, "bareArrow.ts") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    expect(result.files[0]?.metrics.max_parameters).toBe(1);
+  });
+
+  it("reports the same nesting depth for arrows and function declarations", async () => {
+    // Identical 4-deep if-nesting; neither variant may exceed the threshold
+    const body = `  if (n > 0) {
+    if (n > 1) {
+      if (n > 2) {
+        if (n > 3) {
+          return n;
+        }
+      }
+    }
+  }
+  return 0;`;
+    await writeFile(
+      join(testDir, "nestingParity.ts"),
+      `export function declNested(n: number): number {\n${body}\n}\n\n` +
+        `export const arrowNested = (n: number): number => {\n${body}\n};\n`
+    );
+
+    const response = await handler({ path: join(testDir, "nestingParity.ts") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    // Pre-fix the arrow counted its own node (depth 5) and produced a hotspot
+    const nestingHotspots =
+      result.files[0]?.hotspots.filter((h) => h.issue === "nesting_depth") ?? [];
+    expect(nestingHotspots).toHaveLength(0);
+  });
+
+  it("flags arrows and declarations at the same depth once over the threshold", async () => {
+    const body = `  if (n > 0) {
+    if (n > 1) {
+      if (n > 2) {
+        if (n > 3) {
+          if (n > 4) {
+            return n;
+          }
+        }
+      }
+    }
+  }
+  return 0;`;
+    await writeFile(
+      join(testDir, "nestingParityDeep.ts"),
+      `export function declDeep(n: number): number {\n${body}\n}\n\n` +
+        `export const arrowDeep = (n: number): number => {\n${body}\n};\n`
+    );
+
+    const response = await handler({ path: join(testDir, "nestingParityDeep.ts") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    const nestingHotspots =
+      result.files[0]?.hotspots.filter((h) => h.issue === "nesting_depth") ?? [];
+    expect(nestingHotspots).toHaveLength(2);
+    // Both report the true depth of 5; the arrow must not add itself
+    expect(nestingHotspots.map((h) => h.value)).toEqual([5, 5]);
+  });
+
   it("handles empty directory", async () => {
     const emptyDir = join(testDir, "empty");
     await mkdir(emptyDir, { recursive: true });

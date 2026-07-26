@@ -36,29 +36,45 @@ function isElseIf(node: Parser.SyntaxNode): boolean {
   return false;
 }
 
-/** Calculates maximum nesting depth by tracking control flow structures. */
-export function calculateNestingDepth(node: Parser.SyntaxNode, currentDepth: number): number {
-  const nestingTypes = [
-    "if_statement",
-    "for_statement",
-    "while_statement",
-    "for_in_statement",
-    "try_statement",
-    "switch_statement",
-    "switch_expression", // Java switch statements
-    "match_expression",
-    "lambda_expression",
-    "arrow_function",
-  ];
+const NESTING_TYPES = [
+  "if_statement",
+  "for_statement",
+  "while_statement",
+  "for_in_statement",
+  "try_statement",
+  "switch_statement",
+  "switch_expression", // Java switch statements
+  "match_expression",
+  "lambda_expression",
+  "arrow_function",
+];
 
+/**
+ * Calculates maximum nesting depth by tracking control flow structures.
+ * The starting node itself never counts toward the depth, so a function's own
+ * node (e.g. arrow_function) does not inflate its reported nesting.
+ */
+export function calculateNestingDepth(node: Parser.SyntaxNode, currentDepth: number): number {
   let maxDepth = currentDepth;
 
+  for (const child of node.children) {
+    const childDepth = walkNestingDepth(child, currentDepth);
+    maxDepth = Math.max(maxDepth, childDepth);
+  }
+
+  return maxDepth;
+}
+
+/** Recursive helper that counts nesting for the given node and its descendants. */
+function walkNestingDepth(node: Parser.SyntaxNode, currentDepth: number): number {
   // Don't count "else if" as additional nesting - it's a sibling branch, not nested
-  const isNesting = nestingTypes.includes(node.type) && !isElseIf(node);
+  const isNesting = NESTING_TYPES.includes(node.type) && !isElseIf(node);
   const newDepth = isNesting ? currentDepth + 1 : currentDepth;
 
+  let maxDepth = newDepth;
+
   for (const child of node.children) {
-    const childDepth = calculateNestingDepth(child, newDepth);
+    const childDepth = walkNestingDepth(child, newDepth);
     maxDepth = Math.max(maxDepth, childDepth);
   }
 
@@ -91,6 +107,12 @@ export function countParameters(
     }
   }
 
+  // Unparenthesized single-parameter arrow (`x => ...`): the parameter is a
+  // bare identifier child instead of a formal_parameters node.
+  if (node.type === "arrow_function" && node.childForFieldName("parameter") !== null) {
+    return 1;
+  }
+
   return 0;
 }
 
@@ -110,6 +132,11 @@ function countActualParameters(
     let isFirst = true;
 
     for (const child of children) {
+      // Only the first child can be the receiver; clear the flag unconditionally
+      // so params after skipped splats/separators are not mistaken for it
+      const wasFirst = isFirst;
+      isFirst = false;
+
       // Skip keyword_separator (*) used to mark keyword-only parameters
       if (child.type === "keyword_separator") {
         continue;
@@ -121,8 +148,7 @@ function countActualParameters(
       }
 
       // Skip self/cls as first parameter (method receiver)
-      if (isFirst) {
-        isFirst = false;
+      if (wasFirst) {
         const paramName = child.type === "identifier" ? child.text : null;
         if (paramName === "self" || paramName === "cls") {
           continue;
@@ -236,6 +262,11 @@ export function extractJsxComponentName(node: Parser.SyntaxNode): string | null 
 
 /** Extracts function name from identifier children. */
 export function extractFunctionName(node: Parser.SyntaxNode): string | null {
+  // Arrow functions are anonymous: an identifier child is an unparenthesized
+  // parameter (`x => ...`) or expression body, never the function's name.
+  if (node.type === "arrow_function") {
+    return null;
+  }
   for (const child of node.children) {
     if (child.type === "identifier" || child.type === "property_identifier") {
       return child.text;

@@ -57,7 +57,11 @@ function extractPythonParamNames(paramListNode: Parser.SyntaxNode, names: string
 
     if (child.type === "identifier") {
       names.push(child.text);
-    } else if (child.type === "typed_parameter" || child.type === "default_parameter") {
+    } else if (
+      child.type === "typed_parameter" ||
+      child.type === "default_parameter" ||
+      child.type === "typed_default_parameter"
+    ) {
       const id = child.namedChildren.find((c) => c.type === "identifier");
       if (id !== undefined) names.push(id.text);
     }
@@ -131,10 +135,9 @@ function extractNamesFromParamNode(
       return;
     }
 
-    // Go/C/C++: parameter_declaration — `name Type`
+    // Go/C/C++: parameter_declaration — `name Type` (Go allows multiple names: `a, b int`)
     case "parameter_declaration": {
-      const deepId = findDeepIdentifier(node);
-      if (deepId !== null) names.push(deepId);
+      collectDeepIdentifiers(node, names);
       return;
     }
 
@@ -147,8 +150,7 @@ function extractNamesFromParamNode(
 
     // Java: formal_parameter — Type name
     case "formal_parameter": {
-      const id = findDeepIdentifier(node);
-      if (id !== null) names.push(id);
+      collectDeepIdentifiers(node, names);
       return;
     }
 
@@ -160,19 +162,30 @@ function extractNamesFromParamNode(
   }
 }
 
-/** Finds an identifier deep in a parameter declaration (for C/Java where declarators nest). */
-function findDeepIdentifier(node: Parser.SyntaxNode): string | null {
+/**
+ * Collects identifiers from a parameter declaration.
+ * Handles Go multi-name params (`a, b int` — several identifier children) and
+ * C/Java declarations where the name nests inside a declarator.
+ */
+function collectDeepIdentifiers(node: Parser.SyntaxNode, names: string[]): void {
+  let found = false;
   for (const child of node.namedChildren) {
-    if (child.type === "identifier") return child.text;
+    if (child.type === "identifier") {
+      names.push(child.text);
+      found = true;
+    }
   }
+  if (found) return;
   for (const child of node.namedChildren) {
     if (child.type.includes("declarator")) {
       for (const grandchild of child.namedChildren) {
-        if (grandchild.type === "identifier") return grandchild.text;
+        if (grandchild.type === "identifier") {
+          names.push(grandchild.text);
+          return;
+        }
       }
     }
   }
-  return null;
 }
 
 /** Checks if an identifier or member_expression node forwards a tracked parameter. */
@@ -212,8 +225,8 @@ export function detectForwardedParameters(
   if (body === null) return [];
 
   walkNode(body, (node) => {
-    // "arguments" node covers call expressions: someFunc(userId)
-    if (node.type === "arguments") {
+    // "arguments" (TS/JS/Rust) and "argument_list" (Python/Go/Java/C/Ruby) cover call expressions: someFunc(userId)
+    if (node.type === "arguments" || node.type === "argument_list") {
       for (const child of node.namedChildren) checkNodeForwarding(child, paramSet, forwarded);
     }
 
@@ -277,6 +290,7 @@ function findFunctionBody(funcNode: Parser.SyntaxNode): Parser.SyntaxNode | null
     "block",
     "function_body",
     "body",
+    "body_statement",
     "compound_statement",
   ]);
   for (const child of funcNode.children) {

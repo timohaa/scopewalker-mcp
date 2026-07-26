@@ -45,7 +45,10 @@ export function hasPythonDocstring(node: Parser.SyntaxNode): boolean {
 /** Checks if a line starts a doc comment based on language conventions. */
 export function isDocComment(line: string, language: SupportedLanguage): boolean {
   if (JSDOC_LANGUAGES.includes(language)) {
-    return line.startsWith("/**") || line.startsWith("*") || line.endsWith("*/");
+    // Require the JSDoc opener; plain /* ... */ block comments (e.g. eslint-disable)
+    // are not documentation. Continuation lines (*, */) are handled by the caller
+    // scanning upward through comment lines to the opening line.
+    return line.startsWith("/**");
   }
   if (language === "python") return line.startsWith('"""') || line.startsWith("'''");
   if (language === "rust") return line.startsWith("///") || line.startsWith("//!");

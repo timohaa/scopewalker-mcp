@@ -157,6 +157,18 @@ describe("extractParameterNames - additional languages and patterns", () => {
     expect(names).toContain("count");
   });
 
+  it("extracts Python typed default parameters: x: int = 5", async () => {
+    const func = await getFirstFunction(`def f(x: int = 5, y=2):\n    pass`, "python");
+    const names = extractParameterNames(func, "python");
+    expect(names).toEqual(["x", "y"]);
+  });
+
+  it("extracts all names from Go multi-name parameters: (a, b int)", async () => {
+    const func = await getFirstFunction(`func f(a, b int) {}`, "go");
+    const names = extractParameterNames(func, "go");
+    expect(names).toEqual(["a", "b"]);
+  });
+
   it("extracts optional TS parameter names", async () => {
     const func = await getFirstFunction(
       `function greet(name: string, title?: string): void {}`,
@@ -238,6 +250,22 @@ describe("detectForwardedParameters", () => {
     const arrowNode = await findNodeByType(code, "typescript", "arrow_function");
     const forwarded = detectForwardedParameters(arrowNode, ["userId"], "typescript");
     expect(forwarded).toContain("userId");
+  });
+
+  it("detects forwarding in Python calls (argument_list nodes)", async () => {
+    const func = await getFirstFunction(`def outer(user_id):\n    inner(user_id)\n`, "python");
+    const forwarded = detectForwardedParameters(func, ["user_id"], "python");
+    expect(forwarded).toContain("user_id");
+  });
+
+  it("detects forwarding in Ruby method bodies (body_statement)", async () => {
+    const method = await findNodeByType(
+      `def outer(user_id)\n  inner(user_id)\nend\n`,
+      "ruby",
+      "method"
+    );
+    const forwarded = detectForwardedParameters(method, ["user_id"], "ruby");
+    expect(forwarded).toContain("user_id");
   });
 
   it("detects JSX direct attribute forwarding: prop={prop}", async () => {

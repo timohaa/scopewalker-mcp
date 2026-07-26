@@ -136,6 +136,24 @@ def many_params(a, b, c, d, e, f):
     // many_params has 6 params, should trigger hotspot
     expect(paramHotspots.some((h) => h.function === "many_params")).toBe(true);
   });
+
+  it("counts parameters following splat markers", async () => {
+    await writeFile(
+      join(testDir, "keyword_only.py"),
+      `def f(*args, self):
+    pass
+
+def g(*, self):
+    pass
+`
+    );
+
+    const response = await handler({ path: join(testDir, "keyword_only.py") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    // A param named self after a splat/separator is not a receiver and must count
+    expect(result.files[0]?.metrics.max_parameters).toBe(1);
+  });
 });
 
 describe("Java", () => {

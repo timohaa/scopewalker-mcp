@@ -120,6 +120,134 @@ describe("documentationCoverage tool", () => {
   });
 });
 
+describe("documentationCoverage tool - arrow functions", () => {
+  let arrowDir: string;
+  const arrowHandler = getToolHandler(
+    registerDocumentationCoverageTool,
+    "get_documentation_coverage"
+  );
+
+  beforeAll(async () => {
+    arrowDir = join(tmpdir(), `scopewalker-doc-arrow-test-${String(Date.now())}`);
+    await mkdir(arrowDir, { recursive: true });
+  });
+
+  afterAll(async () => {
+    await rm(arrowDir, { recursive: true, force: true });
+  });
+
+  it("does not count inline callback arrows as documentable items", async () => {
+    await writeFile(
+      join(arrowDir, "callbacks.ts"),
+      `/** Doc */
+export function getIds(items) {
+  return items.map(item => item.id);
+}
+`
+    );
+
+    const response = await arrowHandler({ path: join(arrowDir, "callbacks.ts") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    expect(result.coverage.documented).toBe(1);
+    expect(result.coverage.undocumented).toBe(0);
+    expect(result.coverage.percentage).toBe(100);
+  });
+
+  it("counts name-bound arrows under the bound name, including block bodies", async () => {
+    await writeFile(
+      join(arrowDir, "named.ts"),
+      `const identity = (a) => a;
+
+const withBlock = (x) => {
+  return x + 1;
+};
+`
+    );
+
+    const response = await arrowHandler({ path: join(arrowDir, "named.ts") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    const names = result.undocumented_items.map((i) => i.name);
+    expect(names).toContain("identity");
+    expect(names).toContain("withBlock");
+    // The parameter/body identifier "a" must never be reported as a function name
+    expect(names).not.toContain("a");
+    expect(names).not.toContain("x");
+  });
+});
+
+describe("documentationCoverage tool - TS decorators", () => {
+  let decoratorDir: string;
+  const decoratorHandler = getToolHandler(
+    registerDocumentationCoverageTool,
+    "get_documentation_coverage"
+  );
+
+  beforeAll(async () => {
+    decoratorDir = join(tmpdir(), `scopewalker-doc-decorator-test-${String(Date.now())}`);
+    await mkdir(decoratorDir, { recursive: true });
+
+    await writeFile(
+      join(decoratorDir, "decorated.ts"),
+      `/** A documented decorated service. */
+@Injectable()
+export class DecoratedService {
+  /** A documented decorated method. */
+  @Log()
+  run(): void {}
+}
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(decoratorDir, { recursive: true, force: true });
+  });
+
+  it("finds doc comments above decorators for classes and methods", async () => {
+    const response = await decoratorHandler({ path: join(decoratorDir, "decorated.ts") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    expect(result.coverage.documented).toBe(2);
+    expect(result.coverage.undocumented).toBe(0);
+  });
+});
+
+describe("documentationCoverage tool - non-doc block comments", () => {
+  let blockDir: string;
+  const blockHandler = getToolHandler(
+    registerDocumentationCoverageTool,
+    "get_documentation_coverage"
+  );
+
+  beforeAll(async () => {
+    blockDir = join(tmpdir(), `scopewalker-doc-block-test-${String(Date.now())}`);
+    await mkdir(blockDir, { recursive: true });
+
+    await writeFile(
+      join(blockDir, "eslint.ts"),
+      `/* eslint-disable no-console */
+export function log(x: string) {
+  console.log(x);
+}
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(blockDir, { recursive: true, force: true });
+  });
+
+  it("does not treat plain /* */ block comments as documentation", async () => {
+    const response = await blockHandler({ path: join(blockDir, "eslint.ts") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    expect(result.coverage.documented).toBe(0);
+    expect(result.undocumented_items.map((i) => i.name)).toContain("log");
+  });
+});
+
 describe("documentationCoverage tool - multi-language", () => {
   let langTestDir: string;
   const langHandler = getToolHandler(

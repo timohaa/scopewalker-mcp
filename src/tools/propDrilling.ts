@@ -103,7 +103,7 @@ export function registerPropDrillingTool(server: McpServer): void {
         is_directory: isDirectory,
         threaded_parameters: args.summary_only === true ? [] : limited,
         summary: {
-          files_analyzed: filePaths.length,
+          files_analyzed: fileAnalyses.length,
           total_parameters_scanned: totalParamsScanned,
           threaded_parameters_found: totalFound,
           highest_occurrence: highest,

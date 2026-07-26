@@ -17,6 +17,14 @@ export function baz(x: number): number { return x; }`;
     expect(functions.length).toBeGreaterThanOrEqual(1);
   });
 
+  it("treats unparenthesized single-param arrows as anonymous", async () => {
+    const code = `const dbl = x => x * 2;
+const dbl2 = (x) => x * 2;`;
+    const functions = await getFunctions(code, "typescript");
+    // The bare parameter identifier must not be mistaken for a function name
+    expect(functions.map((f) => f.name)).toEqual(["<anonymous>", "<anonymous>"]);
+  });
+
   it("extracts TypeScript class methods", async () => {
     const code = `class MyClass {
   method1() {}
