@@ -35,7 +35,7 @@ const grammarLoaders: Record<SupportedLanguage, GrammarLoader> = {
     return mod.default as Parser.Language | undefined;
   },
   cpp: async () => {
-    const mod = await import("tree-sitter-c");
+    const mod = await import("tree-sitter-cpp");
     return mod.default as Parser.Language | undefined;
   },
   ruby: async () => {

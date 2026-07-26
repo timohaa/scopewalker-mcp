@@ -61,6 +61,7 @@ const FUNCTION_QUERIES: Record<SupportedLanguage, string> = {
   `,
   cpp: `
     (function_definition declarator: (function_declarator declarator: (identifier) @name)) @func
+    (function_definition declarator: (function_declarator declarator: (field_identifier) @name)) @func
     (function_definition declarator: (function_declarator declarator: (qualified_identifier) @name)) @func
   `,
   ruby: `
@@ -192,13 +193,22 @@ function getFunctionNodeTypes(language: SupportedLanguage): string[] {
 
 /** Extracts function name from AST node, handling language-specific structures. */
 function extractFunctionName(node: Parser.SyntaxNode): string | null {
+  // Arrow functions are anonymous: an identifier child is an unparenthesized
+  // parameter (`x => ...`) or expression body, never the function's name.
+  if (node.type === "arrow_function") {
+    return null;
+  }
   for (const child of node.children) {
     if (isNameNode(child)) {
       return child.text;
     }
     if (child.type === "function_declarator") {
       for (const grandchild of child.children) {
-        if (grandchild.type === "identifier" || grandchild.type === "qualified_identifier") {
+        if (
+          grandchild.type === "identifier" ||
+          grandchild.type === "field_identifier" ||
+          grandchild.type === "qualified_identifier"
+        ) {
           return grandchild.text;
         }
       }

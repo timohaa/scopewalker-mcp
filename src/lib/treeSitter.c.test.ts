@@ -49,3 +49,46 @@ int second(void) {
     expect(second?.startLine).toBe(6);
   });
 });
+
+describe("C++ language support", () => {
+  it("parses C++ constructs with the real C++ grammar", async () => {
+    const tree = await parseCode("class Foo { public: void bar() {} };", "cpp");
+    expect(tree).not.toBeNull();
+    expect(tree?.rootNode.type).toBe("translation_unit");
+    // The C grammar cannot parse class definitions; the C++ grammar can
+    expect(tree?.rootNode.children.map((c) => c.type)).toContain("class_specifier");
+  });
+
+  it("extracts class methods, namespaced functions, and free functions", async () => {
+    const code = `#include <string>
+
+namespace util {
+int helper(int x) {
+  return x + 1;
+}
+}
+
+class Widget {
+public:
+  void render(int depth) {
+    depth++;
+  }
+};
+
+void Widget::resize(int w, int h) {
+  w += h;
+}
+
+int main() {
+  return 0;
+}
+`;
+    const functions = await getFunctions(code, "cpp");
+    const names = functions.map((f) => f.name);
+
+    expect(names).toContain("helper");
+    expect(names).toContain("render");
+    expect(names).toContain("Widget::resize");
+    expect(names).toContain("main");
+  });
+});

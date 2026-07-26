@@ -38,7 +38,7 @@ describe("treeSitterGrammars", () => {
       expect(grammar).not.toBeNull();
     });
 
-    it("loads C++ grammar (uses C parser)", async () => {
+    it("loads C++ grammar", async () => {
       const grammar = await loadGrammar("cpp");
       expect(grammar).not.toBeNull();
     });
