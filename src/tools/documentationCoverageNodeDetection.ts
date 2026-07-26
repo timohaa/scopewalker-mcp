@@ -6,35 +6,52 @@ export interface DocumentableNode {
   lineCount: number;
 }
 
+const FUNC_TYPES = [
+  "function_declaration",
+  "function_definition",
+  "function_item",
+  "function_expression",
+];
+
+// C/C++ record bodies are documentable classes; the grammar names them by keyword.
+const CLASS_TYPES = [
+  "class_declaration",
+  "class_definition",
+  "class",
+  "class_specifier",
+  "struct_specifier",
+];
+
+const METHOD_TYPES = ["method_definition", "method_declaration", "method", "singleton_method"];
+
+/** Classifies a node as function, class, or method, or null if not documentable. */
+function getDocumentableType(node: Parser.SyntaxNode): "function" | "class" | "method" | null {
+  if (CLASS_TYPES.includes(node.type)) return "class";
+  if (METHOD_TYPES.includes(node.type)) return "method";
+
+  // C/C++ members share their node types with free functions and data fields,
+  // so the enclosing record body is what marks them as methods.
+  const inRecordBody = node.parent?.type === "field_declaration_list";
+  if (node.type === "field_declaration") {
+    return inRecordBody && hasFunctionDeclarator(node) ? "method" : null;
+  }
+  if (FUNC_TYPES.includes(node.type)) {
+    return inRecordBody ? "method" : "function";
+  }
+
+  // C/C++ function declarations in headers (prototypes)
+  if (node.type === "declaration" && hasFunctionDeclarator(node)) return "function";
+
+  return null;
+}
+
 /** Returns documentable info if node is a function, class, or method. */
 export function getDocumentableNode(node: Parser.SyntaxNode): DocumentableNode | null {
   if (node.type === "arrow_function") {
     return getNamedArrowFunction(node);
   }
 
-  const funcTypes = [
-    "function_declaration",
-    "function_definition",
-    "function_item",
-    "function_expression",
-  ];
-
-  const classTypes = ["class_declaration", "class_definition", "class"];
-  const methodTypes = ["method_definition", "method_declaration", "method", "singleton_method"];
-
-  let type: "function" | "class" | "method" | null = null;
-
-  if (funcTypes.includes(node.type)) {
-    type = "function";
-  } else if (classTypes.includes(node.type)) {
-    type = "class";
-  } else if (methodTypes.includes(node.type)) {
-    type = "method";
-  } else if (node.type === "declaration" && hasFunctionDeclarator(node)) {
-    // C/C++ function declarations in headers (prototypes)
-    type = "function";
-  }
-
+  const type = getDocumentableType(node);
   if (type === null) return null;
 
   const name = extractName(node);
@@ -79,8 +96,20 @@ function hasFunctionDeclarator(node: Parser.SyntaxNode): boolean {
   return false;
 }
 
+// C/C++ node types whose name lives inside a declarator rather than a direct child.
+const C_DECLARATOR_HOLDERS = ["declaration", "field_declaration", "function_definition"];
+
 /** Extracts name from identifier children of a node. */
 export function extractName(node: Parser.SyntaxNode): string | null {
+  // C/C++ nest the name inside declarators for prototypes (`declaration`,
+  // `field_declaration`) and bodies (`function_definition`) alike. This runs
+  // before the identifier scan because a class-typed return value (`Point
+  // make()`) puts a type_identifier ahead of the declarator.
+  if (C_DECLARATOR_HOLDERS.includes(node.type)) {
+    const declaredName = extractNameFromCDeclaration(node);
+    if (declaredName !== null) return declaredName;
+  }
+
   for (const child of node.children) {
     if (
       child.type === "identifier" ||
@@ -92,17 +121,17 @@ export function extractName(node: Parser.SyntaxNode): string | null {
     }
   }
 
-  // For C/C++ declarations, the name is nested inside declarators
-  if (node.type === "declaration") {
-    return extractNameFromCDeclaration(node);
-  }
-
   return null;
 }
 
+// A declarator names its function differently by context: free functions use
+// `identifier`, out-of-line definitions `qualified_identifier` (`Widget::resize`),
+// and in-class members `field_identifier`.
+const DECLARATOR_NAME_TYPES = ["identifier", "qualified_identifier", "field_identifier"];
+
 /** Extracts identifier from a function_declarator node. */
 function getIdentifierFromFunctionDeclarator(node: Parser.SyntaxNode): string | null {
-  const identifier = node.children.find((c) => c.type === "identifier");
+  const identifier = node.children.find((c) => DECLARATOR_NAME_TYPES.includes(c.type));
   return identifier?.text ?? null;
 }
 
