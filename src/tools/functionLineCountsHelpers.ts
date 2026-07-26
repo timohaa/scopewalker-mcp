@@ -3,7 +3,13 @@ import type { FileFunctionLineCount, FunctionLineCountsResult, LineStats } from 
 
 /**
  * Calculates line statistics for a function using AST-based comment detection.
- * Uses tree-sitter parsed comments for accurate counting instead of heuristics.
+ * Each line is assigned to exactly one category, so code + blank + comment
+ * always equals total:
+ * - comment: every non-whitespace character lies inside a comment (a line with
+ *   code and a trailing comment counts as code); blank lines spanned by a
+ *   multi-line comment also count as comment
+ * - blank: whitespace-only lines outside comments
+ * - code: everything else
  */
 export function calculateFunctionLineStats(
   allLines: string[],
@@ -11,31 +17,62 @@ export function calculateFunctionLineStats(
   comments: CommentInfo[]
 ): LineStats {
   const functionLines = allLines.slice(fn.startLine - 1, fn.endLine);
+  const commentSpansByLine = collectCommentSpans(fn, comments);
+
   let blank = 0;
+  let comment = 0;
+  let code = 0;
 
-  for (const line of functionLines) {
+  for (const [index, line] of functionLines.entries()) {
+    const spans = commentSpansByLine.get(fn.startLine + index);
     if (line.trim() === "") {
-      blank++;
-    }
-  }
-
-  // Use AST-parsed comments to accurately count multi-line comment blocks within the function
-  const commentLinesInFunction = new Set<number>();
-  for (const comment of comments) {
-    if (comment.endLine >= fn.startLine && comment.startLine <= fn.endLine) {
-      const start = Math.max(comment.startLine, fn.startLine);
-      const end = Math.min(comment.endLine, fn.endLine);
-      for (let line = start; line <= end; line++) {
-        commentLinesInFunction.add(line);
+      if (spans) {
+        comment++;
+      } else {
+        blank++;
       }
+    } else if (spans && isFullyCommented(line, spans)) {
+      comment++;
+    } else {
+      code++;
     }
   }
 
-  const total = functionLines.length;
-  const comment = commentLinesInFunction.size;
-  const code = total - blank - comment;
+  return { total: functionLines.length, code, blank, comment };
+}
 
-  return { total, code, blank, comment };
+/** Maps each function line to the [start, end) column ranges covered by comments. */
+function collectCommentSpans(
+  fn: FunctionLocation,
+  comments: CommentInfo[]
+): Map<number, [number, number][]> {
+  const spansByLine = new Map<number, [number, number][]>();
+
+  for (const comment of comments) {
+    if (comment.endLine < fn.startLine || comment.startLine > fn.endLine) continue;
+
+    const first = Math.max(comment.startLine, fn.startLine);
+    const last = Math.min(comment.endLine, fn.endLine);
+    for (let line = first; line <= last; line++) {
+      const start = line === comment.startLine ? comment.startColumn : 0;
+      const end = line === comment.endLine ? comment.endColumn : Number.POSITIVE_INFINITY;
+      const spans = spansByLine.get(line) ?? [];
+      spans.push([start, end]);
+      spansByLine.set(line, spans);
+    }
+  }
+
+  return spansByLine;
+}
+
+/** Checks whether every non-whitespace character of a line falls inside a comment span. */
+function isFullyCommented(line: string, spans: [number, number][]): boolean {
+  for (let col = 0; col < line.length; col++) {
+    if (/\s/.test(line[col])) continue;
+    const covered = spans.some(([start, end]) => col >= start && col < end);
+    if (!covered) return false;
+  }
+  return true;
 }
 
 /** Sorts files and their functions by line count or name. */

@@ -244,6 +244,33 @@ describe("line statistics", () => {
     expect(fn?.lines.code).toBeLessThan(fn?.lines.total ?? 0);
   });
 
+  it("keeps line categories disjoint and non-negative", async () => {
+    await writeFile(
+      join(testDir, "edgeComments.ts"),
+      `export function blankInComment() { /*
+
+*/ }
+
+export function trailingComment() {
+  const x = 1; // trailing comment
+  return x;
+}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "edgeComments.ts") });
+    const result = parseContent<FunctionLineCountsResult>(response);
+    const file = result.files.find((f) => f.path.includes("edgeComments"));
+
+    // Blank line inside a block comment counts once, as comment; code stays non-negative
+    const blankInComment = file?.functions.find((f) => f.name === "blankInComment");
+    expect(blankInComment?.lines).toEqual({ total: 3, code: 2, blank: 0, comment: 1 });
+
+    // A line with code and a trailing comment counts as code, not comment
+    const trailingComment = file?.functions.find((f) => f.name === "trailingComment");
+    expect(trailingComment?.lines).toEqual({ total: 4, code: 4, blank: 0, comment: 0 });
+  });
+
   it("returns error for nonexistent path", async () => {
     const response = await handler({ path: "/nonexistent/path/12345" });
     expect(response.isError).toBe(true);

@@ -36,11 +36,11 @@ export interface TokeiOptions {
  */
 const EXTENSION_TO_LANGUAGE: Record<string, string> = {
   ts: "TypeScript",
-  tsx: "TypeScript",
+  tsx: "TSX",
   mts: "TypeScript",
   cts: "TypeScript",
   js: "JavaScript",
-  jsx: "JavaScript",
+  jsx: "JSX",
   mjs: "JavaScript",
   cjs: "JavaScript",
   py: "Python",
@@ -95,10 +95,9 @@ const EXTENSION_TO_LANGUAGE: Record<string, string> = {
 function extensionsToLanguages(extensions: string[]): string[] {
   const languages = new Set<string>();
   for (const ext of extensions) {
-    const lang = EXTENSION_TO_LANGUAGE[ext.toLowerCase()];
-    if (lang) {
-      languages.add(lang);
-    }
+    // Tokei's -t matching is case-insensitive, so "zig" matches its "Zig" language;
+    // a truly unknown name simply yields an empty result.
+    languages.add(EXTENSION_TO_LANGUAGE[ext.toLowerCase()] ?? ext);
   }
   return Array.from(languages);
 }
@@ -157,10 +156,10 @@ function buildArgs(path: string, options: TokeiOptions): string[] {
   const args = [path, "--output", "json"];
 
   if (options.extensions !== undefined && options.extensions.length > 0) {
+    // Always pass -t when the caller supplied extensions; omitting it would
+    // return counts for every language instead of the requested subset.
     const languages = extensionsToLanguages(options.extensions);
-    if (languages.length > 0) {
-      args.push("-t", languages.join(","));
-    }
+    args.push("-t", languages.join(","));
   }
 
   if (options.exclude !== undefined && options.exclude.length > 0) {

@@ -5,6 +5,10 @@ import { parseCode } from "./treeSitter.js";
 export interface CommentInfo {
   startLine: number;
   endLine: number;
+  /** 0-based column where the comment starts on its first line. */
+  startColumn: number;
+  /** 0-based column just past the comment's end on its last line. */
+  endColumn: number;
   text: string;
 }
 
@@ -33,6 +37,8 @@ function walkTreeForComments(node: Parser.SyntaxNode, comments: CommentInfo[]): 
     comments.push({
       startLine: node.startPosition.row + 1,
       endLine: node.endPosition.row + 1,
+      startColumn: node.startPosition.column,
+      endColumn: node.endPosition.column,
       text: node.text,
     });
   }
