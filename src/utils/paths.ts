@@ -45,7 +45,9 @@ function getAllowedRoots(): string[] {
 function isWithinAllowedRoots(resolvedPath: string, allowedRoots: string[]): boolean {
   return allowedRoots.some((root) => {
     const rel = relative(root, resolvedPath);
-    return rel === "" || (!rel.startsWith("..") && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
+    // rel === ".." or "..<sep>..." means the path escapes the root; a plain
+    // ".." prefix check would wrongly reject entries literally named "..foo".
+    return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
   });
 }
 

@@ -1,6 +1,7 @@
-import { stat, realpath } from "node:fs/promises";
+import { stat, realpath, mkdir, rm, writeFile } from "node:fs/promises";
 import type * as fsModule from "node:fs/promises";
-import { resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { validatePath, validateDirectory, validateFile } from "./paths.js";
 
@@ -87,6 +88,38 @@ describe("validatePath - SCOPEWALKER_ALLOWED_ROOTS", () => {
 
     const result = await validatePath("./src/index.ts");
     expect(result.valid).toBe(true);
+  });
+
+  it("accepts entries literally named with a '..' prefix inside an allowed root", async () => {
+    const tempRoot = join(tmpdir(), `scopewalker-paths-dotdot-${String(Date.now())}`);
+    await mkdir(tempRoot, { recursive: true });
+    try {
+      const dotDotFile = join(tempRoot, "..foo");
+      await writeFile(dotDotFile, "data");
+      process.env.SCOPEWALKER_ALLOWED_ROOTS = tempRoot;
+
+      const result = await validatePath(dotDotFile);
+      expect(result.valid).toBe(true);
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("still rejects the parent directory of an allowed root", async () => {
+    const tempParent = join(tmpdir(), `scopewalker-paths-parent-${String(Date.now())}`);
+    const tempRoot = join(tempParent, "root");
+    await mkdir(tempRoot, { recursive: true });
+    try {
+      process.env.SCOPEWALKER_ALLOWED_ROOTS = tempRoot;
+
+      const result = await validatePath(tempParent);
+      expect(result.valid).toBe(false);
+      if (!result.valid) {
+        expect(result.error.error.code).toBe("PERMISSION_DENIED");
+      }
+    } finally {
+      await rm(tempParent, { recursive: true, force: true });
+    }
   });
 
   it("parses comma-separated roots, trimming whitespace and dropping empty entries", async () => {
