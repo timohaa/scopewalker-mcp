@@ -43,6 +43,70 @@ func main() {
   });
 });
 
+describe("parameter counts across grammars", () => {
+  it("counts Rust parameters", async () => {
+    await writeFile(
+      join(testDir, "params.rs"),
+      `fn make(a: i32, b: i32, c: i32) -> i32 {
+    a + b + c
+}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "params.rs") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    expect(result.files[0]?.metrics.max_parameters).toBe(3);
+  });
+
+  it("counts Ruby parameters", async () => {
+    await writeFile(
+      join(testDir, "params.rb"),
+      `def baz(a, b, c, d)
+end
+`
+    );
+
+    const response = await handler({ path: join(testDir, "params.rb") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    expect(result.files[0]?.metrics.max_parameters).toBe(4);
+  });
+
+  it("counts C parameters nested inside the declarator", async () => {
+    await writeFile(
+      join(testDir, "params.c"),
+      `void helper(int a, int b, int c, int d, int e) {}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "params.c") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    expect(result.files[0]?.metrics.max_parameters).toBe(5);
+  });
+
+  it("expands Go grouped parameters and ignores the method receiver", async () => {
+    await writeFile(
+      join(testDir, "params.go"),
+      `package main
+
+type Point struct{ X int }
+
+// Grouped "a, b, c int" is a single AST node covering three parameters.
+func Make(a, b, c int, d string) int { return a }
+
+func (p *Point) Scale(f int) int { return f }
+`
+    );
+
+    const response = await handler({ path: join(testDir, "params.go") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    expect(result.files[0]?.metrics.max_parameters).toBe(4);
+  });
+});
+
 describe("Ruby", () => {
   it("counts Ruby requires correctly", async () => {
     await writeFile(

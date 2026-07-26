@@ -4,6 +4,7 @@ export { walkNode };
 import { countImports } from "../lib/treeSitter.js";
 import type { SupportedLanguage } from "../types/index.js";
 export { findHotspots, calculateSummary } from "./complexityMetricsHotspots.js";
+export { countParameters } from "./complexityMetricsParameters.js";
 
 /** Nesting depth above which a function is flagged as a hotspot. */
 export const HIGH_NESTING_THRESHOLD = 4;
@@ -79,89 +80,6 @@ function walkNestingDepth(node: Parser.SyntaxNode, currentDepth: number): number
   }
 
   return maxDepth;
-}
-
-/** Returns parameter count for function nodes, null for non-function nodes. */
-export function countParameters(
-  node: Parser.SyntaxNode,
-  language?: SupportedLanguage
-): number | null {
-  const funcTypes = [
-    "function_declaration",
-    "function_definition",
-    "method_definition",
-    "method_declaration",
-    "arrow_function",
-    "function_expression",
-  ];
-
-  if (!funcTypes.includes(node.type)) return null;
-
-  for (const child of node.children) {
-    if (
-      child.type === "formal_parameters" ||
-      child.type === "parameters" ||
-      child.type === "parameter_list"
-    ) {
-      return countActualParameters(child, language);
-    }
-  }
-
-  // Unparenthesized single-parameter arrow (`x => ...`): the parameter is a
-  // bare identifier child instead of a formal_parameters node.
-  if (node.type === "arrow_function" && node.childForFieldName("parameter") !== null) {
-    return 1;
-  }
-
-  return 0;
-}
-
-/**
- * Counts actual parameters, excluding language-specific non-parameter nodes.
- * For Python: excludes keyword_separator (*), list_splat_pattern (*args),
- * dictionary_splat_pattern (**kwargs), and self/cls as first parameter.
- */
-function countActualParameters(
-  paramsNode: Parser.SyntaxNode,
-  language?: SupportedLanguage
-): number {
-  const children = paramsNode.namedChildren;
-
-  if (language === "python") {
-    let count = 0;
-    let isFirst = true;
-
-    for (const child of children) {
-      // Only the first child can be the receiver; clear the flag unconditionally
-      // so params after skipped splats/separators are not mistaken for it
-      const wasFirst = isFirst;
-      isFirst = false;
-
-      // Skip keyword_separator (*) used to mark keyword-only parameters
-      if (child.type === "keyword_separator") {
-        continue;
-      }
-
-      // Skip list_splat_pattern (*args) and dictionary_splat_pattern (**kwargs)
-      if (child.type === "list_splat_pattern" || child.type === "dictionary_splat_pattern") {
-        continue;
-      }
-
-      // Skip self/cls as first parameter (method receiver)
-      if (wasFirst) {
-        const paramName = child.type === "identifier" ? child.text : null;
-        if (paramName === "self" || paramName === "cls") {
-          continue;
-        }
-      }
-
-      count++;
-    }
-
-    return count;
-  }
-
-  return children.length;
 }
 
 /**
