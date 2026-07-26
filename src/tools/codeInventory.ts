@@ -8,6 +8,7 @@ import type { CodeInventoryResult, FileInventory, InventoryItem } from "../types
 import { isFileWithinSizeLimit } from "../utils/fileGuards.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import { attachGoMethods } from "./codeInventoryGoMethods.js";
 import { walkNode, extractItem, calculateSummary } from "./codeInventoryHelpers.js";
 
 const DEFAULT_LIMIT = 20;
@@ -159,6 +160,10 @@ function extractInventoryItems(
       items.push(item);
     }
   });
+
+  if (language === "go") {
+    attachGoMethods(rootNode, items, includePrivate);
+  }
 
   return items;
 }

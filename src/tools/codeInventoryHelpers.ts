@@ -8,6 +8,8 @@ import type {
   MethodInfo,
   SupportedLanguage,
 } from "../types/index.js";
+import { getItemType } from "./codeInventoryItemTypes.js";
+export { getItemType };
 
 /** Extracts an inventory item from an AST node if it represents a class, function, etc. */
 export function extractItem(
@@ -44,72 +46,6 @@ export function extractItem(
   return item;
 }
 
-// Node types that can appear as the value of a const/let declarator and make it a function.
-const FUNCTION_VALUE_TYPES = [
-  "arrow_function",
-  "function_expression",
-  "function",
-  "generator_function",
-];
-
-/** Checks whether a const/let declaration binds a function value (arrow or function expression). */
-function hasFunctionInitializer(node: Parser.SyntaxNode): boolean {
-  return node.children.some(
-    (child) =>
-      child.type === "variable_declarator" &&
-      child.children.some((value) => FUNCTION_VALUE_TYPES.includes(value.type))
-  );
-}
-
-/** Maps AST node types to inventory item types (class, function, interface, etc.). */
-export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | null {
-  // Python defs directly inside a class body are methods of that class, not
-  // standalone functions (analogous to the Ruby guard below).
-  if (
-    node.type === "function_definition" &&
-    node.parent?.type === "block" &&
-    node.parent.parent?.type === "class_definition"
-  ) {
-    return null;
-  }
-
-  // TS/JS const/let: function-valued bindings are functions, plain values are
-  // constants (consistent with how variable_declaration is treated).
-  if (node.type === "lexical_declaration") {
-    return hasFunctionInitializer(node) ? "function" : "constant";
-  }
-
-  const typeMap: Partial<Record<string, InventoryItem["type"]>> = {
-    class_declaration: "class",
-    class_definition: "class",
-    class: "class",
-    function_declaration: "function",
-    function_definition: "function",
-    function_item: "function",
-    arrow_function: "function",
-    interface_declaration: "interface",
-    type_alias_declaration: "interface",
-    enum_declaration: "enum",
-    enum_definition: "enum",
-    const_declaration: "constant",
-    variable_declaration: "constant",
-  };
-
-  const mapped = typeMap[node.type];
-  if (mapped) return mapped;
-
-  // Ruby has no distinct top-level function node type: "method"/"singleton_method"
-  // covers both module-level defs and class members, distinguished only by parent.
-  if (
-    (node.type === "method" || node.type === "singleton_method") &&
-    node.parent?.type !== "body_statement"
-  ) {
-    return "function";
-  }
-
-  return null;
-}
-
 // "constant" covers Ruby class/module names, which use a distinct node type from other languages.
 const IDENTIFIER_TYPES = ["identifier", "type_identifier", "property_identifier", "constant"];
 
@@ -124,18 +60,33 @@ function extractIdentifierFromDeclarator(declarator: Parser.SyntaxNode): string 
   return identifier?.text ?? null;
 }
 
+// A declarator names its function differently by context: free functions use
+// `identifier`, out-of-line definitions `qualified_identifier` (`Widget::resize`),
+// and in-class members `field_identifier`.
+const DECLARATOR_NAME_TYPES = ["identifier", "qualified_identifier", "field_identifier"];
+
 /** Extracts the function name from a C/C++ function_declarator node. */
 function extractIdentifierFromFunctionDeclarator(declarator: Parser.SyntaxNode): string | null {
-  for (const child of declarator.children) {
-    if (child.type === "identifier" || child.type === "qualified_identifier") {
-      return child.text;
-    }
-  }
-  return null;
+  const name = declarator.children.find((child) => DECLARATOR_NAME_TYPES.includes(child.type));
+  return name?.text ?? null;
 }
 
 /** Extracts the name identifier from a declaration node. */
 export function extractName(node: Parser.SyntaxNode): string | null {
+  // Arrow functions are anonymous: an identifier child is an unparenthesized
+  // parameter (`x => ...`) or expression body, never the function's name.
+  // Named arrows are inventoried via their enclosing lexical_declaration.
+  if (node.type === "arrow_function") {
+    return null;
+  }
+
+  // Checked ahead of the identifier scan because a class-typed return value
+  // (`Point make()`) puts a type_identifier before the declarator.
+  const declarator = node.children.find((child) => child.type === "function_declarator");
+  if (declarator) {
+    return extractIdentifierFromFunctionDeclarator(declarator);
+  }
+
   for (const child of node.children) {
     if (isIdentifierNode(child)) {
       return child.text;
@@ -143,8 +94,9 @@ export function extractName(node: Parser.SyntaxNode): string | null {
     if (child.type === "variable_declarator") {
       return extractIdentifierFromDeclarator(child);
     }
-    if (child.type === "function_declarator") {
-      return extractIdentifierFromFunctionDeclarator(child);
+    // Go wraps the type name one level down, in a type_spec or type_alias.
+    if (child.type === "type_spec" || child.type === "type_alias") {
+      return extractName(child);
     }
   }
   return null;
@@ -194,8 +146,9 @@ export function isExported(node: Parser.SyntaxNode, language: SupportedLanguage)
 }
 
 // Node types that hold a class's direct member list, per language grammar
-// (TS/JS/Java: class_body, Python: block, Ruby: body_statement).
-const CLASS_BODY_TYPES = ["class_body", "block", "body_statement"];
+// (TS/JS/Java: class_body, Python: block, Ruby: body_statement,
+// C/C++/Rust: field_declaration_list).
+const CLASS_BODY_TYPES = ["class_body", "block", "body_statement", "field_declaration_list"];
 
 /**
  * Extracts method definitions from a class node.
@@ -239,7 +192,14 @@ export function isMethodNode(node: Parser.SyntaxNode): boolean {
     "method",
     "singleton_method",
   ];
-  return methodTypes.includes(node.type);
+  if (methodTypes.includes(node.type)) return true;
+
+  // C/C++ members declared without a body share a node type with data fields,
+  // so only those carrying a function_declarator are methods.
+  return (
+    node.type === "field_declaration" &&
+    node.children.some((child) => child.type === "function_declarator")
+  );
 }
 
 /** Extracts the method name from a method definition node. */
@@ -251,6 +211,10 @@ export function extractMethodName(node: Parser.SyntaxNode): string | null {
       child.type === "field_identifier"
     ) {
       return child.text;
+    }
+    // C/C++ nest the member name inside its declarator.
+    if (child.type === "function_declarator") {
+      return extractIdentifierFromFunctionDeclarator(child);
     }
   }
   return null;
