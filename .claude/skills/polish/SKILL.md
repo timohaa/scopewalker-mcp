@@ -22,7 +22,7 @@ Run these subagents **in this exact order**, one at a time, using the Agent tool
 | 4    | `comment-fixer`          | Clean up comments (remove redundant, fix misleading, ensure comments explain WHY not WHAT).                                                                                               |
 | 5    | `lint-type-format-fixer` | **Second pass.** Re-run after standards-enforcer — skip if steps 3–4 made no changes.                                                                                                     |
 | 6    | `smart-test-fixer`       | **Second pass.** Re-run after standards-enforcer — skip if steps 3–4 made no changes.                                                                                                     |
-| 7    | `docs-reality-sync`      | Audit and sync documentation (`TOOLS.md`, `docs/`, `AGENTS.md`) with the final codebase state.                                                                                            |
+| 7    | `docs-reality-sync`      | Audit and sync documentation (`README.md`, `TOOLS.md`, `docs/`, `AGENTS.md`, `.claude/`) with the final codebase state.                                                                   |
 | 8    | `agents-md-enforcer`     | Audit `AGENTS.md` (and its `@path` imports) against Anthropic's Claude Code best practices: prune derivable, redundant, or platitudinous content; tighten vague rules; verify references. |
 | 9    | `markdown-quality-fixer` | Lint and format all modified markdown files. Runs last to catch `.md` changes from earlier steps (especially docs-reality-sync and agents-md-enforcer).                                   |
 

@@ -43,15 +43,17 @@ Tools supporting grep: `get_line_counts`, `get_functions`, `get_code_inventory`
 
 Function detection and parsing support:
 
-| Language              | Detection                            |
-|-----------------------|--------------------------------------|
-| TypeScript/JavaScript | `function`, arrow functions, methods |
-| Python                | `def`, `async def`                   |
-| Go                    | `func`                               |
-| Rust                  | `fn`                                 |
-| Java                  | method declarations                  |
-| C/C++                 | function definitions                 |
-| Ruby                  | `def`                                |
+| Language              | Extensions                                   | Detection                            |
+|-----------------------|----------------------------------------------|--------------------------------------|
+| TypeScript/JavaScript | `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs` | `function`, arrow functions, methods |
+| Python                | `.py`                                        | `def`, `async def`                   |
+| Go                    | `.go`                                        | `func`, methods with receivers       |
+| Rust                  | `.rs`                                        | `fn` (including `impl` methods)      |
+| Java                  | `.java`                                      | method and constructor declarations  |
+| C/C++                 | `.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp`    | function definitions                 |
+| Ruby                  | `.rb`                                        | `def`, `def self.<name>`             |
+
+Files with any other extension are skipped by the AST-based tools. `get_line_counts` uses tokei instead, so it reports on every language tokei recognizes.
 
 ## Error Codes
 

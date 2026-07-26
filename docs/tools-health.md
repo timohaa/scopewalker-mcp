@@ -67,10 +67,25 @@ Generates a comprehensive inventory of classes, methods, functions, and exports.
 
 **Supported Symbol Types:** Classes, Functions, Interfaces/Types, Enums, Constants (each item includes an `exported` flag)
 
+Each language's declarations map onto those five types:
+
+| Language              | Class             | Interface                       | Enum   | Function                                      | Constant                  |
+|-----------------------|-------------------|---------------------------------|--------|-----------------------------------------------|---------------------------|
+| TypeScript/JavaScript | `class`           | `interface`, `type`             | `enum` | `function`, `const`/`let` bound to a function | other `const`/`let`/`var` |
+| Python                | `class`           | —                               | —      | module-level `def`                            | —                         |
+| Go                    | `struct` types    | `interface` types, type aliases | —      | `func`                                        | —                         |
+| Rust                  | `struct`          | `trait`                         | `enum` | `fn`                                          | —                         |
+| Java                  | `class`           | `interface`                     | `enum` | —                                             | —                         |
+| C/C++                 | `class`, `struct` | —                               | `enum` | function definitions                          | —                         |
+| Ruby                  | `class`           | —                               | —      | top-level `def`                               | —                         |
+
 Notes:
 
 - Results are grouped by file; `group_by` is accepted for forward compatibility and currently returns file-grouped results.
-- Each file returns at most 100 items to prevent oversized responses; `limit` trims the number of files.
+- Each file returns at most 100 items to prevent oversized responses; `limit` trims the number of files. Files with no matching items are omitted from `inventory` entirely.
+- Methods are nested under the class they belong to, not repeated as top-level functions. Go methods are matched to their type by receiver (`func (p *Point) Scale()`); C/C++ member functions are picked up from the record body, including declaration-only members. Rust `impl` methods are currently reported as standalone functions.
+- `exported` is derived from the TS/JS `export` keyword and from module scope in Python. Go's capitalization rule and Rust's `pub` are not interpreted, so items in those languages report `exported: false`.
+- `include_private` filters on naming and visibility conventions: a leading underscore, or an explicit `private` modifier in TypeScript.
 
 **Response:**
 
@@ -121,10 +136,12 @@ Note: All metrics are currently calculated; the `metrics` parameter is accepted 
 
 **Available Metrics:**
 
-- `nesting_depth`: Maximum nesting level (loops, conditionals, callbacks)
+- `nesting_depth`: Maximum nesting level (loops, conditionals, callbacks). `else if` chains count as sibling branches, not extra nesting
 - `parameters`: Function parameter counts; also counts props passed to React/JSX components (PascalCase elements) so heavily-propped components surface alongside high-arity functions
 - `dependencies`: Import/require count per file
 - `cognitive`: Simplified cognitive complexity score
+
+Parameter counting is language-aware: Python skips `self`/`cls`, `*args`, `**kwargs`, and the bare `*` keyword-only marker; Go excludes the method receiver and expands grouped declarations (`func f(a, b, c int)` counts as 3); C/C++ parameter lists are read out of the function declarator.
 
 Each hotspot's `issue` field is one of `nesting_depth`, `parameters`, or `jsx_props` (a JSX component receiving more than 5 props).
 

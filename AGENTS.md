@@ -2,7 +2,7 @@
 
 ## What
 
-MCP server providing codebase analysis tools for AI assistants. Thin orchestration layer over `tree-sitter` (parsing), `tokei` (line counting), and `fast-glob` (file discovery).
+MCP server providing codebase analysis tools for AI assistants. Thin orchestration layer over external parsing, line-counting, and file-discovery tools — see `package.json` for the current set.
 
 ## Why
 

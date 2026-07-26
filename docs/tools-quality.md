@@ -32,6 +32,8 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 | C/C++                 | JSDoc-style (`/** */`)      |
 | Ruby                  | Line comments (`#`)         |
 
+**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes.
+
 **Response:**
 
 ```json
@@ -50,7 +52,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
     "fully_documented_files": 38,
     "zero_documentation_files": 2
   },
-  "truncated": { "items": 50, "total": 120 }
+  "truncated": { "items": 20, "total": 120 }
 }
 ```
 
@@ -69,9 +71,9 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 
 ## get_code_smells
 
-Detects code smells like TODO, FIXME, HACK, XXX, BUG, UNUSED, and DEPRECATED comments, plus unsafe casts in TypeScript/JavaScript.
+Detects code smells like TODO, FIXME, HACK, XXX, BUG, UNUSED, and DEPRECATED comments, plus unsafe casts in TypeScript.
 
-**Note:** Comment-based smells use tree-sitter to scan actual comments, avoiding false positives from string literals and code. The `unsafe_cast` smell is detected via AST patterns in TypeScript/JavaScript.
+**Note:** Comment-based smells use tree-sitter to scan actual comments, avoiding false positives from string literals and code. The `unsafe_cast` smell is detected via AST patterns and covers double casts that launder a type through `unknown` or `any` (`x as unknown as T`, `x as any as T`); it is TypeScript-only, since JavaScript has no `as` expressions.
 
 **Parameters:**
 

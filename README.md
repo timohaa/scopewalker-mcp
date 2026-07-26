@@ -12,7 +12,7 @@ It's a local MCP server (open source, runs over stdio, makes no network calls) t
 - `check_thresholds` - flags files and functions exceeding size thresholds (defaults: 300 lines per file, 100 per function)
 - `get_code_inventory` - classes with their methods, functions, interfaces/types, enums, and constants, each marked exported or not; private symbols hidden by default
 - `get_documentation_coverage` - coverage percentage plus every function, class, or method missing a doc comment (JSDoc, Python docstrings, Rust `///`, and other per-language formats)
-- `get_code_smells` - TODO/FIXME/HACK/XXX/BUG/UNUSED/DEPRECATED markers found by scanning actual comments via the AST (no false positives from string literals), plus `as unknown as` casts in TypeScript
+- `get_code_smells` - TODO/FIXME/HACK/XXX/BUG/UNUSED/DEPRECATED markers found by scanning actual comments via the AST (no false positives from string literals), plus `as unknown as` / `as any as` double casts in TypeScript
 - `get_prop_drilling` - parameter names threaded through many functions and files, with forwarding evidence and a high/medium/low risk rating
 
 It's tree-sitter (parsing) + tokei (line counting) + fast-glob (file discovery) under the hood; nothing is custom-parsed. Tested on macOS with Claude Code, but should work with Cursor, VS Code, Windsurf, Gemini CLI, Codex, or anything else that speaks MCP.
@@ -199,15 +199,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [docs/pat
 
 ## Supported Languages
 
-Function detection and parsing support:
+The AST-based tools (everything except `get_line_counts`) parse:
 
-- TypeScript/JavaScript
-- Python
-- Go
-- Rust
-- Java
-- C/C++
-- Ruby
+- TypeScript/JavaScript (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`)
+- Python (`.py`)
+- Go (`.go`)
+- Rust (`.rs`)
+- Java (`.java`)
+- C/C++ (`.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp`)
+- Ruby (`.rb`)
+
+`get_line_counts` runs through tokei, so it reports on every language tokei recognizes. See [docs/tools-overview.md](docs/tools-overview.md#supported-languages) for what is detected per language.
 
 ## License
 
