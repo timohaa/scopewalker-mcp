@@ -1,0 +1,188 @@
+import type Parser from "tree-sitter";
+import type { SupportedLanguage } from "../types/index.js";
+
+/** Finds the parameter list node within a function node. */
+function findParamListNode(funcNode: Parser.SyntaxNode): Parser.SyntaxNode | null {
+  for (const child of funcNode.children) {
+    if (
+      child.type === "formal_parameters" ||
+      child.type === "parameters" ||
+      child.type === "parameter_list" ||
+      child.type === "method_parameters"
+    ) {
+      return child;
+    }
+  }
+  return null;
+}
+
+/**
+ * Extracts parameter names from a function node.
+ * Handles typed params, destructured params, rest params across languages.
+ */
+export function extractParameterNames(
+  funcNode: Parser.SyntaxNode,
+  language: SupportedLanguage
+): string[] {
+  const paramListNode = findParamListNode(funcNode);
+  if (paramListNode === null) return [];
+
+  const names: string[] = [];
+
+  if (language === "python") {
+    extractPythonParamNames(paramListNode, names);
+  } else {
+    for (const child of paramListNode.namedChildren) {
+      extractNamesFromParamNode(child, names, language);
+    }
+  }
+
+  return names;
+}
+
+/** Extracts Python parameter names, skipping self/cls/*args/**kwargs. */
+function extractPythonParamNames(paramListNode: Parser.SyntaxNode, names: string[]): void {
+  let isFirst = true;
+
+  for (const child of paramListNode.namedChildren) {
+    if (child.type === "keyword_separator") continue;
+    if (child.type === "list_splat_pattern" || child.type === "dictionary_splat_pattern") continue;
+
+    if (isFirst) {
+      isFirst = false;
+      const paramName = child.type === "identifier" ? child.text : null;
+      if (paramName === "self" || paramName === "cls") continue;
+    }
+
+    if (child.type === "identifier") {
+      names.push(child.text);
+    } else if (
+      child.type === "typed_parameter" ||
+      child.type === "default_parameter" ||
+      child.type === "typed_default_parameter"
+    ) {
+      const id = child.namedChildren.find((c) => c.type === "identifier");
+      if (id !== undefined) names.push(id.text);
+    }
+  }
+}
+
+/** Extracts the value-side name from an object destructuring pair: { userId: id } -> "id". */
+function extractPairPatternName(pairNode: Parser.SyntaxNode): string | null {
+  const lastIdx = pairNode.namedChildren.length - 1;
+  if (lastIdx < 0) return null;
+  const valueNode = pairNode.namedChildren[lastIdx];
+  return valueNode.type === "identifier" ? valueNode.text : null;
+}
+
+/** Extracts names from a TS/JS destructured object parameter: { userId, theme }. */
+function extractObjectPatternNames(node: Parser.SyntaxNode, names: string[]): void {
+  for (const child of node.namedChildren) {
+    if (child.type === "shorthand_property_identifier_pattern") {
+      names.push(child.text);
+    } else if (child.type === "pair_pattern") {
+      const name = extractPairPatternName(child);
+      if (name !== null) names.push(name);
+    }
+  }
+}
+
+/** Extracts the first identifier child name from a node (for Rust parameter nodes). */
+function extractFirstIdentifierChild(node: Parser.SyntaxNode): string | null {
+  for (const child of node.namedChildren) {
+    if (child.type === "identifier") return child.text;
+  }
+  return null;
+}
+
+/** Recursively extracts identifiers from a single parameter node. */
+function extractNamesFromParamNode(
+  node: Parser.SyntaxNode,
+  names: string[],
+  language: SupportedLanguage
+): void {
+  switch (node.type) {
+    case "identifier":
+      names.push(node.text);
+      return;
+
+    // TS/JS destructured object parameter: { userId, theme }
+    case "object_pattern":
+      extractObjectPatternNames(node, names);
+      return;
+
+    // TS/JS array destructuring: [first, second]
+    case "array_pattern":
+      for (const child of node.namedChildren) {
+        if (child.type === "identifier") names.push(child.text);
+      }
+      return;
+
+    // TS/JS rest parameter: ...rest
+    case "rest_pattern":
+      for (const child of node.namedChildren) {
+        if (child.type === "identifier") names.push(child.text);
+      }
+      return;
+
+    // TS typed params: required_parameter, optional_parameter
+    case "required_parameter":
+    case "optional_parameter": {
+      if (node.namedChildren.length > 0) {
+        extractNamesFromParamNode(node.namedChildren[0], names, language);
+      }
+      return;
+    }
+
+    // Go/C/C++: parameter_declaration — `name Type` (Go allows multiple names: `a, b int`)
+    case "parameter_declaration": {
+      collectDeepIdentifiers(node, names);
+      return;
+    }
+
+    // Rust: parameter — pattern: Type
+    case "parameter": {
+      const rustId = extractFirstIdentifierChild(node);
+      if (rustId !== null) names.push(rustId);
+      return;
+    }
+
+    // Java: formal_parameter — Type name
+    case "formal_parameter": {
+      collectDeepIdentifiers(node, names);
+      return;
+    }
+
+    // Fallback: try to find an identifier child
+    default: {
+      const fallbackId = extractFirstIdentifierChild(node);
+      if (fallbackId !== null) names.push(fallbackId);
+    }
+  }
+}
+
+/**
+ * Collects identifiers from a parameter declaration.
+ * Handles Go multi-name params (`a, b int` — several identifier children) and
+ * C/Java declarations where the name nests inside a declarator.
+ */
+function collectDeepIdentifiers(node: Parser.SyntaxNode, names: string[]): void {
+  let found = false;
+  for (const child of node.namedChildren) {
+    if (child.type === "identifier") {
+      names.push(child.text);
+      found = true;
+    }
+  }
+  if (found) return;
+  for (const child of node.namedChildren) {
+    if (child.type.includes("declarator")) {
+      for (const grandchild of child.namedChildren) {
+        if (grandchild.type === "identifier") {
+          names.push(grandchild.text);
+          return;
+        }
+      }
+    }
+  }
+}
