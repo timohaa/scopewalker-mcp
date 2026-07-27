@@ -37,6 +37,9 @@ function isElseIf(node: Parser.SyntaxNode): boolean {
   return false;
 }
 
+// Rust models control flow as expressions; Ruby names its nodes after the
+// keyword. Ruby's brace block is deliberately absent: `block` is also Rust's
+// node for any braced scope, which would count every function body as nesting.
 const NESTING_TYPES = [
   "if_statement",
   "for_statement",
@@ -48,6 +51,19 @@ const NESTING_TYPES = [
   "match_expression",
   "lambda_expression",
   "arrow_function",
+  "if_expression",
+  "for_expression",
+  "while_expression",
+  "loop_expression",
+  "closure_expression",
+  "if",
+  "unless",
+  "while",
+  "until",
+  "for",
+  "case",
+  "begin",
+  "do_block",
 ];
 
 /**
@@ -68,8 +84,10 @@ export function calculateNestingDepth(node: Parser.SyntaxNode, currentDepth: num
 
 /** Recursive helper that counts nesting for the given node and its descendants. */
 function walkNestingDepth(node: Parser.SyntaxNode, currentDepth: number): number {
+  // The named check keeps Ruby's `if`/`while`/`case` nodes from colliding with
+  // the same-named keyword tokens every other grammar emits inside its statements.
   // Don't count "else if" as additional nesting - it's a sibling branch, not nested
-  const isNesting = NESTING_TYPES.includes(node.type) && !isElseIf(node);
+  const isNesting = node.isNamed && NESTING_TYPES.includes(node.type) && !isElseIf(node);
   const newDepth = isNesting ? currentDepth + 1 : currentDepth;
 
   let maxDepth = newDepth;
@@ -94,6 +112,8 @@ export async function countDependencies(
   return countImports(code, language);
 }
 
+// Same grammar spread as NESTING_TYPES: Rust expression forms and Ruby
+// keyword-named nodes, which otherwise leave both languages scoring zero.
 const CONTROL_FLOW_TYPES = [
   "if_statement",
   "for_statement",
@@ -102,15 +122,33 @@ const CONTROL_FLOW_TYPES = [
   "switch_statement",
   "catch_clause",
   "conditional_expression",
+  "if_expression",
+  "for_expression",
+  "while_expression",
+  "loop_expression",
+  "if",
+  "unless",
+  "while",
+  "until",
+  "for",
+  "case",
+  "rescue",
 ];
+
+// Ruby names its binary operator node `binary`; every other grammar here uses
+// `binary_expression`. Both only score when the operator is actually logical.
+const BINARY_TYPES = ["binary_expression", "binary"];
 
 /** Returns complexity increment for a node: 1 + nesting for control flow, 1 for logical operators. */
 function getNodeComplexityIncrement(node: Parser.SyntaxNode, nesting: number): number {
+  // Unnamed keyword tokens share names with Ruby's control-flow nodes (see NESTING_TYPES).
+  if (!node.isNamed) return 0;
+
   if (CONTROL_FLOW_TYPES.includes(node.type)) {
     return 1 + nesting;
   }
 
-  if (node.type === "binary_expression") {
+  if (BINARY_TYPES.includes(node.type)) {
     const hasLogicalOp = node.children.some((c) => c.type === "&&" || c.type === "||");
     return hasLogicalOp ? 1 : 0;
   }
@@ -185,6 +223,13 @@ export function extractFunctionName(node: Parser.SyntaxNode): string | null {
   if (node.type === "arrow_function") {
     return null;
   }
+
+  // A grammar's own `name` field is authoritative where it exists. Go names
+  // methods with a field_identifier the scan below rejects, so every method in a
+  // Go file used to be reported as <anonymous>.
+  const nameField = node.childForFieldName("name");
+  if (nameField) return nameField.text;
+
   for (const child of node.children) {
     if (child.type === "identifier" || child.type === "property_identifier") {
       return child.text;

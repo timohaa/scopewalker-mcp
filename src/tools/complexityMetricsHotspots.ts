@@ -23,8 +23,11 @@ export function findHotspots(
     const funcTypes = [
       "function_declaration",
       "function_definition",
+      "function_item", // Rust functions
       "method_definition",
-      "method_declaration", // Java methods
+      "method_declaration", // Java and Go methods
+      "method", // Ruby defs
+      "singleton_method", // Ruby `def self.x`
       "arrow_function",
     ];
 
