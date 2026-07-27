@@ -91,6 +91,52 @@ end
   });
 });
 
+describe("documentationCoverage tool - Go methods", () => {
+  let goTestDir: string;
+  const goHandler = getToolHandler(registerDocumentationCoverageTool, "get_documentation_coverage");
+
+  beforeAll(async () => {
+    goTestDir = join(tmpdir(), `scopewalker-doc-go-test-${String(Date.now())}`);
+    await mkdir(goTestDir, { recursive: true });
+
+    await writeFile(
+      join(goTestDir, "point.go"),
+      `package main
+
+type Point struct{ X int }
+
+// Name returns the label.
+func (p *Point) Name() string {
+	return "x"
+}
+
+func (p *Point) Reset() {}
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(goTestDir, { recursive: true, force: true });
+  });
+
+  // Go names a method with a field_identifier, which an identifier-only scan
+  // skips: `Name() string` was reported as "string" and `Reset()` was dropped.
+  it("names Go methods by their field_identifier, not their return type", async () => {
+    const response = await goHandler({ path: join(goTestDir, "point.go") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    // Go record types are not documentable classes, so only the two methods count.
+    expect(result.summary.total_symbols).toBe(2);
+
+    const names = result.undocumented_items.map((i) => i.name);
+    expect(names).toEqual(["Reset"]);
+    expect(names).not.toContain("string");
+
+    const reset = result.undocumented_items.find((i) => i.name === "Reset");
+    expect(reset?.type).toBe("method");
+  });
+});
+
 describe("documentationCoverage tool - C/C++", () => {
   let cppTestDir: string;
   const cppHandler = getToolHandler(
@@ -170,5 +216,53 @@ Point makePoint(int x) { return Point(); }
     const names = result.undocumented_items.map((i) => i.name);
     expect(names).toContain("makePoint");
     expect(names).not.toContain("Point");
+  });
+});
+
+describe("documentationCoverage tool - Ruby", () => {
+  let rubyTestDir: string;
+  const rubyHandler = getToolHandler(
+    registerDocumentationCoverageTool,
+    "get_documentation_coverage"
+  );
+
+  beforeAll(async () => {
+    rubyTestDir = join(tmpdir(), `scopewalker-doc-ruby-test-${String(Date.now())}`);
+    await mkdir(rubyTestDir, { recursive: true });
+
+    await writeFile(
+      join(rubyTestDir, "widget.rb"),
+      `def top_level(a)
+  a
+end
+
+class Widget
+  def render(x)
+    x
+  end
+
+  def self.build
+    new
+  end
+end
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(rubyTestDir, { recursive: true, force: true });
+  });
+
+  // Ruby reuses one node type for module-level defs and class members, so this
+  // tool once typed every def a method while get_code_inventory said function.
+  it("types a top-level def as a function and class members as methods", async () => {
+    const response = await rubyHandler({ path: join(rubyTestDir, "widget.rb") });
+    const result = parseContent<DocumentationCoverageResult>(response);
+
+    const byName = new Map(result.undocumented_items.map((i) => [i.name, i.type]));
+    expect(byName.get("top_level")).toBe("function");
+    expect(byName.get("render")).toBe("method");
+    expect(byName.get("build")).toBe("method");
+    expect(byName.get("Widget")).toBe("class");
   });
 });

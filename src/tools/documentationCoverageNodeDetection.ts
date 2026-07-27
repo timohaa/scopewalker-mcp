@@ -22,12 +22,21 @@ const CLASS_TYPES = [
   "struct_specifier",
 ];
 
-const METHOD_TYPES = ["method_definition", "method_declaration", "method", "singleton_method"];
+const METHOD_TYPES = ["method_definition", "method_declaration"];
+
+// Ruby has no distinct top-level function node type: these cover both
+// module-level defs and class members, distinguished only by parent.
+const RUBY_DEF_TYPES = ["method", "singleton_method"];
 
 /** Classifies a node as function, class, or method, or null if not documentable. */
 function getDocumentableType(node: Parser.SyntaxNode): "function" | "class" | "method" | null {
   if (CLASS_TYPES.includes(node.type)) return "class";
   if (METHOD_TYPES.includes(node.type)) return "method";
+
+  // Mirrors the parent check in getItemType so both tools label a Ruby def the same way.
+  if (RUBY_DEF_TYPES.includes(node.type)) {
+    return node.parent?.type === "body_statement" ? "method" : "function";
+  }
 
   // C/C++ members share their node types with free functions and data fields,
   // so the enclosing record body is what marks them as methods.
@@ -101,6 +110,13 @@ const C_DECLARATOR_HOLDERS = ["declaration", "field_declaration", "function_defi
 
 /** Extracts name from identifier children of a node. */
 export function extractName(node: Parser.SyntaxNode): string | null {
+  // A grammar's own `name` field is authoritative where it exists. Go names
+  // methods with a field_identifier the scan below rejects, so `func (p *Point)
+  // Name() string` used to yield the return type and `Reset()` nothing at all.
+  // C/C++ declare no `name` field, leaving the declarator path below in charge.
+  const nameField = node.childForFieldName("name");
+  if (nameField) return nameField.text;
+
   // C/C++ nest the name inside declarators for prototypes (`declaration`,
   // `field_declaration`) and bodies (`function_definition`) alike. This runs
   // before the identifier scan because a class-typed return value (`Point

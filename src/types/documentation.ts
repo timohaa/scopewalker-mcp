@@ -4,7 +4,6 @@ export interface UndocumentedItem {
   type: "function" | "class" | "method";
   line: number;
   lines?: number;
-  methods_undocumented?: string[];
 }
 
 export interface FileDocumentation {

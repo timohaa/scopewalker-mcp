@@ -21,18 +21,15 @@ export function isCommentNode(node: Parser.SyntaxNode): boolean {
  * class, or module body.
  */
 export function hasPythonDocstring(node: Parser.SyntaxNode): boolean {
-  // Find the block (body) of the function/class
   const block = node.children.find((child) => child.type === "block");
   if (!block) return false;
 
-  // The first named child should be an expression_statement containing a string
   if (block.namedChildren.length === 0) return false;
   const firstStatement = block.namedChildren[0];
   if (firstStatement.type !== "expression_statement") {
     return false;
   }
 
-  // Check if the expression_statement contains a string (the docstring)
   if (firstStatement.namedChildren.length === 0) return false;
   const stringNode = firstStatement.namedChildren[0];
   if (stringNode.type !== "string") {
