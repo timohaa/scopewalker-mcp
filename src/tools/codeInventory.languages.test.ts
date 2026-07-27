@@ -185,3 +185,100 @@ end
     expect(internalMethod?.visibility).toBe("private");
   });
 });
+
+// Go and Rust mark visibility in the language itself rather than with an export
+// keyword, so reading only export statements reported every symbol as internal.
+describe("codeInventory tool - Go and Rust visibility", () => {
+  let visTestDir: string;
+  const visHandler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
+
+  beforeAll(async () => {
+    visTestDir = join(tmpdir(), `scopewalker-inv-vis-test-${String(Date.now())}`);
+    await mkdir(visTestDir, { recursive: true });
+
+    await writeFile(
+      join(visTestDir, "shapes.go"),
+      `package main
+
+type Point struct{ X int }
+
+func Exported() {}
+
+func unexported() {}
+
+func (p *Point) Visible() {}
+
+func (p *Point) hidden() {}
+`
+    );
+
+    await writeFile(
+      join(visTestDir, "widget.rs"),
+      `pub struct Widget { w: u32 }
+
+pub fn public_fn() {}
+
+fn private_fn() {}
+
+pub(crate) fn crate_fn() {}
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(visTestDir, { recursive: true, force: true });
+  });
+
+  it("reads Go export status from identifier capitalization", async () => {
+    const response = await visHandler({ path: join(visTestDir, "shapes.go") });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const byName = new Map((result.inventory[0]?.items ?? []).map((i) => [i.name, i]));
+
+    expect(byName.get("Point")?.exported).toBe(true);
+    expect(byName.get("Exported")?.exported).toBe(true);
+    expect(result.summary.exported_symbols).toBe(2);
+  });
+
+  it("treats lowercase Go symbols as private", async () => {
+    const excluded = await visHandler({ path: join(visTestDir, "shapes.go") });
+    const withoutPrivate = parseContent<CodeInventoryResult>(excluded);
+    expect(withoutPrivate.inventory[0]?.items.some((i) => i.name === "unexported")).toBe(false);
+
+    const included = await visHandler({
+      path: join(visTestDir, "shapes.go"),
+      include_private: true,
+    });
+    const withPrivate = parseContent<CodeInventoryResult>(included);
+    const unexported = withPrivate.inventory[0]?.items.find((i) => i.name === "unexported");
+
+    expect(unexported?.exported).toBe(false);
+  });
+
+  it("labels Go method visibility by receiver-method capitalization", async () => {
+    const response = await visHandler({
+      path: join(visTestDir, "shapes.go"),
+      include_private: true,
+    });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const point = result.inventory[0]?.items.find((i) => i.name === "Point");
+    const byName = new Map((point?.methods ?? []).map((m) => [m.name, m.visibility]));
+
+    expect(byName.get("Visible")).toBe("public");
+    expect(byName.get("hidden")).toBe("private");
+  });
+
+  it("counts only bare `pub` Rust items as exported", async () => {
+    const response = await visHandler({ path: join(visTestDir, "widget.rs") });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const byName = new Map((result.inventory[0]?.items ?? []).map((i) => [i.name, i]));
+
+    expect(byName.get("Widget")?.exported).toBe(true);
+    expect(byName.get("public_fn")?.exported).toBe(true);
+    expect(byName.get("private_fn")?.exported).toBe(false);
+    // pub(crate) stops at the crate boundary, so it is not public API
+    expect(byName.get("crate_fn")?.exported).toBe(false);
+  });
+});

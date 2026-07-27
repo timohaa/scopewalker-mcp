@@ -10,6 +10,8 @@ import type {
 } from "../types/index.js";
 import { getItemType } from "./codeInventoryItemTypes.js";
 export { getItemType };
+import { isExported, isPrivateSymbol } from "./codeInventoryVisibility.js";
+export { isExported, isPrivateSymbol };
 
 /** Extracts an inventory item from an AST node if it represents a class, function, etc. */
 export function extractItem(
@@ -26,7 +28,7 @@ export function extractItem(
   const isPrivate = isPrivateSymbol(name, node, language);
   if (isPrivate && !includePrivate) return null;
 
-  const exported = isExported(node, language);
+  const exported = isExported(name, node, language);
   const line = node.startPosition.row + 1;
 
   const item: InventoryItem = {
@@ -100,49 +102,6 @@ export function extractName(node: Parser.SyntaxNode): string | null {
     }
   }
   return null;
-}
-
-/** Determines if a symbol is private based on naming conventions or access modifiers. */
-export function isPrivateSymbol(
-  name: string,
-  node: Parser.SyntaxNode,
-  language: SupportedLanguage
-): boolean {
-  if (name.startsWith("_")) return true;
-
-  if (language === "typescript" || language === "javascript") {
-    for (const child of node.children) {
-      if (child.type === "accessibility_modifier" && child.text === "private") {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-/** Checks if a node is exported based on parent context or export keywords. */
-export function isExported(node: Parser.SyntaxNode, language: SupportedLanguage): boolean {
-  const parent = node.parent;
-  if (!parent) return false;
-
-  if (
-    parent.type === "export_statement" ||
-    parent.type === "export_declaration" ||
-    parent.type === "named_exports"
-  ) {
-    return true;
-  }
-
-  for (const child of node.children) {
-    if (child.text === "export") return true;
-  }
-
-  if (language === "python") {
-    return parent.type === "module";
-  }
-
-  return false;
 }
 
 // Node types that hold a class's direct member list, per language grammar
