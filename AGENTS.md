@@ -31,7 +31,7 @@ Prefer LSP over Grep/Read for code navigation (`workspaceSymbol`, `findReference
 ## Reference Docs
 
 - [TOOLS.md](./TOOLS.md) — tool reference
-- [docs/](./docs/) — detailed tool documentation
+- [docs/](./docs/) — detailed tool documentation; [docs/known-bugs.md](./docs/known-bugs.md) lists verified defects and gaps, check it before chasing unexpected tool output
 - `.claude/skills/create-tool`, `.claude/skills/create-test` — workflows and code examples for adding tools/tests
 - `/polish`, `/review-changes`, `/check-quality`, `/run-tests` — quality-pipeline slash commands (see `.claude/skills/` for the rest)
 - `.claude/agents/` — specialized agents for standards, testing, docs, and code-quality enforcement (see directory for the full list)

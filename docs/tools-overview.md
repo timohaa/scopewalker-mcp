@@ -55,6 +55,8 @@ Function detection and parsing support:
 
 Files with any other extension are skipped by the AST-based tools. `get_line_counts` uses tokei instead, so it reports on every language tokei recognizes.
 
+**Extension filtering on tokei-backed tools:** `get_line_counts` and `check_thresholds` translate `extensions` into tokei language names through a fixed table covering the languages listed above plus common others. An extension outside that table is passed to tokei verbatim and only matches when it happens to name a tokei language — `.zig` works, but `.tf` does not, because tokei calls that language HCL. A non-matching filter silently returns nothing rather than erroring.
+
 ## Error Codes
 
 All tools return structured errors:

@@ -83,9 +83,9 @@ Notes:
 
 - Results are grouped by file; `group_by` is accepted for forward compatibility and currently returns file-grouped results.
 - Each file returns at most 100 items to prevent oversized responses; `limit` trims the number of files. Files with no matching items are omitted from `inventory` entirely.
-- Methods are nested under the class they belong to, not repeated as top-level functions. Go methods are matched to their type by receiver (`func (p *Point) Scale()`); C/C++ member functions are picked up from the record body, including declaration-only members. Rust `impl` methods are currently reported as standalone functions.
-- `exported` is derived from the TS/JS `export` keyword and from module scope in Python. Go's capitalization rule and Rust's `pub` are not interpreted, so items in those languages report `exported: false`.
-- `include_private` filters on naming and visibility conventions: a leading underscore, or an explicit `private` modifier in TypeScript.
+- Methods are nested under the class they belong to, not repeated as top-level functions. Go methods are matched to their type by receiver (`func (p *Point) Scale()`), but only within the same file — a method whose receiver type is declared in another file of the package is omitted from the inventory. C/C++ member functions are picked up from the record body, including declaration-only members. Rust `impl` methods are currently reported as standalone functions.
+- `exported` follows each language's own convention: the TS/JS `export` keyword, module scope in Python, an initial uppercase letter in Go, and a bare `pub` in Rust. `pub(crate)` and `pub(super)` stop at the crate boundary and so count as unexported. Java, C/C++, and Ruby have no equivalent marker and always report `exported: false`.
+- `include_private` filters on naming and visibility conventions: a leading underscore, an explicit `private` modifier in TypeScript, or a lowercase initial in Go. Because unexported is Go's only form of private, the default view of a Go package is its exported API surface; pass `include_private: true` for the rest. Rust visibility is reported but not filtered — non-`pub` items still appear, marked `exported: false`.
 
 **Response:**
 
@@ -142,6 +142,8 @@ Note: All metrics are currently calculated; the `metrics` parameter is accepted 
 - `cognitive`: Simplified cognitive complexity score
 
 Parameter counting is language-aware: Python skips `self`/`cls`, `*args`, `**kwargs`, and the bare `*` keyword-only marker; Go excludes the method receiver and expands grouped declarations (`func f(a, b, c int)` counts as 3); C/C++ parameter lists are read out of the function declarator.
+
+Nesting and cognitive complexity likewise follow each grammar's own shape: Rust's expression forms (`if`/`for`/`while`/`loop`/`match`, closures) and Ruby's keyword-named nodes (`if`, `unless`, `while`, `until`, `case`, `begin`, `do` blocks) count the same as their statement equivalents elsewhere. Ruby brace blocks (`{ |x| ... }`) are the one exception and do not count toward nesting.
 
 Each hotspot's `issue` field is one of `nesting_depth`, `parameters`, or `jsx_props` (a JSX component receiving more than 5 props).
 

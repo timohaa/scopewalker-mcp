@@ -21,3 +21,4 @@ See [docs/tools-overview.md](./docs/tools-overview.md) for complete documentatio
 - [Core Analysis Tools](./docs/tools-core.md)
 - [Codebase Health Tools](./docs/tools-health.md)
 - [Code Quality Tools](./docs/tools-quality.md)
+- [Known Bugs and Limitations](./docs/known-bugs.md)

@@ -32,7 +32,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 | C/C++                 | JSDoc-style (`/** */`)      |
 | Ruby                  | Line comments (`#`)         |
 
-**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes.
+**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods, though Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes. A Ruby top-level `def` is typed as a function and a `def` inside a class or module body as a method, matching how `get_code_inventory` reports the same code.
 
 **Response:**
 
@@ -116,7 +116,7 @@ Detects code smells like TODO, FIXME, HACK, XXX, BUG, UNUSED, and DEPRECATED com
 }
 ```
 
-**Privacy default:** Comment text is redacted unless `include_text` is set to `true`.
+**Privacy default:** Comment text is redacted unless `include_text` is set to `true`. Included text is truncated at 200 characters.
 **Size guard:** Files over 1 MB are skipped to avoid expensive parsing.
 
 **Example:**
