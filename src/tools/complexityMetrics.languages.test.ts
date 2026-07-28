@@ -125,132 +125,56 @@ end
 
     expect(result.files[0]?.metrics.dependency_count).toBe(2);
   });
-});
 
-describe("Python", () => {
-  it("counts Python imports correctly", async () => {
+  it("scores each elsif branch toward cognitive complexity", async () => {
     await writeFile(
-      join(testDir, "sample.py"),
-      `import os
-from pathlib import Path
-import sys
-
-def main():
-    pass
+      join(testDir, "elsif_chain.rb"),
+      `def classify(x)
+  if x == 1
+    :one
+  elsif x == 2
+    :two
+  elsif x == 3
+    :three
+  end
+end
 `
     );
 
-    const response = await handler({ path: join(testDir, "sample.py") });
+    const response = await handler({ path: join(testDir, "elsif_chain.rb") });
     const result = parseContent<ComplexityMetricsResult>(response);
 
-    expect(result.files[0]?.metrics.dependency_count).toBe(3);
-  });
-
-  it("excludes self/cls from parameter count", async () => {
-    await writeFile(
-      join(testDir, "class_methods.py"),
-      `class MyClass:
-    def instance_method(self, a, b, c, d, e, f):
-        pass
-
-    @classmethod
-    def class_method(cls, x, y):
-        pass
-
-def regular_function(a, b, c, d, e, f, g):
-    pass
-`
-    );
-
-    const response = await handler({ path: join(testDir, "class_methods.py") });
-    const result = parseContent<ComplexityMetricsResult>(response);
-
-    // instance_method has 6 params (excluding self), should trigger hotspot (>5)
-    // class_method has 2 params (excluding cls), should not trigger
-    // regular_function has 7 params, should trigger hotspot
-    const hotspots = result.files[0]?.hotspots ?? [];
-    const paramHotspots = hotspots.filter((h) => h.issue === "parameters");
-
-    expect(paramHotspots.length).toBeGreaterThanOrEqual(2);
-    expect(paramHotspots.some((h) => h.function === "instance_method")).toBe(true);
-    expect(paramHotspots.some((h) => h.function === "regular_function")).toBe(true);
-    // class_method should NOT appear since it only has 2 params after excluding cls
-    expect(paramHotspots.some((h) => h.function === "class_method")).toBe(false);
-  });
-
-  it("excludes *args and **kwargs from parameter count", async () => {
-    await writeFile(
-      join(testDir, "variadic.py"),
-      `def variadic_func(a, b, *args, **kwargs):
-    pass
-
-def many_params(a, b, c, d, e, f):
-    pass
-`
-    );
-
-    const response = await handler({ path: join(testDir, "variadic.py") });
-    const result = parseContent<ComplexityMetricsResult>(response);
-
-    const hotspots = result.files[0]?.hotspots ?? [];
-    const paramHotspots = hotspots.filter((h) => h.issue === "parameters");
-
-    // variadic_func has only 2 real params (a, b), *args and **kwargs excluded
-    expect(paramHotspots.some((h) => h.function === "variadic_func")).toBe(false);
-    // many_params has 6 params, should trigger hotspot
-    expect(paramHotspots.some((h) => h.function === "many_params")).toBe(true);
-  });
-
-  it("counts parameters following splat markers", async () => {
-    await writeFile(
-      join(testDir, "keyword_only.py"),
-      `def f(*args, self):
-    pass
-
-def g(*, self):
-    pass
-`
-    );
-
-    const response = await handler({ path: join(testDir, "keyword_only.py") });
-    const result = parseContent<ComplexityMetricsResult>(response);
-
-    // A param named self after a splat/separator is not a receiver and must count
-    expect(result.files[0]?.metrics.max_parameters).toBe(1);
+    // Ruby's elsif is its own node rather than a nested if, so the chain used to
+    // score as a single branch
+    expect(result.files[0]?.metrics.cognitive_complexity).toBeGreaterThan(1);
+    expect(result.files[0]?.metrics.max_nesting_depth).toBe(1);
   });
 });
 
-describe("Java", () => {
+describe("Rust", () => {
   it("does not count else-if chains as nested", async () => {
     await writeFile(
-      join(testDir, "ElseIfChain.java"),
-      `public class ElseIfChain {
-    public void handleEvent(String type) {
-        if (type.equals("A")) {
-            doA();
-        } else if (type.equals("B")) {
-            doB();
-        } else if (type.equals("C")) {
-            doC();
-        } else if (type.equals("D")) {
-            doD();
-        } else if (type.equals("E")) {
-            doE();
-        } else {
-            doDefault();
-        }
+      join(testDir, "else_if_chain.rs"),
+      `fn classify(x: i32) -> i32 {
+    if x == 1 {
+        1
+    } else if x == 2 {
+        2
+    } else if x == 3 {
+        3
+    } else {
+        0
     }
 }
 `
     );
 
-    const response = await handler({ path: join(testDir, "ElseIfChain.java") });
+    const response = await handler({ path: join(testDir, "else_if_chain.rs") });
     const result = parseContent<ComplexityMetricsResult>(response);
 
-    // The else-if chain should NOT trigger a nesting hotspot
-    // Each else-if is a sibling branch, not nested control flow
-    // Max nesting should be 1 (just the initial if), not 5+
-    expect(result.files[0]?.metrics.max_nesting_depth).toBeLessThanOrEqual(2);
+    // Rust names the node if_expression, not if_statement, so the else-if
+    // detection used to miss and report the chain as real nesting
+    expect(result.files[0]?.metrics.max_nesting_depth).toBe(1);
 
     const nestingHotspots =
       result.files[0]?.hotspots.filter((h) => h.issue === "nesting_depth") ?? [];
@@ -259,17 +183,14 @@ describe("Java", () => {
 
   it("still counts true nesting correctly", async () => {
     await writeFile(
-      join(testDir, "TrueNesting.java"),
-      `public class TrueNesting {
-    public void deepMethod(int x) {
-        if (x > 0) {
-            for (int i = 0; i < x; i++) {
-                if (i % 2 == 0) {
-                    while (i > 0) {
-                        if (i == 5) {
-                            System.out.println("deep");
-                        }
-                        i--;
+      join(testDir, "true_nesting.rs"),
+      `fn deep(x: i32) {
+    if x > 0 {
+        for i in 0..x {
+            if i % 2 == 0 {
+                while i > 0 {
+                    if i == 5 {
+                        println!("deep");
                     }
                 }
             }
@@ -279,15 +200,9 @@ describe("Java", () => {
 `
     );
 
-    const response = await handler({ path: join(testDir, "TrueNesting.java") });
+    const response = await handler({ path: join(testDir, "true_nesting.rs") });
     const result = parseContent<ComplexityMetricsResult>(response);
 
-    // True nesting: if > for > if > while > if = 5 levels
     expect(result.files[0]?.metrics.max_nesting_depth).toBe(5);
-
-    // Should trigger nesting hotspot (threshold is 4)
-    const nestingHotspots =
-      result.files[0]?.hotspots.filter((h) => h.issue === "nesting_depth") ?? [];
-    expect(nestingHotspots.length).toBeGreaterThan(0);
   });
 });

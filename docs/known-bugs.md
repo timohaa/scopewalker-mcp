@@ -10,7 +10,7 @@ Two kinds of entry:
 - **Limitations** — the tool is knowingly incomplete, and the behaviour is documented in
   `docs/tools-*.md`. Listed here so the gaps are visible in one place.
 
-Verified against version 1.0.2.
+Verified against version 1.0.3.
 
 ---
 
