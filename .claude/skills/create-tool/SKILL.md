@@ -27,7 +27,7 @@ Read `docs/patterns.md` for tool registration, error handling, and testing patte
 1. **Types** — `src/types/[concern].ts` (named by domain, e.g. `complexity.ts`, `thresholds.ts`), export from `src/types/index.ts`
 2. **Implementation** — `src/tools/[toolName].ts` following the registration pattern
 3. **Tests** — `src/tools/[toolName].test.ts` using `getToolHandler`/`parseContent` from `src/testUtils/toolTestHarness.ts`
-4. **Registration** — add import and call in `src/index.ts`
+4. **Registration** — add the import and `register*Tool(server)` call in `createServer()` in `src/server.ts`, and add the tool name to `EXPECTED_TOOLS` in `src/server.test.ts`
 
 ### 4. Update documentation
 
