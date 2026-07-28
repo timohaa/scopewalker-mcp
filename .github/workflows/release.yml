@@ -24,12 +24,6 @@ jobs:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
 
-      # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10.x.
-      # Pinned to a major rather than @latest so a future npm that drops Node 22
-      # support cannot break the release job.
-      - name: Upgrade npm
-        run: npm install -g npm@^12
-
       # tokei is a runtime dependency (get_line_counts, check_thresholds) and its
       # tests shell out to the real binary. No prebuilt binaries exist past
       # v12.1.2, so build the pinned version from crates.io.
@@ -46,6 +40,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Must come after npm ci: npm 12 blocks dependency install scripts by
+      # default, which leaves tree-sitter without its native binding. Trusted
+      # publishing (OIDC) needs npm >= 11.5.1 and Node 22 ships npm 10.x, so the
+      # upgrade happens once the install is done. Pinned to a major rather than
+      # @latest so a future npm dropping Node 22 cannot break the release.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@^12
 
       - name: Verify tag matches package.json version
         run: |
