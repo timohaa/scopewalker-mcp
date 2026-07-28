@@ -204,3 +204,12 @@ HACK: Temporary workaround
     expect(result.files.length).toBe(0);
   });
 });
+
+describe("get_code_smells - request limits", () => {
+  it("scans at most max_files files", async () => {
+    const response = await handler({ path: testDir, max_files: 1 });
+    const result = parseContent<CodeSmellsResult>(response);
+
+    expect(result.summary.total_files_scanned).toBe(1);
+  });
+});

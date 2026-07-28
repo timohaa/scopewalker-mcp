@@ -48,8 +48,11 @@ jobs:
       - name: Fail if checks modified tracked files
         run: git diff --exit-code
 
+      # Coverage, not plain test: vitest.config.ts carries coverage thresholds
+      # and they only gate when the run collects coverage. Safe after the
+      # working-tree check above, since coverage/ is gitignored.
       - name: Test
-        run: npm run test
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build

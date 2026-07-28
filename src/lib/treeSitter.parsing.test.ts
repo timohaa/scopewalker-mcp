@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { getFunctions, parseCode } from "./treeSitter.js";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { countImports, getComments, getFunctions, parseCode } from "./treeSitter.js";
 
 describe("getFunctions", () => {
   it("extracts TypeScript functions", async () => {
@@ -164,5 +164,40 @@ describe("getFunctions - Java", () => {
     } catch {
       // Grammar may not be available in all environments
     }
+  });
+});
+
+describe("grammar-load failure guards", () => {
+  let originalConsoleError: typeof console.error;
+
+  beforeEach(() => {
+    originalConsoleError = console.error;
+    console.error = vi.fn();
+  });
+
+  afterEach(() => {
+    console.error = originalConsoleError;
+  });
+
+  // An unsupported language has no loader, so loadGrammar returns null and every
+  // caller must fall back to its empty value rather than throwing.
+  it("returns no functions when the grammar cannot be loaded", async () => {
+    // @ts-expect-error - unsupported language exercises the grammar-load failure path
+    expect(await getFunctions("function f() {}", "nosuchlang")).toEqual([]);
+  });
+
+  it("returns a null tree when the grammar cannot be loaded", async () => {
+    // @ts-expect-error - unsupported language exercises the grammar-load failure path
+    expect(await parseCode("function f() {}", "nosuchlang")).toBeNull();
+  });
+
+  it("returns no comments when the grammar cannot be loaded", async () => {
+    // @ts-expect-error - unsupported language exercises the grammar-load failure path
+    expect(await getComments("// hi", "nosuchlang")).toEqual([]);
+  });
+
+  it("counts zero imports when the grammar cannot be loaded", async () => {
+    // @ts-expect-error - unsupported language exercises the grammar-load failure path
+    expect(await countImports('import "x"', "nosuchlang")).toBe(0);
   });
 });

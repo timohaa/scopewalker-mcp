@@ -143,3 +143,23 @@ describe("path handling and filtering", () => {
     expect(utilsFile?.function_count).toBeGreaterThanOrEqual(3);
   });
 });
+
+describe("get_functions - request limits", () => {
+  it("analyzes at most max_files files", async () => {
+    const response = await handler({ path: testDir, extensions: ["ts"], max_files: 1 });
+    const result = parseContent<FunctionCountsResult>(response);
+
+    expect(result.summary.total_files_analyzed).toBe(1);
+  });
+
+  it("counts unparseable files against max_files", async () => {
+    // max_files truncates the discovered path list before language detection,
+    // so a leading non-source file (README.md here) consumes the budget and is
+    // then skipped. Pinned as current behavior, not endorsed — see
+    // docs/known-bugs.md.
+    const response = await handler({ path: testDir, max_files: 1 });
+    const result = parseContent<FunctionCountsResult>(response);
+
+    expect(result.summary.total_files_analyzed).toBe(0);
+  });
+});
