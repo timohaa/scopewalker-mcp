@@ -39,7 +39,7 @@ npm run test:coverage  # Run tests with coverage report
 3. Export types from `src/types/index.ts`
 4. Register the tool in `src/index.ts`
 5. Add tests in `src/tools/[toolName].test.ts`
-6. Document in the appropriate `docs/tools-*.md` file and update the quick reference table in `TOOLS.md`
+6. Document in the appropriate `docs/tools-*.md` file, update the quick reference table in `TOOLS.md`, and add the tool to the list in `README.md` (bumping the tool count there and in `docs/tools-overview.md`)
 
 ## Pull Request Process
 
