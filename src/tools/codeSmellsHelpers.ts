@@ -243,7 +243,7 @@ function walkTreeForUnsafeCasts(
         const text = lines.join("\n").trim();
 
         matches.push({
-          line: node.startPosition.row + 1, // Convert to 1-indexed
+          line: node.startPosition.row + 1,
           text,
         });
         return; // Don't descend further into this node

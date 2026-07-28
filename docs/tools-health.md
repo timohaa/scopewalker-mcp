@@ -143,7 +143,12 @@ Note: All metrics are currently calculated; the `metrics` parameter is accepted 
 
 Parameter counting is language-aware: Python skips `self`/`cls`, `*args`, `**kwargs`, and the bare `*` keyword-only marker; Go excludes the method receiver and expands grouped declarations (`func f(a, b, c int)` counts as 3); C/C++ parameter lists are read out of the function declarator.
 
-Nesting and cognitive complexity likewise follow each grammar's own shape: Rust's expression forms (`if`/`for`/`while`/`loop`/`match`, closures) and Ruby's keyword-named nodes (`if`, `unless`, `while`, `until`, `case`, `begin`, `do` blocks) count the same as their statement equivalents elsewhere. Ruby brace blocks (`{ |x| ... }`) are the one exception and do not count toward nesting.
+Nesting and cognitive complexity likewise follow each grammar's own shape, but from two separate node lists, so the metrics do not always agree about the same construct:
+
+- **Nesting** counts Rust's expression forms (`if`/`for`/`while`/`loop`/`match`, closures) and Ruby's keyword-named nodes (`if`, `unless`, `while`, `until`, `for`, `case`, `begin`, `do` blocks) alongside the statement equivalents other grammars emit.
+- **Cognitive complexity** covers a narrower set: Rust `if`/`for`/`while`/`loop` and Ruby `if`, `unless`, `while`, `until`, `for`, `case`, `rescue` score, but Rust `match` and closures and Ruby `begin`/`do` blocks do not.
+
+Ruby brace blocks (`{ |x| ... }`) count toward neither metric.
 
 Each hotspot's `issue` field is one of `nesting_depth`, `parameters`, or `jsx_props` (a JSX component receiving more than 5 props).
 

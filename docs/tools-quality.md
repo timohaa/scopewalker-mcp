@@ -32,7 +32,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 | C/C++                 | JSDoc-style (`/** */`)      |
 | Ruby                  | Line comments (`#`)         |
 
-**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods, though Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes. A Ruby top-level `def` is typed as a function and a `def` inside a class or module body as a method, matching how `get_code_inventory` reports the same code.
+**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods, though Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes. A Ruby top-level `def` is typed as a function and a `def` inside a class or module body as a method. `get_code_inventory` labels the same code the same way for class bodies, but drops module-body defs entirely — `module` is not one of its symbol types, so there is nothing to nest them under.
 
 **Response:**
 
