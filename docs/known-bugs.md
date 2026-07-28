@@ -76,6 +76,50 @@ function with a `match` whose one arm uses a closure reports `max_nesting_depth:
 `cognitive_complexity: 0` — nesting depth counts both constructs, cognitive complexity
 counts neither.
 
+### Grouped Go `type (...)` declarations report only their first type
+
+**Tools:** `get_code_inventory`
+
+`getGoTypeDeclarationKind` takes the **first** `type_spec` child of a `type_declaration`, and
+the surrounding walk emits one item per declaration rather than one per spec. Go's grouped
+form declares several types under a single `type_declaration`, so everything after the first
+is silently dropped.
+
+Given a file containing only:
+
+```go
+type (
+    Celsius float64
+    Widget  struct{ X int }
+    Shape   interface{ Area() float64 }
+)
+```
+
+the inventory returns a single item — `Celsius`, typed `interface` — and `summary` reports
+`total_classes: 0`, `exported_symbols: 1`. `Widget` and `Shape` appear nowhere, and nothing
+signals that two declared types were skipped. The struct is what makes this more than a
+mislabel: a Go package using the grouped form for its type block reports no classes at all.
+
+Fixing this needs the walk to emit one item per `type_spec`, which the current
+one-item-per-node mapping does not do.
+
+### `max_files` spends its budget on files that are never analyzed
+
+**Tools:** `get_complexity_metrics`, `get_code_smells`, `get_functions`, `get_prop_drilling`
+
+All four tools apply `max_files` by slicing the discovered path list *before* language
+detection, so unsupported files consume the cap and are then skipped. `max_files: N` means
+"consider the first N paths", not "analyze N files".
+
+In a directory containing `README.md`, `types.ts`, and `utils.ts`, `get_functions` with
+`max_files: 1` returns `total_files_analyzed: 0` — the cap is spent on `README.md`, which has
+no supported language. On a repository with many non-source files at the top of the walk, a
+small `max_files` can return an empty result that is indistinguishable from "nothing to
+report".
+
+Passing `extensions` alongside `max_files` avoids it, because the filter is applied during
+discovery. Pinned by tests in `src/tools/functions.counts.test.ts`.
+
 ### Ruby methods inside a `module` body are invisible to the inventory
 
 **Tools:** `get_code_inventory`
