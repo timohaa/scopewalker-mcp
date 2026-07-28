@@ -15,7 +15,7 @@ Target files:
 
 - `README.md`, `TOOLS.md`, `CONTRIBUTING.md`, `AGENTS.md`
 - `CLAUDE.md`, `GEMINI.md` (pointer files — verify their `@AGENTS.md` imports resolve)
-- `docs/tools-overview.md`, `docs/tools-core.md`, `docs/tools-health.md`, `docs/tools-quality.md`, `docs/patterns.md`
+- `docs/tools-overview.md`, `docs/tools-core.md`, `docs/tools-health.md`, `docs/tools-quality.md`, `docs/patterns.md`, `docs/known-bugs.md` (verify each listed bug/limitation still reproduces)
 - `.claude/skills/*/SKILL.md`, `.claude/agents/*.md` (workflow docs — verify tool names, commands, and quoted defaults/thresholds)
 
 ## Phase 1: Discovery

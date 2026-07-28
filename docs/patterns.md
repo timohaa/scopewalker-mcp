@@ -22,7 +22,7 @@ server.registerTool(
 
 ## Error Handling
 
-- Structured errors with code, message, context
+- Structured errors built with `createError(code, message, details)`, shaped `{ error: { code, message, path?, ...details } }`
 - Codes: `PATH_NOT_FOUND`, `PARSE_ERROR`, `UNSUPPORTED_LANGUAGE`, `TOOL_NOT_AVAILABLE`, and more — see the full table in [tools-overview.md](./tools-overview.md#error-codes)
 - Set `isError: true` for error responses
 

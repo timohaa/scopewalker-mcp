@@ -83,7 +83,7 @@ Returns function/method information. Use `detail` parameter to control output le
 | `min_lines`       | integer  | No       | Only include functions with at least this many lines (lines mode only)                                                                                                                                                                                                          |
 | `sort_by`         | string   | No       | `"count_desc"`, `"count_asc"`, `"lines_desc"`, `"lines_asc"`, `"name"`. Defaults: `"count_desc"` (counts mode), `"lines_desc"` (lines mode). `count_*` keys apply to counts mode and `lines_*` keys to lines mode; a key from the other mode falls back to that mode's default. |
 | `limit`           | integer  | No       | Maximum number of files to return (default: 20)                                                                                                                                                                                                                                 |
-| `grep`            | string   | No       | Filter by keyword                                                                                                                                                                                                                                                               |
+| `grep`            | string   | No       | Filter results by keyword (case-insensitive substring match)                                                                                                                                                                                                                    |
 
 **Note:** Each file returns at most 100 functions to prevent oversized responses.
 
