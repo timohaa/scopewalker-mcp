@@ -18,6 +18,9 @@ npm run check 2>&1
 npm run test 2>&1
 ```
 
+If your prompt states that lint/typecheck was already verified green, skip the initial
+`npm run check` and run it only after you edit source files.
+
 ### 2. Categorize Issues
 
 Group findings into:
@@ -63,9 +66,12 @@ Fix in dependency order:
 
 ## Iteration Protocol
 
-1. After each batch of fixes, re-run `npm run check && npm run test`
-2. Continue until all checks pass with zero warnings and zero test failures
-3. Report using the Output Format below
+1. After each batch of fixes, re-run only the affected test files
+   (`npx vitest run <file>.test.ts`) plus `npm run check` if source files changed —
+   not the full suite
+2. Continue until the targeted tests and checks pass with zero warnings and zero failures
+3. Run the full `npm run check && npm run test` once as final confirmation before reporting
+4. Report using the Output Format below
 
 ## Quality Standards
 
