@@ -8,39 +8,39 @@ type GrammarLoader = () => Promise<Parser.Language | undefined>;
 const grammarLoaders: Record<SupportedLanguage, GrammarLoader> = {
   typescript: async () => {
     const mod = await import("tree-sitter-typescript");
-    return mod.default.tsx as Parser.Language | undefined;
+    return mod.default.tsx;
   },
   javascript: async () => {
     const mod = await import("tree-sitter-javascript");
-    return mod.default as Parser.Language | undefined;
+    return mod.default;
   },
   python: async () => {
     const mod = await import("tree-sitter-python");
-    return mod.default as Parser.Language | undefined;
+    return mod.default;
   },
   go: async () => {
     const mod = await import("tree-sitter-go");
-    return mod.default as Parser.Language | undefined;
+    return mod.default;
   },
   rust: async () => {
     const mod = await import("tree-sitter-rust");
-    return mod.default as Parser.Language | undefined;
+    return mod.default;
   },
   java: async () => {
     const mod = await import("tree-sitter-java");
-    return mod.default as Parser.Language | undefined;
+    return mod.default;
   },
   c: async () => {
     const mod = await import("tree-sitter-c");
-    return mod.default as Parser.Language | undefined;
+    return mod.default;
   },
   cpp: async () => {
     const mod = await import("tree-sitter-cpp");
-    return mod.default as Parser.Language | undefined;
+    return mod.default;
   },
   ruby: async () => {
     const mod = await import("tree-sitter-ruby");
-    return mod.default as Parser.Language | undefined;
+    return mod.default;
   },
 };
 

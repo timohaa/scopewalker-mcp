@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -13,10 +14,18 @@ import { registerFunctionsTool } from "./tools/functions.js";
 import { registerLineCountsTool } from "./tools/lineCounts.js";
 import { registerPropDrillingTool } from "./tools/propDrilling.js";
 
+// Read at runtime rather than importing: a JSON import outside rootDir would
+// restructure dist/, and hardcoding drifts because the release workflow bumps
+// package.json without touching this file. src/ and dist/ are both one level
+// below the package root, so the relative path holds in dev and when published.
+const { version } = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8")
+) as { version: string };
+
 const server = new McpServer(
   {
     name: "scopewalker-mcp",
-    version: "1.0.2",
+    version,
   },
   {
     capabilities: {
