@@ -123,15 +123,23 @@ describe("validatePath - SCOPEWALKER_ALLOWED_ROOTS", () => {
   });
 
   it("parses comma-separated roots, trimming whitespace and dropping empty entries", async () => {
-    process.env.SCOPEWALKER_ALLOWED_ROOTS = ` ${resolve("./src")} , ,${resolve("./dist")} `;
+    // Second root is a temp dir, not ./dist — dist is a build artifact and is
+    // absent in a fresh checkout (CI runs tests before build).
+    const tempRoot = join(tmpdir(), `scopewalker-paths-multi-${String(Date.now())}`);
+    await mkdir(tempRoot, { recursive: true });
+    try {
+      process.env.SCOPEWALKER_ALLOWED_ROOTS = ` ${resolve("./src")} , ,${tempRoot} `;
 
-    const srcResult = await validatePath("./src/index.ts");
-    expect(srcResult.valid).toBe(true);
+      const srcResult = await validatePath("./src/index.ts");
+      expect(srcResult.valid).toBe(true);
 
-    const distResult = await validatePath("./dist");
-    expect(distResult.valid).toBe(true);
+      const tempResult = await validatePath(tempRoot);
+      expect(tempResult.valid).toBe(true);
 
-    const outsideResult = await validatePath("./package.json");
-    expect(outsideResult.valid).toBe(false);
+      const outsideResult = await validatePath("./package.json");
+      expect(outsideResult.valid).toBe(false);
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
   });
 });
