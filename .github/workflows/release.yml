@@ -11,7 +11,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write # npm provenance + MCP Registry OIDC login
+      id-token: write # npm trusted publishing + MCP Registry OIDC login
       contents: write # create the GitHub Release
 
     steps:
@@ -23,6 +23,12 @@ jobs:
         with:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
+
+      # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10.x.
+      # Pinned to a major rather than @latest so a future npm that drops Node 22
+      # support cannot break the release job.
+      - name: Upgrade npm
+        run: npm install -g npm@^12
 
       # tokei is a runtime dependency (get_line_counts, check_thresholds) and its
       # tests shell out to the real binary. No prebuilt binaries exist past
@@ -50,11 +56,11 @@ jobs:
             exit 1
           fi
 
-      # prepublishOnly runs check + tests + build before publishing
+      # Auth comes from OIDC via the id-token permission — no NODE_AUTH_TOKEN.
+      # Provenance is generated automatically, so --provenance is not passed.
+      # prepublishOnly runs check + tests + build before publishing.
       - name: Publish to npm
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
       - name: Sync version into server.json and manifest.json
         run: |
