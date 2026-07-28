@@ -2,7 +2,7 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-plugin-prettier";
 import eslintConfigPrettier from "eslint-config-prettier";
-import importPlugin from "eslint-plugin-import";
+import importPlugin from "eslint-plugin-import-x";
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -18,7 +18,7 @@ export default tseslint.config(
     },
     plugins: {
       prettier,
-      import: importPlugin,
+      "import-x": importPlugin,
     },
     rules: {
       // Prettier integration
@@ -54,7 +54,7 @@ export default tseslint.config(
       ],
 
       // Import rules
-      "import/order": [
+      "import-x/order": [
         "error",
         {
           groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
@@ -62,7 +62,7 @@ export default tseslint.config(
           alphabetize: { order: "asc", caseInsensitive: true },
         },
       ],
-      "import/no-duplicates": "error",
+      "import-x/no-duplicates": "error",
 
       // General code quality
       "no-console": ["warn", { allow: ["warn", "error"] }],
