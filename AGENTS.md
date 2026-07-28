@@ -19,7 +19,7 @@ npm run test:coverage  # Tests with coverage
 
 Use the project's own MCP tools to understand and validate code. Run `check_thresholds` before committing.
 
-Prefer LSP over Grep/Read for code navigation (`workspaceSymbol`, `findReferences`, `goToDefinition`, `hover`). Use Grep only for text/pattern searches.
+If LSP tools are available in your session, prefer them (`workspaceSymbol`, `findReferences`, `goToDefinition`, `hover`) over Grep/Read for code navigation; otherwise use Grep for text/pattern searches.
 
 ## Behavior
 
