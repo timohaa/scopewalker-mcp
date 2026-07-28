@@ -66,6 +66,31 @@ scores zero on each.
 Both are one-line additions to the type lists, gated on the same `node.isNamed` check the
 Ruby entries already use.
 
+### Rust `match` and closures also score zero cognitive complexity
+
+**Tools:** `get_complexity_metrics`
+
+Same root cause as the Go/Java `switch` entry above: `match_expression` and
+`closure_expression` are in `NESTING_TYPES` but absent from `CONTROL_FLOW_TYPES`. A
+function with a `match` whose one arm uses a closure reports `max_nesting_depth: 2` and
+`cognitive_complexity: 0` — nesting depth counts both constructs, cognitive complexity
+counts neither.
+
+### Ruby methods inside a `module` body are invisible to the inventory
+
+**Tools:** `get_code_inventory`
+
+`getItemType` treats a `method` node as a function only when its parent is not
+`body_statement`. Class methods are expected to be nested under their class already, but
+`module` has no entry in `NODE_TYPE_MAP` for a method to nest under, so a method whose
+parent is a module's `body_statement` has nowhere to attach and is dropped instead.
+
+A file containing only `module Helpers; def helper; end; end` returns an empty inventory
+(`total_files: 0`) — the whole file disappears, files with no matched items being dropped
+the same as the Go case above. `get_documentation_coverage` runs a separate walk and still
+sees `helper` as type `method`, so the two tools disagree about whether the file has
+anything in it at all.
+
 ---
 
 ## Limitations
