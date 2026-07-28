@@ -3,7 +3,7 @@ import type * as fsModule from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { validatePath, validateDirectory, validateFile } from "./paths.js";
+import { validatePath } from "./paths.js";
 
 vi.mock("node:fs/promises", async () => {
   const actual = await vi.importActual<typeof fsModule>("node:fs/promises");
@@ -133,51 +133,5 @@ describe("validatePath - SCOPEWALKER_ALLOWED_ROOTS", () => {
 
     const outsideResult = await validatePath("./package.json");
     expect(outsideResult.valid).toBe(false);
-  });
-});
-
-describe("validateDirectory", () => {
-  it("returns valid result for directory", async () => {
-    const result = await validateDirectory("./src");
-    expect(result.valid).toBe(true);
-  });
-
-  it("returns error for file path", async () => {
-    const result = await validateDirectory("./package.json");
-    expect(result.valid).toBe(false);
-    if (!result.valid) {
-      expect(result.error.error.code).toBe("NOT_A_DIRECTORY");
-    }
-  });
-
-  it("returns error for non-existent path", async () => {
-    const result = await validateDirectory("./nonexistent-12345");
-    expect(result.valid).toBe(false);
-    if (!result.valid) {
-      expect(result.error.error.code).toBe("PATH_NOT_FOUND");
-    }
-  });
-});
-
-describe("validateFile", () => {
-  it("returns valid result for file", async () => {
-    const result = await validateFile("./package.json");
-    expect(result.valid).toBe(true);
-  });
-
-  it("returns error for directory path", async () => {
-    const result = await validateFile("./src");
-    expect(result.valid).toBe(false);
-    if (!result.valid) {
-      expect(result.error.error.code).toBe("NOT_A_FILE");
-    }
-  });
-
-  it("returns error for non-existent path", async () => {
-    const result = await validateFile("./nonexistent-file-9876");
-    expect(result.valid).toBe(false);
-    if (!result.valid) {
-      expect(result.error.error.code).toBe("PATH_NOT_FOUND");
-    }
   });
 });

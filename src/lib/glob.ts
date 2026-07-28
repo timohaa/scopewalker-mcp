@@ -69,40 +69,6 @@ export async function findFiles(options: GlobOptions): Promise<string[]> {
 }
 
 /**
- * Finds all entries (files and directories) for tree building.
- */
-export async function findEntries(
-  options: GlobOptions
-): Promise<{ files: string[]; directories: string[] }> {
-  const { cwd, includeHidden = false, ignorePatterns = [], maxDepth } = options;
-
-  const ig = await createIgnoreFilter(cwd, ignorePatterns);
-
-  const [files, directories] = await Promise.all([
-    fg("**/*", {
-      cwd,
-      dot: includeHidden,
-      onlyFiles: true,
-      deep: maxDepth,
-      ignore: [...DEFAULT_IGNORE_PATTERNS],
-    }),
-    fg("**/*", {
-      cwd,
-      dot: includeHidden,
-      onlyDirectories: true,
-      deep: maxDepth,
-      ignore: [...DEFAULT_IGNORE_PATTERNS],
-    }),
-  ]);
-
-  // Append trailing slash for directories so gitignore directory-only patterns (e.g. "dist/") match correctly
-  return {
-    files: files.filter((file) => !ig.ignores(file)).sort(),
-    directories: directories.filter((dir) => !ig.ignores(dir) && !ig.ignores(dir + "/")).sort(),
-  };
-}
-
-/**
  * Creates an ignore filter that properly handles .gitignore patterns.
  * Uses the `ignore` library which correctly handles negation patterns,
  * escaped characters, directory-only patterns, and other gitignore semantics.

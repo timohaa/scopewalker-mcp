@@ -29,47 +29,6 @@ const EXTENSION_MAP: Record<string, SupportedLanguage> = {
   ".rb": "ruby",
 };
 
-const FUNCTION_QUERIES: Record<SupportedLanguage, string> = {
-  typescript: `
-    (function_declaration name: (identifier) @name) @func
-    (method_definition name: (property_identifier) @name) @func
-    (arrow_function) @func
-    (function_expression) @func
-  `,
-  javascript: `
-    (function_declaration name: (identifier) @name) @func
-    (method_definition name: (property_identifier) @name) @func
-    (arrow_function) @func
-    (function_expression) @func
-  `,
-  python: `
-    (function_definition name: (identifier) @name) @func
-  `,
-  go: `
-    (function_declaration name: (identifier) @name) @func
-    (method_declaration name: (field_identifier) @name) @func
-  `,
-  rust: `
-    (function_item name: (identifier) @name) @func
-  `,
-  java: `
-    (method_declaration name: (identifier) @name) @func
-    (constructor_declaration name: (identifier) @name) @func
-  `,
-  c: `
-    (function_definition declarator: (function_declarator declarator: (identifier) @name)) @func
-  `,
-  cpp: `
-    (function_definition declarator: (function_declarator declarator: (identifier) @name)) @func
-    (function_definition declarator: (function_declarator declarator: (field_identifier) @name)) @func
-    (function_definition declarator: (function_declarator declarator: (qualified_identifier) @name)) @func
-  `,
-  ruby: `
-    (method name: (identifier) @name) @func
-    (singleton_method name: (identifier) @name) @func
-  `,
-};
-
 export interface FunctionLocation {
   name: string;
   startLine: number;
@@ -84,13 +43,6 @@ export interface FunctionLocation {
 export function detectLanguage(filePath: string): SupportedLanguage | null {
   const ext = extname(filePath).toLowerCase();
   return EXTENSION_MAP[ext] ?? null;
-}
-
-/**
- * Checks if a language is supported for parsing.
- */
-export function isLanguageSupported(language: string): language is SupportedLanguage {
-  return language in FUNCTION_QUERIES;
 }
 
 /**

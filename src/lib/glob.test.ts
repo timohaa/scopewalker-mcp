@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { describe, it, expect } from "vitest";
-import { findFiles, findEntries } from "./glob.js";
+import { findFiles } from "./glob.js";
 
 const fixturesDir = resolve(import.meta.dirname, "../__fixtures__");
 
@@ -49,38 +49,6 @@ describe("glob", () => {
       const files = await findFiles({ cwd: fixturesDir });
       const sorted = [...files].sort();
       expect(files).toEqual(sorted);
-    });
-  });
-
-  describe("findEntries", () => {
-    it("returns both files and directories", async () => {
-      const result = await findEntries({ cwd: resolve(import.meta.dirname, "..") });
-      expect(result.files.length).toBeGreaterThan(0);
-      // Should find subdirectories like tools, types, utils, lib
-      expect(result.directories).toContain("tools");
-      expect(result.directories).toContain("types");
-      expect(result.directories).toContain("utils");
-    });
-
-    it("respects maxDepth option", async () => {
-      const deep = await findEntries({ cwd: resolve(import.meta.dirname, ".."), maxDepth: 1 });
-      const shallow = await findEntries({ cwd: resolve(import.meta.dirname, ".."), maxDepth: 0 });
-      // maxDepth: 0 means only the immediate contents
-      expect(shallow.files.length).toBeLessThanOrEqual(deep.files.length);
-    });
-
-    it("normalizes simple directory names in ignore patterns", async () => {
-      const srcDir = resolve(import.meta.dirname, "..");
-      const withUtils = await findEntries({ cwd: srcDir });
-      const withoutUtils = await findEntries({
-        cwd: srcDir,
-        ignorePatterns: ["utils"],
-      });
-
-      expect(withUtils.directories).toContain("utils");
-      expect(withoutUtils.directories).not.toContain("utils");
-      expect(withUtils.files.some((f) => f.startsWith("utils/"))).toBe(true);
-      expect(withoutUtils.files.some((f) => f.startsWith("utils/"))).toBe(false);
     });
   });
 });

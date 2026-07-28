@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectLanguage, isLanguageSupported } from "./treeSitter.js";
+import { detectLanguage } from "./treeSitter.js";
 
 describe("detectLanguage", () => {
   it("detects TypeScript files", () => {
@@ -49,18 +49,5 @@ describe("detectLanguage", () => {
     expect(detectLanguage("foo.xyz")).toBeNull();
     expect(detectLanguage("foo.md")).toBeNull();
     expect(detectLanguage("foo.json")).toBeNull();
-  });
-});
-
-describe("isLanguageSupported", () => {
-  it("returns true for supported languages", () => {
-    expect(isLanguageSupported("typescript")).toBe(true);
-    expect(isLanguageSupported("javascript")).toBe(true);
-    expect(isLanguageSupported("python")).toBe(true);
-  });
-
-  it("returns false for unsupported languages", () => {
-    expect(isLanguageSupported("haskell")).toBe(false);
-    expect(isLanguageSupported("")).toBe(false);
   });
 });
