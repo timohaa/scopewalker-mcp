@@ -37,7 +37,7 @@ npm run test:coverage  # Run tests with coverage report
 1. Create `src/tools/[toolName].ts` with the tool implementation
 2. Create `src/types/[concern].ts` for type definitions (named by domain, e.g., `complexity.ts`, `thresholds.ts`)
 3. Export types from `src/types/index.ts`
-4. Register the tool in `src/index.ts`
+4. Register the tool in `createServer()` in `src/server.ts`, and add its name to `EXPECTED_TOOLS` in `src/server.test.ts`
 5. Add tests in `src/tools/[toolName].test.ts`
 6. Document in the appropriate `docs/tools-*.md` file, update the quick reference table in `TOOLS.md`, and add the tool to the list in `README.md` (bumping the tool count there and in `docs/tools-overview.md`)
 
@@ -47,7 +47,7 @@ npm run test:coverage  # Run tests with coverage report
 2. Make changes following the code standards
 3. Run `npm run check` and fix any issues
 4. Submit PR with clear description of changes
-5. Ensure CI checks pass
+5. Ensure CI checks pass — `.github/workflows/ci.yml` runs `npm run check`, `npm run test:coverage`, and `npm run build` on every pull request. It fails if `npm run check` modifies a tracked file (commit the fixes it applies) or if coverage drops below the thresholds in `vitest.config.ts`
 
 ## Releasing (maintainers)
 

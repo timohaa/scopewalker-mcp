@@ -218,3 +218,30 @@ export const withParams = (a: number, b: number) => a + b;
     expect(result.summary.most_complex_file).toBeNull();
   });
 });
+
+describe("get_complexity_metrics - request limits and path validation", () => {
+  it("analyzes at most max_files files", async () => {
+    const response = await handler({ path: testDir, max_files: 1 });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    expect(result.summary.files_analyzed).toBe(1);
+  });
+
+  it("analyzes every file when max_files exceeds the file count", async () => {
+    const capped = parseContent<ComplexityMetricsResult>(
+      await handler({ path: testDir, max_files: 99 })
+    );
+    const uncapped = parseContent<ComplexityMetricsResult>(await handler({ path: testDir }));
+
+    expect(capped.summary.files_analyzed).toBe(uncapped.summary.files_analyzed);
+    expect(capped.summary.files_analyzed).toBeGreaterThan(1);
+  });
+
+  it("returns an error response for a path that does not exist", async () => {
+    const response = await handler({ path: join(testDir, "does-not-exist-12345") });
+
+    expect(response.isError).toBe(true);
+    const failure = parseContent<{ error: { code: string } }>(response);
+    expect(failure.error.code).toBe("PATH_NOT_FOUND");
+  });
+});

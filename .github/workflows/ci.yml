@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  TOKEI_VERSION: "14.0.0"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # tokei is a runtime dependency (get_line_counts, check_thresholds) and its
+      # tests shell out to the real binary. No prebuilt binaries exist past
+      # v12.1.2, so build the pinned version from crates.io.
+      - name: Cache tokei binary
+        id: cache-tokei
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/tokei
+          key: tokei-${{ runner.os }}-${{ env.TOKEI_VERSION }}
+
+      - name: Install tokei
+        if: steps.cache-tokei.outputs.cache-hit != 'true'
+        run: cargo install tokei --version "$TOKEI_VERSION" --locked
+
+      - name: Install dependencies
+        run: npm ci
+
+      # lint:fix, not lint — `npm run check` is the documented pre-commit gate
+      # and CI must run the same command. Any fix it applies is reported by the
+      # working-tree check below rather than silently accepted.
+      - name: Lint and typecheck
+        run: npm run check
+
+      - name: Fail if checks modified tracked files
+        run: git diff --exit-code
+
+      # Coverage, not plain test: vitest.config.ts carries coverage thresholds
+      # and they only gate when the run collects coverage. Safe after the
+      # working-tree check above, since coverage/ is gitignored.
+      - name: Test
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build

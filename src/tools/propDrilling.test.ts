@@ -229,3 +229,12 @@ describe("edge cases", () => {
     expect(locale?.occurrences).toBe(3);
   });
 });
+
+describe("get_prop_drilling - request limits", () => {
+  it("analyzes at most max_files files", async () => {
+    const response = await handler({ path: testDir, max_files: 1 });
+    const result = parseContent<PropDrillingResult>(response);
+
+    expect(result.summary.files_analyzed).toBe(1);
+  });
+});

@@ -136,7 +136,7 @@ Note: All metrics are currently calculated; the `metrics` parameter is accepted 
 
 **Available Metrics:**
 
-- `nesting_depth`: Maximum nesting level (loops, conditionals, callbacks). `else if` chains count as sibling branches, not extra nesting
+- `nesting_depth`: Maximum nesting level (loops, conditionals, callbacks). `else if` chains count as sibling branches, not extra nesting, in every supported language
 - `parameters`: Function parameter counts; also counts props passed to React/JSX components (PascalCase elements) so heavily-propped components surface alongside high-arity functions
 - `dependencies`: Import/require count per file
 - `cognitive`: Simplified cognitive complexity score
@@ -146,7 +146,7 @@ Parameter counting is language-aware: Python skips `self`/`cls`, `*args`, `**kwa
 Nesting and cognitive complexity likewise follow each grammar's own shape, but from two separate node lists, so the metrics do not always agree about the same construct:
 
 - **Nesting** counts Rust's expression forms (`if`/`for`/`while`/`loop`/`match`, closures) and Ruby's keyword-named nodes (`if`, `unless`, `while`, `until`, `for`, `case`, `begin`, `do` blocks) alongside the statement equivalents other grammars emit.
-- **Cognitive complexity** covers a narrower set: Rust `if`/`for`/`while`/`loop` and Ruby `if`, `unless`, `while`, `until`, `for`, `case`, `rescue` score, but Rust `match` and closures and Ruby `begin`/`do` blocks do not.
+- **Cognitive complexity** covers a narrower set: Rust `if`/`for`/`while`/`loop` and Ruby `if`, `unless`, `while`, `until`, `for`, `case`, `rescue` score, but Rust `match` and closures and Ruby `begin`/`do` blocks do not. Python `elif` and Ruby `elsif` each score as their own branch; because Python attaches them flat to the parent `if` while other grammars nest them, a Python chain scores slightly lower than the same chain elsewhere.
 
 Ruby brace blocks (`{ |x| ... }`) count toward neither metric.
 

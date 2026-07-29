@@ -28,9 +28,9 @@ For each documentation file, verify:
 
 - File and directory path references exist on disk
 - Code examples match actual implementation patterns
-- Tool names and descriptions match `src/index.ts` registrations
+- Tool names and descriptions match the `createServer()` registrations in `src/server.ts`
 - Input parameter names/types match zod schemas in `src/tools/*.ts`
-- For `.claude/` skills and agents: frontmatter `tools:` entries reference tools that exist (scopewalker names match `src/index.ts` registrations) and body claims (commands, defaults, thresholds, config files) match the code
+- For `.claude/` skills and agents: frontmatter `tools:` entries reference tools that exist (scopewalker names match the `src/server.ts` registrations) and body claims (commands, defaults, thresholds, config files) match the code
 - npm scripts listed match `package.json` scripts
 - Version numbers and dependency names match `package.json`
 - Installation instructions are accurate
@@ -44,7 +44,7 @@ For each documentation file, verify:
 - Walk through updated instructions step-by-step to confirm they'd actually work
 - Run `markdownlint` on each changed file — fix any warnings
 - Confirm every file path reference resolves
-- Confirm every tool name matches a registration in `src/index.ts`
+- Confirm every tool name matches a registration in `src/server.ts`
 - Confirm npm script names match `package.json`
 
 ## Decision Framework

@@ -29,7 +29,7 @@ Run project tests using vitest.
 
 ## Test Structure
 
-- Tests live alongside source files: `src/tools/*.test.ts`, `src/lib/*.test.ts`, `src/utils/*.test.ts`
+- Tests live alongside source files: `src/tools/*.test.ts`, `src/lib/*.test.ts`, `src/utils/*.test.ts`, `src/server.test.ts`
 - Use `getToolHandler` from `src/testUtils/toolTestHarness.ts` for tool tests
 - Mock external dependencies with `vi.mock()`
 - Test both success and error scenarios

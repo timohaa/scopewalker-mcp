@@ -14,27 +14,22 @@ export const HIGH_PARAMS_THRESHOLD = 5;
 export const HIGH_COMPLEXITY_THRESHOLD = 20;
 
 /**
- * Checks if an if_statement is part of an "else if" chain.
+ * Checks if an if node is part of an "else if" chain.
  * In tree-sitter, "else if" is represented as:
  *   if_statement
  *     ├── else (keyword)
  *     └── if_statement (sibling - this is the "else if")
- * So we check if the if_statement has a previous sibling that is an 'else' keyword.
+ * So we check if the if node has a previous sibling that is an 'else' keyword.
+ * Rust wraps the pair in an else_clause and calls the node if_expression, but the
+ * else-keyword sibling holds there too, so both type names qualify.
  */
 function isElseIf(node: Parser.SyntaxNode): boolean {
-  if (node.type !== "if_statement") return false;
+  if (node.type !== "if_statement" && node.type !== "if_expression") return false;
 
-  const parent = node.parent;
-  if (!parent) return false;
-
-  const siblings = parent.children;
-  const nodeIndex = siblings.indexOf(node);
-
-  if (nodeIndex > 0 && siblings[nodeIndex - 1].type === "else") {
-    return true;
-  }
-
-  return false;
+  // Compare via previousSibling rather than locating the node in parent.children:
+  // tree-sitter hands out fresh SyntaxNode wrappers per access, so indexOf's
+  // reference equality silently misses and the chain reads as real nesting.
+  return node.previousSibling?.type === "else";
 }
 
 // Rust models control flow as expressions; Ruby names its nodes after the
@@ -133,6 +128,10 @@ const CONTROL_FLOW_TYPES = [
   "for",
   "case",
   "rescue",
+  // Python and Ruby give else-if its own node instead of nesting a second if,
+  // so without these two the whole chain scores as a single branch.
+  "elif_clause",
+  "elsif",
 ];
 
 // Ruby names its binary operator node `binary`; every other grammar here uses
