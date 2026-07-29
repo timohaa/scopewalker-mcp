@@ -146,10 +146,10 @@ Parameter counting is language-aware: Python skips `self`/`cls`, `*args`, `**kwa
 Nesting and cognitive complexity likewise follow each grammar's own shape, but each runs off its own node list, so a construct can count toward one metric, both, or neither:
 
 - **Both metrics:** `if`, `for`, and `while` in every grammar; switches everywhere (`switch_statement` in C, C++, TypeScript, and JavaScript, `expression_switch_statement` and `type_switch_statement` in Go, `switch_expression` in Java); Rust's expression forms (`if`/`for`/`while`/`loop`/`match` and closures); Ruby's keyword-named `if`, `unless`, `while`, `until`, `for`, and `case`.
-- **Nesting only:** `try` blocks, the anonymous-function nodes TS/JS arrow functions and Java/C++ lambdas emit, and Ruby's `begin` and `do` blocks.
-- **Cognitive complexity only:** `catch` clauses (Python's `except` is a different node and does not count), Ruby `rescue`, logical `&&`/`||` operators (Python's `and`/`or` do not count), the ternary node C, C++, and Python emit (TypeScript's and Java's ternary counts toward neither), and the `elif`/`elsif` nodes Python and Ruby give else-if chains. Because Python attaches `elif` flat to the parent `if` while other grammars nest them, a Python chain of three or more branches scores slightly lower than the same chain elsewhere.
+- **Nesting only:** `try` blocks, anonymous functions in every grammar (`arrow_function` in TypeScript and JavaScript, `lambda` in Python and Ruby's stabby `->(x){}`, `func_literal` in Go, `lambda_expression` in Java and C++), and Ruby's `begin` and `do` blocks.
+- **Cognitive complexity only:** `catch` clauses in every grammar that has one (`catch_clause` in TypeScript, JavaScript, Java, and C++, `except_clause` in Python, `rescue` in Ruby); ternaries in every grammar that has one (`ternary_expression` in TypeScript, JavaScript, and Java, `conditional_expression` in Python, C, and C++, `conditional` in Ruby — Go and Rust have no ternary operator); logical operators, both the `&&`/`||` form and the `and`/`or` keywords Python and Ruby also accept; and the `elif`/`elsif` nodes Python and Ruby give else-if chains. Because Python attaches `elif` flat to the parent `if` while other grammars nest them, a Python chain of three or more branches scores slightly lower than the same chain elsewhere.
 
-Ruby brace blocks (`{ |x| ... }`), Python `lambda`, and Go function literals count toward neither metric.
+Ruby brace blocks (`{ |x| ... }`) count toward neither metric — see [known-bugs.md](./known-bugs.md) for why.
 
 Each hotspot's `issue` field is one of `nesting_depth`, `parameters`, or `jsx_props` (a JSX component receiving more than 5 props).
 

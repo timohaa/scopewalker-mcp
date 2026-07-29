@@ -35,6 +35,8 @@ function isElseIf(node: Parser.SyntaxNode): boolean {
 // Rust models control flow as expressions; Ruby names its nodes after the
 // keyword. Ruby's brace block is deliberately absent: `block` is also Rust's
 // node for any braced scope, which would count every function body as nesting.
+// Anonymous functions carry five names across the nine grammars and all five are
+// listed, so a callback nests the same amount whatever it is written in.
 const NESTING_TYPES = [
   "if_statement",
   "for_statement",
@@ -46,8 +48,10 @@ const NESTING_TYPES = [
   "expression_switch_statement", // Go switch statements
   "type_switch_statement", // Go type switches
   "match_expression",
-  "lambda_expression",
-  "arrow_function",
+  "lambda_expression", // Java and C++ lambdas
+  "arrow_function", // TypeScript and JavaScript arrows
+  "lambda", // Python `lambda x:` and Ruby's stabby `->(x){}`
+  "func_literal", // Go function literals
   "if_expression",
   "for_expression",
   "while_expression",
@@ -112,6 +116,8 @@ export async function countDependencies(
 // Same grammar spread as NESTING_TYPES: Rust expression forms, Ruby
 // keyword-named nodes, and the switch node names Go and Java use instead of
 // `switch_statement`, which otherwise leave those languages scoring zero.
+// The ternary and the catch clause are the worst offenders — three and two node
+// names respectively for one construct — so both are listed in full below.
 const CONTROL_FLOW_TYPES = [
   "if_statement",
   "for_statement",
@@ -121,8 +127,11 @@ const CONTROL_FLOW_TYPES = [
   "switch_expression", // Java switch statements
   "expression_switch_statement", // Go switch statements
   "type_switch_statement", // Go type switches
-  "catch_clause",
-  "conditional_expression",
+  "catch_clause", // TypeScript, JavaScript, Java, C++
+  "except_clause", // Python
+  "conditional_expression", // ternary in Python, C, C++
+  "ternary_expression", // ternary in TypeScript, JavaScript, Java
+  "conditional", // ternary in Ruby
   "if_expression",
   "for_expression",
   "while_expression",
@@ -142,13 +151,19 @@ const CONTROL_FLOW_TYPES = [
   "elsif",
 ];
 
-// Ruby names its binary operator node `binary`; every other grammar here uses
-// `binary_expression`. Both only score when the operator is actually logical.
-const BINARY_TYPES = ["binary_expression", "binary"];
+// Ruby names its binary operator node `binary` and Python splits logical
+// operators out into `boolean_operator`; every other grammar here uses
+// `binary_expression`. All three only score when the operator is actually logical.
+const BINARY_TYPES = ["binary_expression", "binary", "boolean_operator"];
+
+// Python spells its logical operators `and`/`or`, as does Ruby alongside `&&`/`||`.
+// No other supported grammar emits those two as operator tokens, so matching them
+// cannot over-count.
+const LOGICAL_OPERATORS = ["&&", "||", "and", "or"];
 
 /** Returns complexity increment for a node: 1 + nesting for control flow, 1 for logical operators. */
 function getNodeComplexityIncrement(node: Parser.SyntaxNode, nesting: number): number {
-  // Unnamed keyword tokens share names with Ruby's control-flow nodes (see NESTING_TYPES).
+  // Unnamed keyword tokens share names with Ruby's control-flow nodes (see CONTROL_FLOW_TYPES).
   if (!node.isNamed) return 0;
 
   if (CONTROL_FLOW_TYPES.includes(node.type)) {
@@ -156,7 +171,7 @@ function getNodeComplexityIncrement(node: Parser.SyntaxNode, nesting: number): n
   }
 
   if (BINARY_TYPES.includes(node.type)) {
-    const hasLogicalOp = node.children.some((c) => c.type === "&&" || c.type === "||");
+    const hasLogicalOp = node.children.some((c) => LOGICAL_OPERATORS.includes(c.type));
     return hasLogicalOp ? 1 : 0;
   }
 
