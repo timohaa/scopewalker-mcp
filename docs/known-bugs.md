@@ -10,7 +10,7 @@ Two kinds of entry:
 - **Limitations** — the tool is knowingly incomplete, and the behaviour is documented in
   `docs/tools-*.md`. Listed here so the gaps are visible in one place.
 
-Verified against version 1.0.3.
+Verified against version 1.0.4.
 
 ---
 
@@ -48,33 +48,6 @@ Two separate causes:
 The Constant column in the language table in `docs/tools-health.md` shows `—` for both
 languages, so the table is accurate — but it reads as "this language has no constants"
 rather than "the tool cannot see them".
-
-### Go and Java `switch` do not count toward cognitive complexity
-
-**Tools:** `get_complexity_metrics`
-
-`CONTROL_FLOW_TYPES` contains `switch_statement`, which is what C, C++, TypeScript, and
-JavaScript emit. Go emits `expression_switch_statement` and Java emits `switch_expression`,
-so neither scores.
-
-A single-`switch` function returns `cognitive_complexity: 1` in C and TypeScript,
-`0` in Go, and `0` in Java. Java's `switch_expression` *is* in `NESTING_TYPES`, so it
-reports `max_nesting_depth: 1` while still scoring zero cognitive complexity — the two
-metrics disagree about the same construct. Go's switch is absent from both lists and
-scores zero on each.
-
-Both are one-line additions to the type lists, gated on the same `node.isNamed` check the
-Ruby entries already use.
-
-### Rust `match` and closures also score zero cognitive complexity
-
-**Tools:** `get_complexity_metrics`
-
-Same root cause as the Go/Java `switch` entry above: `match_expression` and
-`closure_expression` are in `NESTING_TYPES` but absent from `CONTROL_FLOW_TYPES`. A
-function with a `match` whose one arm uses a closure reports `max_nesting_depth: 2` and
-`cognitive_complexity: 0` — nesting depth counts both constructs, cognitive complexity
-counts neither.
 
 ### Grouped Go `type (...)` declarations report only their first type
 

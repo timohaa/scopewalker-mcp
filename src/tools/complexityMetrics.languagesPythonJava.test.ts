@@ -202,4 +202,31 @@ describe("Java", () => {
       result.files[0]?.hotspots.filter((h) => h.issue === "nesting_depth") ?? [];
     expect(nestingHotspots.length).toBeGreaterThan(0);
   });
+
+  it("scores a switch toward cognitive complexity", async () => {
+    await writeFile(
+      join(testDir, "SwitchCase.java"),
+      `public class SwitchCase {
+    public String classify(int x) {
+        switch (x) {
+            case 1:
+                return "one";
+            case 2:
+                return "two";
+            default:
+                return "other";
+        }
+    }
+}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "SwitchCase.java") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    // Java names the node switch_expression, which nesting depth already counted
+    // while cognitive complexity used to score it zero
+    expect(result.files[0]?.metrics.cognitive_complexity).toBeGreaterThanOrEqual(1);
+    expect(result.files[0]?.metrics.max_nesting_depth).toBe(1);
+  });
 });

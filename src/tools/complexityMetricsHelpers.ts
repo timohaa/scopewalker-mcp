@@ -43,6 +43,8 @@ const NESTING_TYPES = [
   "try_statement",
   "switch_statement",
   "switch_expression", // Java switch statements
+  "expression_switch_statement", // Go switch statements
+  "type_switch_statement", // Go type switches
   "match_expression",
   "lambda_expression",
   "arrow_function",
@@ -107,20 +109,26 @@ export async function countDependencies(
   return countImports(code, language);
 }
 
-// Same grammar spread as NESTING_TYPES: Rust expression forms and Ruby
-// keyword-named nodes, which otherwise leave both languages scoring zero.
+// Same grammar spread as NESTING_TYPES: Rust expression forms, Ruby
+// keyword-named nodes, and the switch node names Go and Java use instead of
+// `switch_statement`, which otherwise leave those languages scoring zero.
 const CONTROL_FLOW_TYPES = [
   "if_statement",
   "for_statement",
   "while_statement",
   "for_in_statement",
   "switch_statement",
+  "switch_expression", // Java switch statements
+  "expression_switch_statement", // Go switch statements
+  "type_switch_statement", // Go type switches
   "catch_clause",
   "conditional_expression",
   "if_expression",
   "for_expression",
   "while_expression",
   "loop_expression",
+  "match_expression",
+  "closure_expression",
   "if",
   "unless",
   "while",

@@ -35,7 +35,7 @@ Tools supporting grep: `get_line_counts`, `get_functions`, `get_code_inventory`
 
 **Path scoping:** All tools resolve paths with `realpath` and will reject requests outside allowed roots. Defaults: current working directory and system temp. Override with `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`.
 
-**Default ignores:** File discovery skips common build artifacts, caches, and lock files (e.g., `node_modules`, `dist`, `package-lock.json`). Directory-scanning tools respect `.gitignore` via the `ignore` library; tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) respect `.gitignore` through tokei's built-in ignore handling, in addition to those explicit ignore lists.
+**Default ignores:** File discovery skips common build artifacts, caches, and lock files (e.g., `node_modules`, `dist`, `package-lock.json`). Directory-scanning tools respect `.gitignore` via the `ignore` library; tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) respect `.gitignore` through tokei's built-in ignore handling — which only applies inside a git repository — in addition to those explicit ignore lists.
 
 **Resource guardrails:** AST-based tools skip files over 1 MB to prevent runaway memory/CPU usage. Tokei-based line counts do not enforce this limit. Use extension filters, `ignore_patterns`, and `limit` to reduce scan size further. Most directory-scanning tools also accept `max_depth` and `max_files` to bound traversal.
 

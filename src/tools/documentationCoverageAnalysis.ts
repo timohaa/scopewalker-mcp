@@ -30,6 +30,7 @@ export interface CoverageData {
   totalUndocumented: number;
 }
 
+/** Result of analyzing a single file's documentation coverage. */
 export interface FileAnalysis {
   documented: number;
   undocumented: number;

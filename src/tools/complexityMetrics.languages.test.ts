@@ -41,6 +41,62 @@ func main() {
 
     expect(result.files[0]?.metrics.dependency_count).toBe(3);
   });
+
+  it("scores an expression switch toward cognitive complexity", async () => {
+    await writeFile(
+      join(testDir, "expr_switch.go"),
+      `package main
+
+func classify(x int) string {
+	switch x {
+	case 1:
+		return "one"
+	case 2:
+		return "two"
+	default:
+		return "other"
+	}
+}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "expr_switch.go") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    // Go names the node expression_switch_statement, not switch_statement, so a
+    // single-switch function used to score zero
+    expect(result.files[0]?.metrics.cognitive_complexity).toBeGreaterThanOrEqual(1);
+    expect(result.files[0]?.metrics.max_nesting_depth).toBe(1);
+  });
+
+  it("scores a type switch toward cognitive complexity", async () => {
+    await writeFile(
+      join(testDir, "type_switch.go"),
+      `package main
+
+func describe(x interface{}) string {
+	switch v := x.(type) {
+	case int:
+		_ = v
+		return "int"
+	case string:
+		_ = v
+		return "string"
+	default:
+		return "other"
+	}
+}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "type_switch.go") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    // Go's type switch is a separate node type again (type_switch_statement), so
+    // it too used to score zero
+    expect(result.files[0]?.metrics.cognitive_complexity).toBeGreaterThanOrEqual(1);
+    expect(result.files[0]?.metrics.max_nesting_depth).toBe(1);
+  });
 });
 
 describe("parameter counts across grammars", () => {
@@ -204,5 +260,29 @@ describe("Rust", () => {
     const result = parseContent<ComplexityMetricsResult>(response);
 
     expect(result.files[0]?.metrics.max_nesting_depth).toBe(5);
+  });
+
+  it("scores match arms and closures toward cognitive complexity", async () => {
+    await writeFile(
+      join(testDir, "match_closure.rs"),
+      `fn pick(x: i32) -> i32 {
+    match x {
+        1 => {
+            let f = |y: i32| y + 1;
+            f(x)
+        }
+        _ => 0,
+    }
+}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "match_closure.rs") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    // match_expression and closure_expression were only in the nesting list, so
+    // depth already counted both while the score used to come back zero
+    expect(result.files[0]?.metrics.max_nesting_depth).toBe(2);
+    expect(result.files[0]?.metrics.cognitive_complexity).toBeGreaterThan(0);
   });
 });
