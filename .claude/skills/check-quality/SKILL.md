@@ -14,7 +14,7 @@ Run the full quality gate for the project.
 Run these commands and capture output:
 
 ```bash
-npm run check          # lint:fix + typecheck
+npm run check          # check:versions + lint:fix + typecheck
 npx prettier --check src
 npm run test
 ```

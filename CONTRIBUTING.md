@@ -12,14 +12,14 @@
 
 ```bash
 npm run build          # Build the project
-npm run check          # Lint + typecheck
+npm run check          # Version sync + lint + typecheck
 npm run test           # Run tests
 npm run test:coverage  # Run tests with coverage report
 ```
 
 ## Before Submitting
 
-1. Run `npm run check` - fix all lint and type errors
+1. Run `npm run check` - fix all lint, type, and version-sync errors
 2. Run `npm run test` - all tests must pass
 3. Verify file/function size limits: use `check_thresholds` tool or review manually
 4. Update documentation if adding new features
@@ -53,9 +53,17 @@ npm run test:coverage  # Run tests with coverage report
 
 Releases are automated by `.github/workflows/release.yml`, triggered by a version tag:
 
+`package.json`, `manifest.json`, and `server.json` all carry the version, and `npm run check:versions` (part of `npm run check`, which `prepublishOnly` runs) fails the release if they disagree. `npm version` only touches `package.json`, so bump all three in the same commit:
+
 ```bash
-npm version patch   # or minor / major — bumps package.json and creates the tag
+npm version patch --no-git-tag-version   # or minor / major — bumps package.json only
+# set the same version in manifest.json, and in server.json's `version` and `packages[].version`
+npm run check:versions                   # confirms all three agree
+
+VERSION=$(node -p 'require("./package.json").version')
+git commit -am "chore: release v$VERSION"
+git tag "v$VERSION"
 git push --follow-tags
 ```
 
-The workflow runs checks and tests, publishes to npm with provenance, publishes to the [MCP Registry](https://registry.modelcontextprotocol.io), builds the `.mcpb` bundle, and attaches it to a GitHub Release.
+The workflow runs checks and tests, publishes to npm with provenance, publishes to the [MCP Registry](https://registry.modelcontextprotocol.io), builds the `.mcpb` bundle, and attaches it to a GitHub Release. It also rewrites the version into `manifest.json` and `server.json` at publish time, but never commits the result — which is what `check:versions` guards against drifting.

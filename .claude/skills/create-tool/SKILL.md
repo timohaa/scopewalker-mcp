@@ -38,7 +38,7 @@ Read `docs/patterns.md` for tool registration, error handling, and testing patte
 ### 5. Verify
 
 ```bash
-npm run check       # lint + typecheck
+npm run check       # check:versions + lint:fix + typecheck
 npm run test        # all tests pass
 ```
 

@@ -2,7 +2,7 @@
 
 ## What
 
-MCP server providing codebase analysis tools for AI assistants. Thin orchestration layer over external parsing, line-counting, and file-discovery tools — see `package.json` for the current set.
+MCP server providing codebase analysis tools for AI assistants. Thin orchestration layer over external parsing, line-counting (via the `tokei` binary), and file-discovery tools — see `package.json` for npm dependencies.
 
 ## Why
 
@@ -12,7 +12,7 @@ Gives AI coding agents quantitative visibility into codebases — complexity, pr
 
 ```bash
 npm run build          # Build
-npm run check          # Lint + typecheck (run before committing)
+npm run check          # Version sync + lint + typecheck (run before committing)
 npm run test           # Run tests
 npm run test:coverage  # Tests with coverage
 ```

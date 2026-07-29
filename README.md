@@ -1,6 +1,6 @@
 # Scopewalker MCP
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/thaanpaa)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/thaanpaa)
 
 AI agents will happily create 1000+ line source files and add a 20th parameter to a function call, even if there's a rule file telling them not to. Scopewalker exists to enforce stricter codebase standards.
 
@@ -190,7 +190,7 @@ Then point your MCP client at the build output, e.g. `claude mcp add scopewalker
 
 ```bash
 npm run build          # Build the project
-npm run check          # Lint + typecheck
+npm run check          # Version sync + lint + typecheck
 npm run test           # Run tests
 npm run test:coverage  # Run tests with coverage
 ```

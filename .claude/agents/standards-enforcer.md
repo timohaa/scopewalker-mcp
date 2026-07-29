@@ -56,7 +56,7 @@ After each refactoring pass, run the checks plus only the test files related to 
 changed code:
 
 ```bash
-npm run check                      # lint:fix + typecheck
+npm run check                      # check:versions + lint:fix + typecheck
 npx vitest run <changed>.test.ts   # tests covering the refactored files
 ```
 

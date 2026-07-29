@@ -1,5 +1,6 @@
 # Keep the bundle to runtime essentials: manifest.json, dist/, node_modules/, package.json
 src/
+scripts/
 coverage/
 docs/
 .github/

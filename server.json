@@ -6,12 +6,12 @@
     "url": "https://github.com/timohaa/scopewalker-mcp",
     "source": "github"
   },
-  "version": "1.0.2",
+  "version": "1.0.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "scopewalker-mcp",
-      "version": "1.0.2",
+      "version": "1.0.4",
       "transport": {
         "type": "stdio"
       },
