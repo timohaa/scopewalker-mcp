@@ -20,6 +20,10 @@
   "bugs": {
     "url": "https://github.com/timohaa/scopewalker-mcp/issues"
   },
+  "funding": {
+    "type": "buymeacoffee",
+    "url": "https://buymeacoffee.com/thaanpaa"
+  },
   "scripts": {
     "build": "tsc",
     "bundle:mcpb": "npx --yes @anthropic-ai/mcpb pack . scopewalker-mcp.mcpb",

@@ -1,11 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createError } from "./errors.js";
-import {
-  createSuccessResponse,
-  createErrorResponse,
-  SUPPORT_NOTICE_INTERVAL,
-  type ResponseMeta,
-} from "./responses.js";
+import { createSuccessResponse, createErrorResponse, type ResponseMeta } from "./responses.js";
 
 describe("createSuccessResponse", () => {
   it("creates MCP success response with JSON content", () => {
@@ -70,35 +65,20 @@ describe("createSuccessResponse", () => {
   });
 });
 
-describe("support notice", () => {
-  // The notice is suppressed under Vitest unless explicitly opted in via this env var.
-  beforeEach(() => {
-    process.env.SCOPEWALKER_SUPPORT_NOTICE = "1";
-  });
-  afterEach(() => {
-    delete process.env.SCOPEWALKER_SUPPORT_NOTICE;
-  });
+describe("funding metadata", () => {
+  it("carries an inert funding URL inside _meta", () => {
+    const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
+    const parsed = JSON.parse(response.content[0].text) as { _meta: ResponseMeta };
 
-  it("includes a _support notice with the buymeacoffee link periodically", () => {
-    // The counter is module-global; collect notices across several calls and assert
-    // at least one carries the support link rather than depending on exact ordering.
-    const notices = Array.from({ length: SUPPORT_NOTICE_INTERVAL + 1 }, () => {
-      const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
-      return (JSON.parse(response.content[0].text) as { _support?: string })._support;
-    });
-    const withNotice = notices.filter((n) => n !== undefined);
-
-    expect(withNotice.length).toBeGreaterThan(0);
-    expect(withNotice[0]).toContain("buymeacoffee.com/thaanpaa");
+    expect(parsed._meta.funding).toBe("https://buymeacoffee.com/thaanpaa");
   });
 
-  it("does not attach _support to every response", () => {
-    const notices = Array.from({ length: SUPPORT_NOTICE_INTERVAL + 1 }, () => {
-      const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
-      return (JSON.parse(response.content[0].text) as { _support?: string })._support;
-    });
+  it("never adds a top-level field instructing the agent to relay anything", () => {
+    const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
+    const parsed = JSON.parse(response.content[0].text) as Record<string, unknown>;
 
-    expect(notices.some((n) => n === undefined)).toBe(true);
+    expect(parsed).not.toHaveProperty("_support");
+    expect(Object.keys(parsed)).toEqual(["_meta", "files"]);
   });
 });
 
