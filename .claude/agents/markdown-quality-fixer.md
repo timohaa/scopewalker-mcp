@@ -19,15 +19,32 @@ git status --porcelain
 
 Filter for `.md` files that are new (`??`, `A`) or modified (`M`). If no specific files are changed, process all `.md` files in the project.
 
-### 2. Process Each File
+### 2. Process All Target Files in One Batch
 
-For each target file:
+Both tools accept **multiple file paths** in a single invocation, and
+`markdownlint` prefixes every warning with its filename. Pass the entire target
+list to each command. Do **not** loop the pipeline file by file, and do **not**
+run these commands as one Bash tool call per file — each `npx` invocation pays
+its own startup cost and each tool call costs a full model round-trip, so a
+per-file loop turns a ~2-second job into minutes.
 
-1. **Auto-fix**: `npx markdownlint --fix <file>`
-2. **Format tables**: `npx markdown-table-formatter <file>` — aligns and pads Markdown tables
-3. **Check remaining**: `npx markdownlint <file>`
-4. **Manual fix**: Resolve any issues that auto-fix could not handle
-5. **Final verify**: `npx markdownlint <file>` — must produce zero warnings
+Run the mechanical steps as a **single** Bash call, spelling out the target list
+from step 1 as literal arguments (the shell is zsh, which does not word-split an
+unquoted `$FILES` variable — it would pass the whole list as one bogus path):
+
+```bash
+npx markdownlint --fix README.md TOOLS.md docs/patterns.md          # auto-fix
+npx markdown-table-formatter README.md TOOLS.md docs/patterns.md    # align tables
+npx markdownlint README.md TOOLS.md docs/patterns.md                # what remains
+```
+
+1. **Auto-fix**, **format tables**, and **check remaining** — the call above.
+2. **Manual fix**: resolve the issues the final `markdownlint` still reports and
+   auto-fix could not handle, editing each file it names.
+3. **Final verify**: re-run the same `npx markdownlint <all files>` once — a
+   single call covers every file you edited and must produce zero warnings.
+
+Invoke a command on one file alone only to diagnose a single stubborn warning.
 
 ### 3. Project Config
 

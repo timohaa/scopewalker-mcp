@@ -71,15 +71,18 @@ Apply with judgement, not mechanically.
 
 ## Workflow
 
-1. **Inventory** — `find . -name 'AGENTS.md' -not -path '*/node_modules/*' -not -path '*/.git/*'`
-   and same for `CLAUDE.md`. Skip pure-pointer `CLAUDE.md` files.
-   Resolve `@path` imports into the audit set. Record `wc -l` per file.
+1. **Inventory** — in one Bash call, `find . \( -name 'AGENTS.md' -o -name 'CLAUDE.md' \) -not -path '*/node_modules/*' -not -path '*/.git/*' | xargs wc -l`
+   to list and size every candidate at once. Skip pure-pointer `CLAUDE.md`
+   files. Resolve `@path` imports into the audit set.
 2. **Audit** — classify every section/bullet as **Keep**, **Tighten**
    (rewrite for concision/specificity/voice, same meaning), **Cut**
    (derivable, standard convention, stale, platitude, duplicate), or
    **Flag** (possibly wrong, contradictory, or subjective — report,
-   don't edit). Verify every named script, path, command, or symbol
-   with `Glob`/`Read`/`Bash` — stale references are high-priority cuts.
+   don't edit). Verify every named script, path, command, and symbol —
+   collect them all first, then check them in a **single** batched Bash
+   call (`test -e` / `ls` over the paths, one `grep -nE` over
+   `package.json` for the scripts) rather than one call per reference.
+   Stale references are high-priority cuts.
 3. **Apply** — make only **Tighten** and **Cut** edits via `Edit`.
    Preserve every rule's semantic content even when rephrasing.
    Do **not**: move content between files (flag instead — that's a
@@ -92,9 +95,9 @@ Apply with judgement, not mechanically.
    create new files. When a rule names a specific past incident or
    non-obvious constraint, that's the highest-value content in the
    file — keep it, and flag it rather than touch it if unsure.
-4. **Verify** — re-run `wc -l`, re-read each edited file end to end
-   for flow and contradictions, spot-check every referenced command/
-   path/file still exists.
+4. **Verify** — re-run the step 1 `wc -l` and the step 2 batched reference
+   check together in one Bash call, then re-read each edited file end to
+   end for flow and contradictions.
 5. **Report** — under ~300 words, no full diff:
    - **Size** — before/after line counts, PASS / OVER BUDGET.
    - **Tightened** / **Cut** — bullet list with one-line justification each.

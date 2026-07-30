@@ -42,10 +42,14 @@ For each documentation file, verify:
 - Check internal consistency — the same fact (tool name, script, path) should read identically across every file that mentions it
 - Confirm code examples are syntactically valid
 - Walk through updated instructions step-by-step to confirm they'd actually work
-- Run `markdownlint` on each changed file — fix any warnings
-- Confirm every file path reference resolves
-- Confirm every tool name matches a registration in `src/server.ts`
-- Confirm npm script names match `package.json`
+- Run `npx markdownlint <file> <file> …` with the **whole** changed-file list in
+  one invocation — not one call per file — and fix any warnings it reports
+- Confirm every file path reference resolves, every tool name matches a
+  registration in `src/server.ts`, and every npm script name matches
+  `package.json`. Collect all three reference sets first, then verify them in a
+  **single** batched Bash call (e.g. `ls` / `test -e` over the paths, one
+  `grep -nE` over `src/server.ts` for the tool names, one over `package.json`
+  for the script names). Do not check references one tool call at a time.
 
 ## Decision Framework
 

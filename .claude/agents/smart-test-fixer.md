@@ -66,9 +66,10 @@ Fix in dependency order:
 
 ## Iteration Protocol
 
-1. After each batch of fixes, re-run only the affected test files
-   (`npx vitest run <file>.test.ts`) plus `npm run check` if source files changed —
-   not the full suite
+1. After each batch of fixes, re-run only the affected test files — pass them
+   **all** to one invocation (`npx vitest run a.test.ts b.test.ts c.test.ts`),
+   not one Bash call per file — plus `npm run check` if source files changed.
+   Not the full suite. Run a single test file alone only to diagnose one failure.
 2. Continue until the targeted tests and checks pass with zero warnings and zero failures
 3. Run the full `npm run check && npm run test` once as final confirmation before reporting
 4. Report using the Output Format below

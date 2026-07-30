@@ -37,7 +37,11 @@ Use `check_thresholds` and `get_code_smells` on changed files.
 
 ### 4. Manual review
 
-For each changed file, check for issues automation misses:
+Check for issues automation misses. The first three are mechanical markers —
+find them with **one** batched search across the whole changed-file list (e.g. a
+single `grep -nE 'eslint-disable|@ts-ignore|console\.log' <files>`, plus a pass
+over the diff you already have for commented-out code), not one search per file.
+The last two need judgment; read the changed files for those.
 
 - `eslint-disable` or `@ts-ignore` added without justification
 - `console.log` left in (use structured error handling)

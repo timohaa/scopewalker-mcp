@@ -34,7 +34,7 @@ Before any major refactoring (splitting files, extracting functions, reorganizin
    - Public exports that will be restructured
    - Branching logic and conditional paths
    - Error handling paths
-3. **Run the relevant tests** — only the test files covering the code being refactored (`npx vitest run <file>.test.ts`), not the full suite — and confirm they **pass before** starting the refactor (pre-refactor baseline)
+3. **Run the relevant tests** — only the test files covering the code being refactored, not the full suite — and confirm they **pass before** starting the refactor (pre-refactor baseline). Pass every relevant file to a **single** invocation (`npx vitest run a.test.ts b.test.ts c.test.ts`); do not issue one Bash call per test file
 4. **If coverage is insufficient**: Write characterization tests for the current behavior BEFORE refactoring
    - Test against the public interface so tests remain valid after internal restructuring
    - Run the new tests to confirm they pass against the current code
@@ -56,9 +56,12 @@ After each refactoring pass, run the checks plus only the test files related to 
 changed code:
 
 ```bash
-npm run check                      # check:versions + lint:fix + typecheck
-npx vitest run <changed>.test.ts   # tests covering the refactored files
+npm run check                              # check:versions + lint:fix + typecheck
+npx vitest run a.test.ts b.test.ts …       # ALL tests covering the refactored files
 ```
+
+List every relevant test file in that one `vitest` invocation — do not run them
+as separate Bash calls. Individual runs are for diagnosing a specific failure.
 
 Then re-run the relevant Scopewalker tool to confirm the violation is resolved.
 
