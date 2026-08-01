@@ -24,7 +24,6 @@ const inputSchema = {
   max_depth: z.number().int().positive().optional().describe("Max depth"),
   max_files: z.number().int().positive().optional().describe("Max files to scan"),
   include_private: z.boolean().optional().describe("Include private symbols"),
-  group_by: z.enum(["file", "type", "directory"]).optional().describe("Grouping method"),
   limit: z.number().int().positive().optional().describe("Max results"),
   grep: z.string().optional().describe("Filter by keyword"),
 };

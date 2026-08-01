@@ -29,10 +29,6 @@ const inputSchema = {
   extensions: z.array(z.string()).optional().describe("Filter by extensions"),
   max_depth: z.number().int().positive().optional().describe("Max depth"),
   max_files: z.number().int().positive().optional().describe("Max files to scan"),
-  metrics: z
-    .array(z.enum(["nesting_depth", "parameters", "dependencies", "cognitive"]))
-    .optional()
-    .describe("Metrics to calculate"),
   summary_only: z.boolean().optional().describe("Summary only"),
   limit: z.number().int().positive().optional().describe("Max results"),
 };

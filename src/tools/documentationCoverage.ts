@@ -22,8 +22,6 @@ const inputSchema = {
   extensions: z.array(z.string()).optional().describe("Filter by extensions"),
   max_depth: z.number().int().positive().optional().describe("Max depth"),
   max_files: z.number().int().positive().optional().describe("Max files to scan"),
-  require_param_docs: z.boolean().optional().describe("Require param docs"),
-  require_return_docs: z.boolean().optional().describe("Require return docs"),
   min_lines: z.number().int().positive().optional().describe("Min function lines"),
   summary_only: z.boolean().optional().describe("Summary only"),
   limit: z.number().int().positive().optional().describe("Max results"),
