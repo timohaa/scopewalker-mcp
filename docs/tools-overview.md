@@ -35,7 +35,7 @@ Tools supporting grep: `get_line_counts`, `get_functions`, `get_code_inventory`
 
 **Path scoping:** All tools resolve paths with `realpath` and will reject requests outside allowed roots. Defaults: current working directory and system temp. Override with `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`.
 
-**Default ignores:** File discovery skips common build artifacts, caches, and lock files (e.g., `node_modules`, `dist`, `package-lock.json`). Directory-scanning tools respect `.gitignore` via the `ignore` library; tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) respect `.gitignore` through tokei's built-in ignore handling — which only applies inside a git repository — in addition to those explicit ignore lists.
+**Default ignores:** File discovery skips common build artifacts, caches, and lock files (e.g., `node_modules`, `dist`, `package-lock.json`). Directory-scanning tools respect the single `.gitignore` at the scanned path via the `ignore` library — nested `.gitignore` files in subdirectories are not read, and neither is the repository root's when you scan a subdirectory (see [known-bugs.md](./known-bugs.md)); tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) respect `.gitignore` through tokei's built-in ignore handling (which only applies inside a git repository) in addition to those explicit ignore lists.
 
 **Resource guardrails:** AST-based tools skip files over 1 MB to prevent runaway memory/CPU usage. Tokei-based line counts do not enforce this limit. Use extension filters, `ignore_patterns`, and `limit` to reduce scan size further. Most directory-scanning tools also accept `max_depth` and `max_files` to bound traversal.
 
@@ -55,23 +55,23 @@ Function detection and parsing support:
 
 Files with any other extension are skipped by the AST-based tools. `get_line_counts` uses tokei instead, so it reports on every language tokei recognizes.
 
-**Extension filtering on tokei-backed tools:** `get_line_counts` and `check_thresholds` translate `extensions` into tokei language names through a fixed table covering the languages listed above plus common others. An extension outside that table is passed to tokei verbatim and only matches when it happens to name a tokei language — `.zig` works, but `.tf` does not, because tokei calls that language HCL. A non-matching filter silently returns nothing rather than erroring.
+**Extension filtering on tokei-backed tools:** `get_line_counts` and `check_thresholds` translate `extensions` into tokei language names through a fixed table covering the languages listed above plus common others. An extension outside that table is passed to tokei verbatim and only matches when it happens to name a tokei language: `.zig` works, but `.tf` does not, because tokei calls that language HCL. A non-matching filter silently returns nothing rather than erroring.
 
 ## Error Codes
 
 All tools return structured errors:
 
-| Code                   | Description                                                                                   |
-|------------------------|-----------------------------------------------------------------------------------------------|
-| `PATH_NOT_FOUND`       | Path does not exist                                                                           |
-| `NOT_A_DIRECTORY`      | Expected directory, got file (reserved — every tool accepts both)                             |
-| `NOT_A_FILE`           | Expected file, got directory (reserved — every tool accepts both)                             |
-| `PERMISSION_DENIED`    | Cannot read path, or path is outside allowed roots                                            |
-| `UNSUPPORTED_LANGUAGE` | Cannot parse this file type (reserved — unsupported files are currently skipped, not errored) |
-| `PARSE_ERROR`          | Unexpected analysis failure (e.g., tokei output could not be parsed)                          |
-| `TOOL_NOT_AVAILABLE`   | A required external CLI is missing (returned when tokei is not installed)                     |
-| `GIT_NOT_FOUND`        | Git executable not found (reserved)                                                           |
-| `NOT_A_GIT_REPO`       | Path is not inside a git repository (reserved)                                                |
+| Code                   | Description                                                                                  |
+|------------------------|----------------------------------------------------------------------------------------------|
+| `PATH_NOT_FOUND`       | Path does not exist                                                                          |
+| `NOT_A_DIRECTORY`      | Expected directory, got file (reserved; every tool accepts both)                             |
+| `NOT_A_FILE`           | Expected file, got directory (reserved; every tool accepts both)                             |
+| `PERMISSION_DENIED`    | Cannot read path, or path is outside allowed roots                                           |
+| `UNSUPPORTED_LANGUAGE` | Cannot parse this file type (reserved; unsupported files are currently skipped, not errored) |
+| `PARSE_ERROR`          | Unexpected analysis failure (e.g., tokei output could not be parsed)                         |
+| `TOOL_NOT_AVAILABLE`   | A required external CLI is missing (returned when tokei is not installed)                    |
+| `GIT_NOT_FOUND`        | Git executable not found (reserved)                                                          |
+| `NOT_A_GIT_REPO`       | Path is not inside a git repository (reserved)                                               |
 
 ## Response Format
 

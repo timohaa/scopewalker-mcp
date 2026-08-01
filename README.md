@@ -15,13 +15,13 @@ It's a local MCP server (open source, runs over stdio, makes no network calls) t
 - `get_code_smells` - TODO/FIXME/HACK/XXX/BUG/UNUSED/DEPRECATED markers found by scanning actual comments via the AST (no false positives from string literals), plus `as unknown as` / `as any as` double casts in TypeScript
 - `get_prop_drilling` - parameter names threaded through many functions and files, with forwarding evidence and a high/medium/low risk rating
 
-It's tree-sitter (parsing) + tokei (line counting) + fast-glob (file discovery) under the hood; nothing is custom-parsed. Tested on macOS with Claude Code, but should work with Cursor, VS Code, Windsurf, Gemini CLI, Codex, or anything else that speaks MCP.
+It's tree-sitter (parsing) + tokei (line counting) + fast-glob (file discovery) under the hood; nothing is custom-parsed. Tested on macOS with Claude Code, but should work with Cursor, VS Code, Windsurf, Antigravity CLI, Codex, or anything else that speaks MCP.
 
-See [TOOLS.md](TOOLS.md) for the quick reference and [docs/](docs/) for per-tool parameters and example responses.
+See [TOOLS.md](TOOLS.md) for the quick reference, [docs/](docs/) for per-tool parameters and example responses, and [docs/usage-examples.md](docs/usage-examples.md) for a guide to wiring Scopewalker into skills, subagents, and AGENTS.md.
 
 ## Safety Defaults
 
-- **No network access:** All analysis runs locally over stdio — no data leaves your machine, no API keys or external services involved.
+- **No network access:** All analysis runs locally over stdio: no data leaves your machine, no API keys or external services involved.
 - **Path scoping:** All tools only operate inside allowed roots (defaults: current working directory and system temp). Override with `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`.
 - **Large file guard:** AST-based tools skip files larger than 1 MB to avoid excessive memory/CPU use. Tokei-based line counts do not enforce this limit.
 - **Output limits:** Tools default to returning 20 files/items unless `limit` is set.
@@ -34,7 +34,7 @@ See [TOOLS.md](TOOLS.md) for the quick reference and [docs/](docs/) for per-tool
 
 ## Installation
 
-Scopewalker is published to npm as [`scopewalker-mcp`](https://www.npmjs.com/package/scopewalker-mcp) — no clone or build needed. Configure your MCP client to run it via `npx` (examples below), or install it globally with `npm install -g scopewalker-mcp`.
+Scopewalker is published to npm as [`scopewalker-mcp`](https://www.npmjs.com/package/scopewalker-mcp); no clone or build needed. Configure your MCP client to run it via `npx` (examples below), or install it globally with `npm install -g scopewalker-mcp`.
 
 To build from source instead, see [Development](#development).
 
@@ -122,9 +122,12 @@ Or configure via Windsurf Settings > Cascade > Manage MCPs.
 
 See [Windsurf MCP documentation](https://docs.devin.ai/desktop/cascade/mcp) for details.
 
-### Gemini CLI
+### Antigravity CLI
 
-Add to `~/.gemini/settings.json`:
+Antigravity CLI (`agy`) replaced Gemini CLI in June 2026; MCP servers now
+live in a dedicated config file instead of `~/.gemini/settings.json`. Add
+to `~/.gemini/config/mcp_config.json` (global) or `.agents/mcp_config.json`
+(per project):
 
 ```json
 {
@@ -137,7 +140,12 @@ Add to `~/.gemini/settings.json`:
 }
 ```
 
-See [Gemini CLI MCP documentation](https://geminicli.com/docs/tools/mcp-server/) for details.
+Use `/mcp` inside the prompt panel to check server status and reload the
+config.
+
+See [Antigravity CLI MCP documentation](https://antigravity.google/docs/cli/mcp)
+for details, and the [migration guide](https://antigravity.google/docs/cli/gcli-migration)
+if you're coming from Gemini CLI.
 
 ### OpenAI Codex CLI
 
@@ -159,7 +167,7 @@ See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for deta
 
 ## Usage
 
-Once configured, the assistant calls Scopewalker's tools on its own — no special syntax needed. Ask things like:
+Once configured, the assistant calls Scopewalker's tools on its own; no special syntax needed. Ask things like:
 
 - "Check this repo against our size thresholds before I commit"
 - "Which functions in `src/` have the highest cognitive complexity?"
@@ -171,9 +179,9 @@ It picks the right tool and parameters for the request.
 
 This repo also dogfoods its own tools via Claude Code skills and agents:
 
-- [`.claude/skills/check-quality/SKILL.md`](.claude/skills/check-quality/SKILL.md) — runs `check_thresholds` and `get_code_smells` as part of the quality gate
-- [`.claude/agents/standards-enforcer.md`](.claude/agents/standards-enforcer.md) — uses the full tool set to find and fix standards violations
-- [`.claude/agents/docs-reality-sync.md`](.claude/agents/docs-reality-sync.md) — uses `get_code_inventory` and `get_functions` to keep docs in sync with code
+- [`.claude/skills/check-quality/SKILL.md`](.claude/skills/check-quality/SKILL.md): runs `check_thresholds` and `get_code_smells` as part of the quality gate
+- [`.claude/agents/standards-enforcer.md`](.claude/agents/standards-enforcer.md): uses the full tool set to find and fix standards violations
+- [`.claude/agents/docs-reality-sync.md`](.claude/agents/docs-reality-sync.md): uses `get_code_inventory` and `get_functions` to keep docs in sync with code
 
 ## Development
 

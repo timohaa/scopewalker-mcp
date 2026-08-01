@@ -6,19 +6,17 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 
 **Parameters:**
 
-| Name                  | Type     | Required | Description                                                                    |
-|-----------------------|----------|----------|--------------------------------------------------------------------------------|
-| `path`                | string   | Yes      | Path to file or directory                                                      |
-| `include_hidden`      | boolean  | No       | Include hidden files                                                           |
-| `ignore_patterns`     | string[] | No       | Glob patterns to exclude                                                       |
-| `extensions`          | string[] | No       | Filter by extensions                                                           |
-| `max_depth`           | integer  | No       | Maximum directory depth to traverse                                            |
-| `max_files`           | integer  | No       | Maximum number of files to scan                                                |
-| `require_param_docs`  | boolean  | No       | Reserved flag for parameter docs enforcement (accepted, no extra checks today) |
-| `require_return_docs` | boolean  | No       | Reserved flag for return docs enforcement (accepted, no extra checks today)    |
-| `min_lines`           | integer  | No       | Only check functions with at least this many lines (default: 1)                |
-| `summary_only`        | boolean  | No       | Return only summary, no detailed item lists (default: false)                   |
-| `limit`               | integer  | No       | Max undocumented items to return (default: 20)                                 |
+| Name              | Type     | Required | Description                                                     |
+|-------------------|----------|----------|-----------------------------------------------------------------|
+| `path`            | string   | Yes      | Path to file or directory                                       |
+| `include_hidden`  | boolean  | No       | Include hidden files                                            |
+| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                        |
+| `extensions`      | string[] | No       | Filter by extensions                                            |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse                             |
+| `max_files`       | integer  | No       | Maximum number of files to scan                                 |
+| `min_lines`       | integer  | No       | Only check functions with at least this many lines (default: 1) |
+| `summary_only`    | boolean  | No       | Return only summary, no detailed item lists (default: false)    |
+| `limit`           | integer  | No       | Max undocumented items to return (default: 20)                  |
 
 **Documentation Detection:**
 
@@ -32,7 +30,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 | C/C++                 | JSDoc-style (`/** */`)      |
 | Ruby                  | Line comments (`#`)         |
 
-**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods, though Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes. A Ruby top-level `def` is typed as a function and a `def` inside a class or module body as a method. `get_code_inventory` labels the same code the same way for class bodies, but drops module-body defs entirely — `module` is not one of its symbol types, so there is nothing to nest them under.
+**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods, though Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes. A Ruby top-level `def` is typed as a function and a `def` inside a class or module body as a method. `get_code_inventory` labels the same code the same way for class bodies, but drops module-body defs entirely: `module` is not one of its symbol types, so there is nothing to nest them under.
 
 **Response:**
 
