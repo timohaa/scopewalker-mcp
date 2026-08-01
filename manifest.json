@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "scopewalker-mcp",
   "display_name": "Scopewalker",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Codebase analysis tools for AI assistants: complexity, prop drilling, documentation coverage, code smells.",
   "author": {
     "name": "Timo Haanpää",
