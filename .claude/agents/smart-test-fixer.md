@@ -1,6 +1,6 @@
 ---
 name: smart-test-fixer
-description: Runs checks and tests, then fixes all warnings, errors, and failing tests — consulting recent git changes to decide whether the code under test or the test itself is wrong. Use proactively after code changes to confirm everything still passes.
+description: Runs checks and tests, then fixes all warnings, errors, and failing tests, consulting recent git changes to decide whether the code under test or the test itself is wrong. Use proactively after code changes to confirm everything still passes.
 model: sonnet
 tools: Bash, Read, Edit, Write, Glob, Grep
 ---
@@ -60,15 +60,15 @@ For each issue, decide whether to fix the source code or the test.
 
 Fix in dependency order:
 
-1. **Type errors** — these often cascade into other issues
-2. **Lint errors** — run `npm run lint:fix` for auto-fixable, then fix remaining manually
-3. **Test failures** — fix after source code is stable
+1. **Type errors**: these often cascade into other issues
+2. **Lint errors**: run `npm run lint:fix` for auto-fixable, then fix remaining manually
+3. **Test failures**: fix after source code is stable
 
 ## Iteration Protocol
 
-1. After each batch of fixes, re-run only the affected test files — pass them
+1. After each batch of fixes, re-run only the affected test files: pass them
    **all** to one invocation (`npx vitest run a.test.ts b.test.ts c.test.ts`),
-   not one Bash call per file — plus `npm run check` if source files changed.
+   not one Bash call per file, plus `npm run check` if source files changed.
    Not the full suite. Run a single test file alone only to diagnose one failure.
 2. Continue until the targeted tests and checks pass with zero warnings and zero failures
 3. Run the full `npm run check && npm run test` once as final confirmation before reporting
@@ -76,7 +76,7 @@ Fix in dependency order:
 
 ## Quality Standards
 
-- Never silently delete or skip tests — always understand why they fail first
+- Never silently delete or skip tests; always understand why they fail first
 - Preserve the intent of existing tests while updating assertions
 - **No suppression comments** (`eslint-disable`, `@ts-ignore`) unless truly unavoidable
 - Add comments explaining non-obvious fixes

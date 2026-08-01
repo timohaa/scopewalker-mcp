@@ -49,7 +49,7 @@ Framework: **vitest** (`describe`, `it`, `expect`, `vi`).
 ### Tool Test (uses MCP harness)
 
 Setup (temp dir, handler, `beforeAll`/`afterAll`) lives at module top
-level — `describe` blocks only group the `it` cases. Import `vi` only
+level; `describe` blocks only group the `it` cases. Import `vi` only
 when the test actually mocks something.
 
 ```typescript
@@ -111,7 +111,7 @@ describe("myHelper", () => {
 
 ## Conventions
 
-- ESM imports — **always** include the `.js` extension (the project is
+- ESM imports: **always** include the `.js` extension (the project is
   `"type": "module"`)
 - Use `vi.mock()` to stub external dependencies (`../lib/tokei.js`,
   filesystem boundaries)

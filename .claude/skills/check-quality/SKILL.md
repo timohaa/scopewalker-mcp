@@ -23,8 +23,8 @@ npm run test
 
 Use MCP tools to validate code standards:
 
-- `check_thresholds` on `src/` — verify files/functions are within size limits (defaults: 300 lines/file, 100 lines/function)
-- `get_code_smells` on `src/` — review any TODO/FIXME/HACK markers
+- `check_thresholds` on `src/`: verify files/functions are within size limits (defaults: 300 lines/file, 100 lines/function)
+- `get_code_smells` on `src/`: review any TODO/FIXME/HACK markers
 
 ### 3. Report findings
 

@@ -34,21 +34,21 @@ Before any major refactoring (splitting files, extracting functions, reorganizin
    - Public exports that will be restructured
    - Branching logic and conditional paths
    - Error handling paths
-3. **Run the relevant tests** — only the test files covering the code being refactored, not the full suite — and confirm they **pass before** starting the refactor (pre-refactor baseline). Pass every relevant file to a **single** invocation (`npx vitest run a.test.ts b.test.ts c.test.ts`); do not issue one Bash call per test file
+3. **Run the relevant tests** (only the test files covering the code being refactored, not the full suite) and confirm they **pass before** starting the refactor (pre-refactor baseline). Pass every relevant file to a **single** invocation (`npx vitest run a.test.ts b.test.ts c.test.ts`); do not issue one Bash call per test file
 4. **If coverage is insufficient**: Write characterization tests for the current behavior BEFORE refactoring
    - Test against the public interface so tests remain valid after internal restructuring
    - Run the new tests to confirm they pass against the current code
 5. **If tests cannot be written** (tightly coupled to filesystem/process state with no abstraction): Flag the violation for human review rather than proceeding
-6. **After each refactoring change**: Re-run tests and confirm they still pass. If any test fails, the refactor introduced a regression — fix it before proceeding
+6. **After each refactoring change**: Re-run tests and confirm they still pass. If any test fails, the refactor introduced a regression; fix it before proceeding
 
 ## Refactoring Strategies
 
-- **Oversized files (>300 lines)** — extract cohesive modules into separate files (e.g., `*Helpers.ts`); update imports/exports and re-export from the original file if backward compatibility is needed.
-- **Long functions (>100 lines)** — extract helper functions with descriptive names; keep the original function as a coordinator.
-- **Deep nesting** — apply guard clauses and extract nested logic into named functions.
-- **Excessive parameters** — group related params into an options object with a TypeScript interface.
-- **Code smells (TODO/FIXME/HACK)** — evaluate if still relevant; implement the fix or remove the stale comment. For complex TODOs, create a tracking issue and reference it.
-- **Prop drilling** — run `get_prop_drilling` to detect parameters appearing in 3+ functions (`min_occurrences`, default 3); recommend module-scoped config, dependency injection, or direct imports instead.
+- **Oversized files (>300 lines)**: extract cohesive modules into separate files (e.g., `*Helpers.ts`); update imports/exports and re-export from the original file if backward compatibility is needed.
+- **Long functions (>100 lines)**: extract helper functions with descriptive names; keep the original function as a coordinator.
+- **Deep nesting**: apply guard clauses and extract nested logic into named functions.
+- **Excessive parameters**: group related params into an options object with a TypeScript interface.
+- **Code smells (TODO/FIXME/HACK)**: evaluate if still relevant; implement the fix or remove the stale comment. For complex TODOs, create a tracking issue and reference it.
+- **Prop drilling**: run `get_prop_drilling` to detect parameters appearing in 3+ functions (`min_occurrences`, default 3); recommend module-scoped config, dependency injection, or direct imports instead.
 
 ## Verification
 
@@ -60,7 +60,7 @@ npm run check                              # check:versions + lint:fix + typeche
 npx vitest run a.test.ts b.test.ts …       # ALL tests covering the refactored files
 ```
 
-List every relevant test file in that one `vitest` invocation — do not run them
+List every relevant test file in that one `vitest` invocation; do not run them
 as separate Bash calls. Individual runs are for diagnosing a specific failure.
 
 Then re-run the relevant Scopewalker tool to confirm the violation is resolved.
@@ -102,7 +102,7 @@ For each violation, report:
 
 Structure the end-of-run report as:
 
-1. **Scan Summary** — violations found per category
-2. **Detailed Findings** — per-violation entries in the Report Format above
-3. **Refactoring Actions Taken** — what was fixed autonomously vs. flagged for the user
-4. **Final Status** — confirmation that `npm run check` and `npm run test` pass, and that re-running the relevant Scopewalker tool shows the violation resolved
+1. **Scan Summary**: violations found per category
+2. **Detailed Findings**: per-violation entries in the Report Format above
+3. **Refactoring Actions Taken**: what was fixed autonomously vs. flagged for the user
+4. **Final Status**: confirmation that `npm run check` and `npm run test` pass, and that re-running the relevant Scopewalker tool shows the violation resolved

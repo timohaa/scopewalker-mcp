@@ -2,11 +2,11 @@
 
 ## What
 
-MCP server providing codebase analysis tools for AI assistants. Thin orchestration layer over external parsing, line-counting (via the `tokei` binary), and file-discovery tools — see `package.json` for npm dependencies.
+MCP server providing codebase analysis tools for AI assistants. Thin orchestration layer over external parsing, line-counting (via the `tokei` binary), and file-discovery tools; see `package.json` for npm dependencies.
 
 ## Why
 
-Gives AI coding agents quantitative visibility into codebases — complexity, prop drilling, documentation coverage, code smells — so they can make informed refactoring and review decisions.
+Gives AI coding agents quantitative visibility into codebases (complexity, prop drilling, documentation coverage, code smells) so they can make informed refactoring and review decisions.
 
 ## How
 
@@ -24,14 +24,14 @@ If LSP tools are available in your session, prefer them (`workspaceSymbol`, `fin
 ## Behavior
 
 - **Think before coding.** If a request is ambiguous, sketch a short plan and surface assumptions/tradeoffs before editing.
-- **Minimum footprint.** Write the minimum code that solves the problem — no speculative abstractions, no drive-by renames, no unrelated cleanup bundled into the same change.
-- **Verify, don't trust.** Define a success criterion before starting and loop until it's met. `npm run check` is necessary but not sufficient to confirm a tool's actual output — verify behavior with the tool itself or its tests.
-- **Never create `_enhanced`, `_v2`, or `_new` duplicate file variants** — edit the original file.
+- **Minimum footprint.** Write the minimum code that solves the problem: no speculative abstractions, no drive-by renames, no unrelated cleanup bundled into the same change.
+- **Verify, don't trust.** Define a success criterion before starting and loop until it's met. `npm run check` is necessary but not sufficient to confirm a tool's actual output; verify behavior with the tool itself or its tests.
+- **Never create `_enhanced`, `_v2`, or `_new` duplicate file variants**; edit the original file.
 
 ## Reference Docs
 
-- [TOOLS.md](./TOOLS.md) — tool reference
-- [docs/](./docs/) — detailed tool documentation; [docs/known-bugs.md](./docs/known-bugs.md) lists verified defects and gaps, check it before chasing unexpected tool output
-- `.claude/skills/create-tool`, `.claude/skills/create-test` — workflows and code examples for adding tools/tests
-- `/polish`, `/review-changes`, `/check-quality`, `/run-tests` — quality-pipeline slash commands (see `.claude/skills/` for the rest)
-- `.claude/agents/` — specialized agents for standards, testing, docs, and code-quality enforcement (see directory for the full list)
+- [TOOLS.md](./TOOLS.md): tool reference
+- [docs/](./docs/): detailed tool documentation; [docs/known-bugs.md](./docs/known-bugs.md) lists verified defects and gaps, check it before chasing unexpected tool output
+- `.claude/skills/create-tool`, `.claude/skills/create-test`: workflows and code examples for adding tools/tests
+- `/polish`, `/review-changes`, `/check-quality`, `/run-tests`: quality-pipeline slash commands (see `.claude/skills/` for the rest)
+- `.claude/agents/`: specialized agents for standards, testing, docs, and code-quality enforcement (see directory for the full list)

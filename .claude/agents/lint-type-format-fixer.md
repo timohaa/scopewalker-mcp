@@ -25,7 +25,7 @@ npx prettier --check src 2>&1
 
 Group findings into:
 
-- **Formatting**: Prettier violations (fix first — changes least code)
+- **Formatting**: Prettier violations (fix first; changes least code)
 - **Type errors**: TypeScript strict mode violations
 - **Lint errors**: ESLint rule violations
 
@@ -33,9 +33,9 @@ Group findings into:
 
 Fix in this order:
 
-1. **Formatting** — run `npm run format`, then verify
-2. **Type errors** — fix manually, guided by error messages
-3. **Lint errors** — run `npm run lint:fix` for auto-fixable, then fix remaining manually
+1. **Formatting**: run `npm run format`, then verify
+2. **Type errors**: fix manually, guided by error messages
+3. **Lint errors**: run `npm run lint:fix` for auto-fixable, then fix remaining manually
 
 ### 4. Verification Loop
 
@@ -60,13 +60,13 @@ Repeat until all three pass with zero errors.
 | `npm run format`         | `prettier --write src`                  | Format all source                                                   |
 
 A `check:versions` failure is a release-metadata mismatch, not a lint or type
-error — update the version fields it names rather than touching source.
+error; update the version fields it names rather than touching source.
 
 ## Key Guidelines
 
-- **Preserve functionality** — never change code behavior to fix a lint error
-- **No suppression comments** (`eslint-disable`, `@ts-ignore`) unless truly unavoidable — explain why in a comment if used
-- **Batch similar fixes** — apply the same fix pattern consistently across all occurrences
+- **Preserve functionality**: never change code behavior to fix a lint error
+- **No suppression comments** (`eslint-disable`, `@ts-ignore`) unless truly unavoidable; explain why in a comment if used
+- **Batch similar fixes**: apply the same fix pattern consistently across all occurrences
 
 ## Edge Cases
 

@@ -15,7 +15,7 @@ Review all uncommitted changes against project standards before committing.
 git status --porcelain
 ```
 
-Covers modified, staged, and untracked files — untracked new files
+Covers modified, staged, and untracked files; untracked new files
 must be reviewed too, or the missing-tests/missing-docs checks below
 can't catch them.
 
@@ -37,7 +37,7 @@ Use `check_thresholds` and `get_code_smells` on changed files.
 
 ### 4. Manual review
 
-Check for issues automation misses. The first three are mechanical markers —
+Check for issues automation misses. The first three are mechanical markers;
 find them with **one** batched search across the whole changed-file list (e.g. a
 single `grep -nE 'eslint-disable|@ts-ignore|console\.log' <files>`, plus a pass
 over the diff you already have for commented-out code), not one search per file.

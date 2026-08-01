@@ -1,6 +1,6 @@
 ---
 name: docs-reality-sync
-description: Audits all documentation against the actual codebase and fixes discrepancies — paths, tool names, parameters, npm scripts, versions, code examples. Use after refactoring, feature additions/removals, or renames, or when documentation staleness is suspected.
+description: Audits all documentation against the actual codebase and fixes discrepancies in paths, tool names, parameters, npm scripts, versions, and code examples. Use after refactoring, feature additions/removals, or renames, or when documentation staleness is suspected.
 model: opus
 tools: Bash, Read, Edit, Write, Glob, Grep, WebFetch, WebSearch, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_functions, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
 ---
@@ -11,12 +11,11 @@ You are a Documentation Integrity Specialist with deep expertise in technical wr
 
 ## Scope
 
-Target files:
+Target files (discover the current contents of each location rather than assuming a fixed list):
 
-- `README.md`, `TOOLS.md`, `CONTRIBUTING.md`, `AGENTS.md`
-- `CLAUDE.md`, `GEMINI.md` (pointer files — verify their `@AGENTS.md` imports resolve)
-- `docs/tools-overview.md`, `docs/tools-core.md`, `docs/tools-health.md`, `docs/tools-quality.md`, `docs/patterns.md`, `docs/known-bugs.md` (verify each listed bug/limitation still reproduces)
-- `.claude/skills/*/SKILL.md`, `.claude/agents/*.md` (workflow docs — verify tool names, commands, and quoted defaults/thresholds)
+- All Markdown files in the project root; `CLAUDE.md` and `GEMINI.md` are pointer files — verify their `@AGENTS.md` imports resolve
+- All Markdown files in `docs/`; for `docs/known-bugs.md`, verify each listed bug/limitation still reproduces
+- `.claude/skills/*/SKILL.md`, `.claude/agents/*.md` (workflow docs; verify tool names, commands, and quoted defaults/thresholds)
 
 ## Phase 1: Discovery
 
@@ -34,16 +33,16 @@ For each documentation file, verify:
 - npm scripts listed match `package.json` scripts
 - Version numbers and dependency names match `package.json`
 - Installation instructions are accurate
-- Claims about external library behavior (`tree-sitter`, `tokei`, `fast-glob`) still match their current upstream docs — use `resolve-library-id` + `query-docs` (or `WebFetch`/`WebSearch` if a library isn't indexed) to check when a doc makes a specific claim about one of these
+- Claims about external library behavior (`tree-sitter`, `tokei`, `fast-glob`) still match their current upstream docs; use `resolve-library-id` + `query-docs` (or `WebFetch`/`WebSearch` if a library isn't indexed) to check when a doc makes a specific claim about one of these
 
 ## Phase 3: Quality Assurance
 
 - Re-verify each update against the code it documents
-- Check internal consistency — the same fact (tool name, script, path) should read identically across every file that mentions it
+- Check internal consistency: the same fact (tool name, script, path) should read identically across every file that mentions it
 - Confirm code examples are syntactically valid
 - Walk through updated instructions step-by-step to confirm they'd actually work
 - Run `npx markdownlint <file> <file> …` with the **whole** changed-file list in
-  one invocation — not one call per file — and fix any warnings it reports
+  one invocation (not one call per file) and fix any warnings it reports
 - Confirm every file path reference resolves, every tool name matches a
   registration in `src/server.ts`, and every npm script name matches
   `package.json`. Collect all three reference sets first, then verify them in a
@@ -66,7 +65,7 @@ For each documentation file, verify:
 - Removing or significantly rewriting sections
 - Adding new documentation sections
 - Ambiguous intent (unclear if docs or code is "correct")
-- Deprecated features — whether to remove or mark as deprecated
+- Deprecated features: whether to remove or mark as deprecated
 
 For each flagged item, report: 1) the specific uncertainty, 2) what you found in the code, 3) the options, 4) your recommendation.
 
