@@ -1,14 +1,13 @@
-import { readFile } from "node:fs/promises";
 import type Parser from "tree-sitter";
 import { walkNode } from "../lib/astWalker.js";
-import { detectLanguage, parseCode } from "../lib/treeSitter.js";
+import { walkSourceFiles, type SourceFile } from "../lib/sourceFileWalker.js";
+import { parseCode } from "../lib/treeSitter.js";
 import type {
   FileParameterAnalysis,
   ParameterInfo,
   RiskLevel,
   ThreadedParameter,
 } from "../types/propDrilling.js";
-import { isFileWithinSizeLimit } from "../utils/fileGuards.js";
 import { extractParameterNames, detectForwardedParameters } from "./propDrillingHelpers.js";
 
 /** Parameter names that commonly appear across many functions without indicating prop drilling. */
@@ -80,24 +79,12 @@ function getFunctionName(node: Parser.SyntaxNode): string {
  * Analyzes a single file for parameter info: extracts params from every function
  * and detects forwarding.
  */
-export async function analyzeFile(
-  fullPath: string,
-  relativePath: string
-): Promise<FileParameterAnalysis | null> {
-  const language = detectLanguage(fullPath);
-  if (language === null) return null;
-
-  const withinLimit = await isFileWithinSizeLimit(fullPath);
-  if (!withinLimit) return null;
-
-  let content: string;
-  try {
-    content = await readFile(fullPath, "utf-8");
-  } catch {
-    return null;
-  }
-
-  const tree = await parseCode(content, language);
+async function analyzeFile({
+  relativePath,
+  language,
+  code,
+}: SourceFile): Promise<FileParameterAnalysis | null> {
+  const tree = await parseCode(code, language);
   if (tree === null) return null;
 
   const parameters: ParameterInfo[] = [];
@@ -121,6 +108,27 @@ export async function analyzeFile(
   });
 
   return { path: relativePath, language, parameters };
+}
+
+/** Analyzes every scanned file, returning per-file parameters and the scan total. */
+export async function analyzeFilesForParameters(
+  filePaths: string[],
+  basePath: string,
+  isDirectory: boolean,
+  maxFiles?: number
+): Promise<{ fileAnalyses: FileParameterAnalysis[]; totalParamsScanned: number }> {
+  const fileAnalyses: FileParameterAnalysis[] = [];
+  let totalParamsScanned = 0;
+
+  for await (const file of walkSourceFiles(filePaths, basePath, isDirectory, maxFiles)) {
+    const analysis = await analyzeFile(file);
+    if (analysis === null) continue;
+
+    fileAnalyses.push(analysis);
+    totalParamsScanned += analysis.parameters.length;
+  }
+
+  return { fileAnalyses, totalParamsScanned };
 }
 
 /**

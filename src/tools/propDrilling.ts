@@ -1,18 +1,33 @@
-import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
-import type { PropDrillingResult, FileParameterAnalysis } from "../types/propDrilling.js";
+import type {
+  PropDrillingResult,
+  FileParameterAnalysis,
+  ThreadedParameter,
+} from "../types/propDrilling.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
-  analyzeFile,
+  analyzeFilesForParameters,
   aggregateParameters,
   COMMON_PARAMETER_NAMES,
 } from "./propDrillingAnalysis.js";
 
 const DEFAULT_LIMIT = 20;
 const DEFAULT_MIN_OCCURRENCES = 3;
+
+/** Aggregates per-file parameters into the threaded list, optionally dropping common names. */
+function selectThreadedParameters(
+  fileAnalyses: FileParameterAnalysis[],
+  options: { minOccurrences: number; excludeCommon: boolean }
+): ThreadedParameter[] {
+  const threaded = aggregateParameters(fileAnalyses, options.minOccurrences);
+
+  return options.excludeCommon
+    ? threaded.filter((p) => !COMMON_PARAMETER_NAMES.has(p.name))
+    : threaded;
+}
 
 const inputSchema = {
   path: z.string().describe("Target path"),
@@ -55,7 +70,7 @@ export function registerPropDrillingTool(server: McpServer): void {
 
       const { resolvedPath, isDirectory } = pathValidation;
 
-      let filePaths = isDirectory
+      const filePaths = isDirectory
         ? await findFiles({
             cwd: resolvedPath,
             includeHidden: args.include_hidden,
@@ -65,35 +80,17 @@ export function registerPropDrillingTool(server: McpServer): void {
           })
         : [resolvedPath];
 
-      if (args.max_files !== undefined && args.max_files > 0 && filePaths.length > args.max_files) {
-        filePaths = filePaths.slice(0, args.max_files);
-      }
+      const { fileAnalyses, totalParamsScanned } = await analyzeFilesForParameters(
+        filePaths,
+        resolvedPath,
+        isDirectory,
+        args.max_files
+      );
 
-      const fileAnalyses: FileParameterAnalysis[] = [];
-      let totalParamsScanned = 0;
-
-      for (const filePath of filePaths) {
-        const fullPath = isDirectory ? join(resolvedPath, filePath) : filePath;
-        const relativePath = isDirectory ? filePath : fullPath;
-        const analysis = await analyzeFile(fullPath, relativePath);
-
-        if (analysis) {
-          fileAnalyses.push(analysis);
-          totalParamsScanned += analysis.parameters.length;
-        }
-      }
-
-      const minOccurrences = args.min_occurrences ?? DEFAULT_MIN_OCCURRENCES;
-      let threaded = aggregateParameters(fileAnalyses, minOccurrences);
-
-      if (args.exclude_common === true) {
-        threaded = threaded.filter((p) => !COMMON_PARAMETER_NAMES.has(p.name));
-      }
-
-      // Summary uses the full list for accurate totals; limit only trims the returned details
-      const totalFound = threaded.length;
-      const highest =
-        threaded.length > 0 ? { name: threaded[0].name, count: threaded[0].occurrences } : null;
+      const threaded = selectThreadedParameters(fileAnalyses, {
+        minOccurrences: args.min_occurrences ?? DEFAULT_MIN_OCCURRENCES,
+        excludeCommon: args.exclude_common === true,
+      });
 
       const limit = args.limit ?? DEFAULT_LIMIT;
       const limited = threaded.slice(0, limit);
@@ -105,8 +102,10 @@ export function registerPropDrillingTool(server: McpServer): void {
         summary: {
           files_analyzed: fileAnalyses.length,
           total_parameters_scanned: totalParamsScanned,
-          threaded_parameters_found: totalFound,
-          highest_occurrence: highest,
+          // Summary totals describe the full list; limit only trims the returned details
+          threaded_parameters_found: threaded.length,
+          highest_occurrence:
+            threaded.length > 0 ? { name: threaded[0].name, count: threaded[0].occurrences } : null,
         },
       };
 

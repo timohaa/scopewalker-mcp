@@ -39,25 +39,39 @@ export function detectForwardedParameters(
   if (body === null) return [];
 
   walkNode(body, (node) => {
-    // "arguments" (TS/JS/Rust) and "argument_list" (Python/Go/Java/C/Ruby) cover call expressions: someFunc(userId)
-    if (node.type === "arguments" || node.type === "argument_list") {
-      for (const child of node.namedChildren) checkNodeForwarding(child, paramSet, forwarded);
-    }
-
-    // JSX attribute value forwarding: <Child userId={userId} />
-    if (node.type === "jsx_attribute") {
-      checkJsxAttributeForwarding(node, paramSet, forwarded);
-    }
-
-    // Check JSX spread: <Child {...props} /> — jsx_expression > spread_element > identifier
-    if (node.type === "spread_element") {
-      for (const child of node.namedChildren) {
-        if (child.type === "identifier" && paramSet.has(child.text)) forwarded.add(child.text);
-      }
-    }
+    collectForwardingFromNode(node, paramSet, forwarded);
   });
 
   return [...forwarded];
+}
+
+// "arguments" in TS/JS/Rust, "argument_list" in Python/Go/Java/C/Ruby — both are
+// the call-expression argument container: someFunc(userId).
+const ARGUMENT_CONTAINER_TYPES = ["arguments", "argument_list"];
+
+/** Records any tracked parameter this node forwards onward. */
+function collectForwardingFromNode(
+  node: Parser.SyntaxNode,
+  paramSet: Set<string>,
+  forwarded: Set<string>
+): void {
+  if (ARGUMENT_CONTAINER_TYPES.includes(node.type)) {
+    for (const child of node.namedChildren) checkNodeForwarding(child, paramSet, forwarded);
+    return;
+  }
+
+  // JSX attribute value forwarding: <Child userId={userId} />
+  if (node.type === "jsx_attribute") {
+    checkJsxAttributeForwarding(node, paramSet, forwarded);
+    return;
+  }
+
+  // JSX spread: <Child {...props} /> — jsx_expression > spread_element > identifier
+  if (node.type === "spread_element") {
+    for (const child of node.namedChildren) {
+      if (child.type === "identifier" && paramSet.has(child.text)) forwarded.add(child.text);
+    }
+  }
 }
 
 /** Checks if a JSX expression node forwards tracked parameters, including shorthand {prop}. */
