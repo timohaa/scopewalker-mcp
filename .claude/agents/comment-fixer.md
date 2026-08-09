@@ -1,6 +1,6 @@
 ---
 name: comment-fixer
-description: Scans source files and fixes code comments; adds missing one-line JSDoc, improves existing JSDoc, and cleans up inline comments (WHY not WHAT, removes obvious or stale ones). Use when asked to clean up, fix, or standardize comments across the codebase.
+description: Scans source files and fixes code comments; adds missing one-line JSDoc, improves existing JSDoc, and cleans up inline comments (WHY not WHAT, removes obvious or stale ones). Defaults to recently changed files; prompt with `full` for a whole-src sweep. Use when asked to clean up, fix, or standardize comments.
 model: sonnet
 tools: Bash, Read, Edit, Glob, Grep
 ---
@@ -69,15 +69,21 @@ Comments on type/interface fields, enum members, config constants, and similar d
 
 ## Phase 2: Scan and Plan
 
-Build a file inventory of all source files to process.
+Build the file inventory to process.
 
-1. Use `Glob` to find source files:
-   - `src/**/*.ts` (TypeScript)
-   - Exclude: `node_modules/`, `dist/`, `coverage/`, `*.test.*`, `*.d.ts`
+**Default scope — changed files only.** Take the union of:
 
-2. If the scope is very large (50+ files), prioritize directories with
-   recent git changes (`git diff --name-only HEAD~20`) and process those
-   first.
+```bash
+git status --porcelain                          # working-tree changes
+git diff --name-only HEAD~20 -- 'src/**/*.ts'   # recent commits
+```
+
+Keep only `src/**/*.ts`; exclude `*.test.*` and `*.d.ts`. If the union is
+empty, report "no changed source files" and stop.
+
+**Full scope — only when the prompt says `full`.** Use `Glob` over
+`src/**/*.ts`, excluding `node_modules/`, `dist/`, `coverage/`, `*.test.*`,
+`*.d.ts`.
 
 ## Phase 3: Process Files
 
@@ -106,6 +112,7 @@ After processing all files, provide a summary:
 
 ## Important Notes
 
-- Do NOT run type checks or tests; this agent only modifies comments,
-  not code logic
+- Do NOT run tests; this agent only modifies comments, not code logic.
+  Run `npm run check` **once** at the end, and only if you edited files
+  (a cheap guard against malformed comment edits breaking parsing/lint)
 - Bias toward adding over removing when the code is not self-explanatory

@@ -1,7 +1,7 @@
 ---
 name: docs-reality-sync
 description: Audits all documentation against the actual codebase and fixes discrepancies in paths, tool names, parameters, npm scripts, versions, and code examples. Use after refactoring, feature additions/removals, or renames, or when documentation staleness is suspected.
-model: opus
+model: sonnet
 tools: Bash, Read, Edit, Write, Glob, Grep, WebFetch, WebSearch, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_functions, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
 ---
 
@@ -41,8 +41,8 @@ For each documentation file, verify:
 - Check internal consistency: the same fact (tool name, script, path) should read identically across every file that mentions it
 - Confirm code examples are syntactically valid
 - Walk through updated instructions step-by-step to confirm they'd actually work
-- Run `npx markdownlint <file> <file> …` with the **whole** changed-file list in
-  one invocation (not one call per file) and fix any warnings it reports
+- Do **not** run `markdownlint`; markdown lint/format is `markdown-quality-fixer`'s
+  job and it runs after this agent
 - Confirm every file path reference resolves, every tool name matches a
   registration in `src/server.ts`, and every npm script name matches
   `package.json`. Collect all three reference sets first, then verify them in a

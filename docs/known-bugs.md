@@ -10,27 +10,11 @@ Two kinds of entry:
 - **Limitations**: the tool is knowingly incomplete, and the behaviour is documented in
   `docs/tools-*.md`. Listed here so the gaps are visible in one place.
 
-Verified against version 1.0.5.
+Verified against version 1.1.0.
 
 ---
 
 ## Bugs
-
-### Go methods on a type declared in another file are silently dropped
-
-**Tools:** `get_code_inventory`
-
-`attachGoMethods` pairs a method to its receiver type by name within a single file. Go
-packages routinely split a type and its methods across files, and a method with no local
-type to attach to is discarded rather than reported.
-
-Given `types.go` containing `type Point struct{ X int }` and `methods.go` containing
-`func (p *Point) Scale(f int)`, the inventory returns `Point` with **no** methods, and
-`methods.go` is omitted from the response entirely (files with no items are dropped). The
-method appears nowhere in the output, and nothing signals that it was skipped.
-
-Fixing this needs the inventory to aggregate across files before matching receivers,
-which the current per-file walk does not do.
 
 ### Go and Rust constants never appear in the inventory
 
@@ -75,28 +59,6 @@ mislabel: a Go package using the grouped form for its type block reports no clas
 
 Fixing this needs the walk to emit one item per `type_spec`, which the current
 one-item-per-node mapping does not do.
-
-### `max_files` spends its budget on files that are never analyzed
-
-**Tools:** `check_thresholds`, `get_code_inventory`, `get_code_smells`,
-`get_complexity_metrics`, `get_documentation_coverage`, `get_functions`, `get_prop_drilling`
-
-Every tool that accepts `max_files` (all of them except `get_line_counts`, which has no such
-parameter) applies it by slicing the discovered path list *before* language detection, so
-unsupported files consume the cap and are then skipped. `max_files: N` means "consider the
-first N paths", not "analyze N files".
-
-In a directory containing `README.md`, `types.ts`, and `utils.ts`, `max_files: 1` spends the
-cap on `README.md`, which has no supported language: `get_functions` returns
-`total_files_analyzed: 0`, `get_code_inventory` `total_files: 0`, and
-`get_documentation_coverage` `files_analyzed: 0`. `check_thresholds` reports
-`functions_checked: 0` while still returning `files_checked: 3`, because its file-size scan
-runs through tokei and is not bounded by `max_files`. On a repository with many non-source
-files at the top of the walk, a small `max_files` can return an empty result that is
-indistinguishable from "nothing to report".
-
-Passing `extensions` alongside `max_files` avoids it, because the filter is applied during
-discovery. Pinned by tests in `src/tools/functions.counts.test.ts`.
 
 ### Ruby methods inside a `module` body are invisible to the inventory
 
@@ -152,28 +114,58 @@ undocumented Rust `pub struct Widget` does not count against coverage: a file de
 
 Documented in `docs/tools-quality.md`.
 
-### Ruby brace blocks do not count toward nesting
+### Ruby iterator blocks do not count toward cognitive or cyclomatic complexity
 
 **Tools:** `get_complexity_metrics`
 
-Ruby's `do ... end` block counts as a nesting level; its brace form does not. Four nested
-`{ |x| ... }` blocks report `max_nesting_depth: 0`.
+`xs.each do |x| ... end` is the idiomatic Ruby loop, but tree-sitter parses it as a method
+call with a block — structurally identical to `map`, `tap`, `Array.new`, or `File.open`.
+Nothing in the tree distinguishes an iteration from any other block-taking call.
 
-This one is deliberate rather than an oversight: tree-sitter-ruby names the brace form
-`block`, which is also tree-sitter-rust's node for *any* braced scope. Adding it would make
-every Rust function body register as a nesting level. Fixing it properly means threading the
-language through `calculateNestingDepth`, which currently takes no language argument.
+The effect is a cross-grammar gap in the branch counts: two nested `for..in` loops score 3
+in Ruby like everywhere else, while the same logic written with `.each do` scores 1. The
+cross-grammar parity fixtures deliberately use `for..in` for this reason.
+
+Both block forms *do* count toward `max_nesting_depth`, which is the deliberate asymmetry —
+a block is a level of indentation whether or not it loops, so nesting can count it without
+being wrong, while a branch count would be. A method-name allowlist (`each`, `map`, `times`,
+…) was considered and rejected: it would be silently wrong for every iterator not on the
+list, which is a worse failure than a known, uniform gap.
 
 Documented in `docs/tools-health.md`.
 
-### `exported` is always false for Java, C/C++, and Ruby
+### `exported` is always false for C/C++ and Ruby
 
 **Tools:** `get_code_inventory`
 
-These languages have no declaration-site export marker comparable to `export`, `pub`, or
-Go's capitalization rule. Java's `public`/`private` modifiers are not consulted. Every
-symbol reports `exported: false`, and `exported_symbols` in the summary is `0` for a
-codebase written in them.
+Neither language has a declaration-site export marker comparable to `export`, `pub`, or Go's
+capitalization rule, and `isExported` has no branch for either. Every symbol reports
+`exported: false`, and `exported_symbols` in the summary is `0` for a codebase written in
+them. Java used to belong here; its `public` modifier is now read as the export marker.
+
+C++ has candidates — a header declaration, an `export` in a module interface unit — but none
+is visible from the definition alone, which is all the inventory walk sees. Ruby has nothing
+at all. Reporting `false` under-claims; inventing a `true` would be worse.
+
+Documented in `docs/tools-health.md`.
+
+### Ruby visibility set outside the class body is not tracked
+
+**Tools:** `get_code_inventory`
+
+Method visibility follows the section markers inside a class body (`private`, `protected`,
+`public`), the `private :sym` form, and `private def x`. Three further ways to set it are not
+read:
+
+- `module_function`, which has no effect here anyway — a method inside a `module` body never
+  reaches the inventory at all (see the module bug above).
+- Visibility applied to a receiver other than the enclosing class, e.g.
+  `Other.send(:private, :m)` or a `class << self` block.
+- Visibility changed from outside the class body entirely, such as reopening the class
+  elsewhere in the file.
+
+The first covers everything an ordinary class writes; the rest are metaprogramming, where the
+declaration site no longer states the answer.
 
 Documented in `docs/tools-health.md`.
 
@@ -214,6 +206,20 @@ tokei calls that language HCL. The mismatch returns an empty result rather than 
 which is indistinguishable from "no such files".
 
 Documented in `docs/tools-overview.md`.
+
+### `max_files` does not bound `check_thresholds`' file-size scan
+
+**Tools:** `check_thresholds`
+
+The tool runs two passes. Function-length checks walk the discovered file list and honor
+`max_files`; file-length checks come from a separate tokei run over the whole tree and do
+not. On a directory of `README.md`, `types.ts`, and `utils.ts`, `max_files: 1` returns
+`functions_checked: 1` alongside `files_checked: 3`.
+
+This is deliberate. Tokei does its own traversal and is language-independent, so bounding it
+would mean discarding part of its output — suppressing real oversized-file violations to make
+a counter agree. The two numbers describe different scans, and the file-size half is cheap
+enough that capping it buys nothing.
 
 ---
 

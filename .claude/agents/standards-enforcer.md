@@ -16,7 +16,7 @@ the current violation set, then use the rest as needed:
 
 ```text
 check_thresholds           → oversized files and functions
-get_complexity_metrics     → deep nesting, many params, high cognitive complexity
+get_complexity_metrics     → deep nesting, many params, high cognitive/cyclomatic complexity
 get_code_smells            → TODO, FIXME, HACK, XXX, BUG, UNUSED, DEPRECATED markers and unsafe casts
 get_functions detail=lines → per-function line counts
 get_line_counts            → file line metrics (code/blank/comment)
@@ -34,7 +34,7 @@ Before any major refactoring (splitting files, extracting functions, reorganizin
    - Public exports that will be restructured
    - Branching logic and conditional paths
    - Error handling paths
-3. **Run the relevant tests** (only the test files covering the code being refactored, not the full suite) and confirm they **pass before** starting the refactor (pre-refactor baseline). Pass every relevant file to a **single** invocation (`npx vitest run a.test.ts b.test.ts c.test.ts`); do not issue one Bash call per test file
+3. **Run the relevant tests** (only the test files covering the code being refactored, not the full suite) and confirm they **pass before** starting the refactor (pre-refactor baseline)
 4. **If coverage is insufficient**: Write characterization tests for the current behavior BEFORE refactoring
    - Test against the public interface so tests remain valid after internal restructuring
    - Run the new tests to confirm they pass against the current code
@@ -60,13 +60,11 @@ npm run check                              # check:versions + lint:fix + typeche
 npx vitest run a.test.ts b.test.ts …       # ALL tests covering the refactored files
 ```
 
-List every relevant test file in that one `vitest` invocation; do not run them
-as separate Bash calls. Individual runs are for diagnosing a specific failure.
-
 Then re-run the relevant Scopewalker tool to confirm the violation is resolved.
 
-After the **final** pass, run the full suite once (`npm run test`) to confirm nothing
-else regressed before reporting.
+After the **final** pass, run the full suite once (`npm run test`) — but **only if
+you changed any files**. If you made zero edits, skip both `npm run check` and
+`npm run test` entirely and report a clean scan.
 
 ## Decision Framework
 
@@ -105,4 +103,4 @@ Structure the end-of-run report as:
 1. **Scan Summary**: violations found per category
 2. **Detailed Findings**: per-violation entries in the Report Format above
 3. **Refactoring Actions Taken**: what was fixed autonomously vs. flagged for the user
-4. **Final Status**: confirmation that `npm run check` and `npm run test` pass, and that re-running the relevant Scopewalker tool shows the violation resolved
+4. **Final Status**: confirmation that `npm run check` and `npm run test` pass (or that no edits were made and the run was skipped), and that re-running the relevant Scopewalker tool shows the violation resolved

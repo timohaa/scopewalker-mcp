@@ -21,15 +21,9 @@ Filter for `.md` files that are new (`??`, `A`) or modified (`M`). If no specifi
 
 ### 2. Process All Target Files in One Batch
 
-Both tools accept **multiple file paths** in a single invocation, and
-`markdownlint` prefixes every warning with its filename. Pass the entire target
-list to each command. Do **not** loop the pipeline file by file, and do **not**
-run these commands as one Bash tool call per file; each `npx` invocation pays
-its own startup cost and each tool call costs a full model round-trip, so a
-per-file loop turns a ~2-second job into minutes.
-
-Run the mechanical steps as a **single** Bash call, spelling out the target list
-from step 1 as literal arguments (the shell is zsh, which does not word-split an
+Both tools accept **multiple file paths** in a single invocation. Run the
+mechanical steps as a **single** Bash call, spelling out the target list from
+step 1 as literal arguments (the shell is zsh, which does not word-split an
 unquoted `$FILES` variable; it would pass the whole list as one bogus path):
 
 ```bash

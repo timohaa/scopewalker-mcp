@@ -27,11 +27,13 @@ server.registerTool(
 Every file-scanning tool repeats the same handler shape after `validatePath`:
 
 1. Directory input → `findFiles({ cwd, includeHidden, ignorePatterns, extensions, maxDepth })`; file input → single-element list.
-2. Slice the file list to `args.max_files` **before** analysis (note: the slice happens before language detection, so the budget is spent on non-analyzable files too — see [known-bugs.md](./known-bugs.md)).
-3. Skip files failing `isFileWithinSizeLimit` (`DEFAULT_MAX_FILE_BYTES`, 1 MB) and files that fail to read or parse, silently.
+2. Iterate that list with `walkSourceFiles(filePaths, basePath, isDirectory, args.max_files)` from `src/lib/sourceFileWalker.ts`, which yields `{ fullPath, relativePath, language, code }`. It handles language detection, the `isFileWithinSizeLimit` guard (`DEFAULT_MAX_FILE_BYTES`, 1 MB), and the read — skipping silently on each. Files that fail to parse are the caller's to skip.
+3. Pass `args.max_files` to the walker rather than slicing the path list up front. The walker counts files it *yields*, so unsupported and oversized files no longer spend the budget; slicing beforehand meant `max_files: 1` on a directory led by a README analyzed nothing.
 4. Sort results, slice to `args.limit ?? DEFAULT_LIMIT` (20), and honor `summary_only` by returning an empty details array.
 
 New tools should copy this shape from an existing tool (e.g. `src/tools/complexityMetrics.ts`) rather than invent a variant.
+
+Derive per-file counters from what the walker yields, not from `filePaths.length` — the two differ whenever the scan list holds anything unanalyzable.
 
 ## Tree-sitter Layer
 

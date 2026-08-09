@@ -26,6 +26,7 @@ If LSP tools are available in your session, prefer them (`workspaceSymbol`, `fin
 - **Think before coding.** If a request is ambiguous, sketch a short plan and surface assumptions/tradeoffs before editing.
 - **Minimum footprint.** Write the minimum code that solves the problem: no speculative abstractions, no drive-by renames, no unrelated cleanup bundled into the same change.
 - **Verify, don't trust.** Define a success criterion before starting and loop until it's met. `npm run check` is necessary but not sufficient to confirm a tool's actual output; verify behavior with the tool itself or its tests.
+- **Batch multi-file commands.** Pass every target file to one invocation (`npx vitest run a.test.ts b.test.ts`, `npx markdownlint f1 f2`, one `grep -nE` across all files) — never one Bash call per file.
 - **Never create `_enhanced`, `_v2`, or `_new` duplicate file variants**; edit the original file.
 
 ## Reference Docs
@@ -33,5 +34,5 @@ If LSP tools are available in your session, prefer them (`workspaceSymbol`, `fin
 - [TOOLS.md](./TOOLS.md): tool reference
 - [docs/](./docs/): detailed tool documentation; [docs/known-bugs.md](./docs/known-bugs.md) lists verified defects and gaps, check it before chasing unexpected tool output
 - `.claude/skills/create-tool`, `.claude/skills/create-test`: workflows and code examples for adding tools/tests
-- `/polish`, `/review-changes`, `/check-quality`, `/run-tests`: quality-pipeline slash commands (see `.claude/skills/` for the rest)
+- `/polish`, `/review-changes`: quality-pipeline slash commands (see `.claude/skills/` for the rest)
 - `.claude/agents/`: specialized agents for standards, testing, docs, and code-quality enforcement (see directory for the full list)

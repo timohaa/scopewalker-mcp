@@ -1,11 +1,26 @@
 ---
 name: review-changes
-description: Review uncommitted changes against project standards. Use before committing or when asked to review the working tree.
+description: Review uncommitted changes against project standards, or run the full-codebase quality gate with `full`. Use before committing or when asked to review the working tree or verify code quality.
 ---
 
 # Review Changes
 
 Review all uncommitted changes against project standards before committing.
+
+## Scope
+
+Default: uncommitted changes (the workflow below). If invoked with `full`, skip
+steps 1–2 and run the whole-codebase gate instead:
+
+```bash
+npm run check          # check:versions + lint:fix + typecheck
+npx prettier --check src
+npm run test
+```
+
+Then `check_thresholds` and `get_code_smells` on `src/`, and report a pass/fail
+summary per category (lint, types, format, tests, thresholds) with issue counts
+and `file:line` details for each failure. Skip the diff-based manual review.
 
 ## Workflow
 

@@ -44,7 +44,7 @@ Use scopewalker-mcp tools to understand and validate the code
 - `get_functions` - Function counts and per-function line metrics (`detail=lines`)
 - `get_code_inventory` - Find classes, functions, methods, and exports
 - `check_thresholds` - Verify size limits (files <300, functions <100 lines)
-- `get_complexity_metrics` - Nesting depth, params, cognitive complexity
+- `get_complexity_metrics` - Nesting depth, params, cognitive and per-function cyclomatic complexity
 - `get_code_smells` - TODO/FIXME-style markers and unsafe casts
 - `get_documentation_coverage` - Find undocumented functions/classes
 - `get_prop_drilling` - Parameters threaded through many functions/files
@@ -114,14 +114,14 @@ description: Run a read-only code health check (lint, typecheck, tests,
 Run these MCP tools over `src/` (and `__tests__/` for the size checks;
 the limits apply to test files too) with extensions `[".ts", ".tsx"]`:
 
-| Tool                         | Purpose                                     |
-|------------------------------|---------------------------------------------|
-| `check_thresholds`           | Max 300 lines/file, 100 lines/function      |
-| `get_complexity_metrics`     | Nesting depth, params, cognitive complexity |
-| `get_prop_drilling`          | Same prop/param name in 3+ functions        |
-| `get_code_smells`            | TODO, FIXME, HACK markers                   |
-| `get_documentation_coverage` | Undocumented functions/classes              |
-| `get_line_counts`            | Per-file code/blank/comment metrics         |
+| Tool                         | Purpose                                                  |
+|------------------------------|----------------------------------------------------------|
+| `check_thresholds`           | Max 300 lines/file, 100 lines/function                   |
+| `get_complexity_metrics`     | Nesting depth, params, cognitive + cyclomatic complexity |
+| `get_prop_drilling`          | Same prop/param name in 3+ functions                     |
+| `get_code_smells`            | TODO, FIXME, HACK markers                                |
+| `get_documentation_coverage` | Undocumented functions/classes                           |
+| `get_line_counts`            | Per-file code/blank/comment metrics                      |
 
 ## Report
 
@@ -159,7 +159,7 @@ description: Generate a scopewalker-based code health report
 ## Tool Defaults
 
 - `check_thresholds`: `max_file_lines=300`, `max_function_lines=100`
-- `get_complexity_metrics`: highlight high nesting/cognitive complexity
+- `get_complexity_metrics`: highlight high nesting, cognitive complexity, and functions over cyclomatic 10
 - `get_code_smells`: `todo`, `fixme`, `hack`, `deprecated`
 - `get_documentation_coverage`: undocumented functions/classes;
   `min_lines` to skip trivial ones
@@ -236,7 +236,7 @@ The prompt body maps each tool to the question it answers:
 
 ```text
 check_thresholds           → oversized files and functions
-get_complexity_metrics     → deep nesting, many params, high cognitive complexity
+get_complexity_metrics     → deep nesting, many params, high cognitive/cyclomatic complexity
 get_code_smells            → TODO, FIXME, HACK, XXX, BUG, UNUSED, DEPRECATED markers and unsafe casts
 get_functions detail=lines → per-function line counts
 get_line_counts            → file line metrics (code/blank/comment)
@@ -264,7 +264,7 @@ description: Audits all documentation against the actual codebase and
   versions, and code examples. Use after refactoring, feature
   additions/removals, or renames, or when documentation staleness is
   suspected.
-model: opus
+model: sonnet
 tools: Bash, Read, Edit, Write, Glob, Grep, WebFetch, WebSearch, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_functions, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
 ---
 ```
@@ -357,7 +357,7 @@ A few things apply no matter which integration point you use:
 - Point agents at `get_code_inventory` instead of hand-maintaining
   file/function lists that drift out of date.
 
-This repo uses these patterns itself; see `.claude/skills/check-quality`,
+This repo uses these patterns itself; see `.claude/skills/review-changes`,
 `.claude/skills/polish`, `.claude/agents/standards-enforcer.md`, and
 `.claude/agents/docs-reality-sync.md` for the real versions of the skill
 and agent examples above.

@@ -8,7 +8,7 @@ It's a local MCP server (open source, runs over stdio, makes no network calls) t
 
 - `get_line_counts` - per-file line counts (total, code, blank, comment) with sorting, extension filters, and project-wide totals
 - `get_functions` - function and method detection; per-file counts, or per-function line metrics via `detail=lines` with a `min_lines` filter for hunting oversized functions
-- `get_complexity_metrics` - max/average nesting depth and parameter counts (JSX props included), import counts, and a cognitive-complexity score per file, with hotspots flagged for deeply nested or over-parameterized functions
+- `get_complexity_metrics` - max/average nesting depth and parameter counts (JSX props included), import counts, a per-file cognitive-complexity score, and per-function cyclomatic complexity with high/extreme severity bands, plus hotspots flagged for deeply nested or over-parameterized functions
 - `check_thresholds` - flags files and functions exceeding size thresholds (defaults: 300 lines per file, 100 per function)
 - `get_code_inventory` - classes with their methods, functions, interfaces/types, enums, and constants, each marked exported or not; private symbols hidden by default
 - `get_documentation_coverage` - coverage percentage plus every function, class, or method missing a doc comment (JSDoc, Python docstrings, Rust `///`, and other per-language formats)
@@ -179,7 +179,7 @@ It picks the right tool and parameters for the request.
 
 This repo also dogfoods its own tools via Claude Code skills and agents:
 
-- [`.claude/skills/check-quality/SKILL.md`](.claude/skills/check-quality/SKILL.md): runs `check_thresholds` and `get_code_smells` as part of the quality gate
+- [`.claude/skills/review-changes/SKILL.md`](.claude/skills/review-changes/SKILL.md): runs `check_thresholds` and `get_code_smells` as part of the pre-commit review and full quality gate
 - [`.claude/agents/standards-enforcer.md`](.claude/agents/standards-enforcer.md): uses the full tool set to find and fix standards violations
 - [`.claude/agents/docs-reality-sync.md`](.claude/agents/docs-reality-sync.md): uses `get_code_inventory` and `get_functions` to keep docs in sync with code
 
