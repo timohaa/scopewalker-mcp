@@ -109,12 +109,23 @@ function walkTree(
 
 /** Checks if node type represents a function declaration in the given language. */
 function isFunctionNode(node: Parser.SyntaxNode, language: SupportedLanguage): boolean {
+  // Several grammars name a node after a keyword they also emit as a bare token,
+  // and a token match is never a real function.
+  if (!node.isNamed) return false;
+
   const functionTypes = getFunctionNodeTypes(language);
   return functionTypes.includes(node.type);
 }
 
-/** Returns AST node types that represent functions for each language. */
-function getFunctionNodeTypes(language: SupportedLanguage): string[] {
+/**
+ * Returns AST node types that represent functions for each language.
+ *
+ * Callers must guard on `node.isNamed`. `function` is deliberately absent from the
+ * TypeScript/JavaScript list: it names only the unnamed `function` keyword token,
+ * never a node, so listing it produced one phantom function per declaration. The
+ * named node for `const f = function () {}` is `function_expression`.
+ */
+export function getFunctionNodeTypes(language: SupportedLanguage): string[] {
   switch (language) {
     case "typescript":
     case "javascript":
@@ -123,7 +134,8 @@ function getFunctionNodeTypes(language: SupportedLanguage): string[] {
         "method_definition",
         "arrow_function",
         "function_expression",
-        "function",
+        "generator_function_declaration", // function* f() {}
+        "generator_function", // const f = function* () {}
       ];
     case "python":
       return ["function_definition"];
