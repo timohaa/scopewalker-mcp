@@ -65,10 +65,6 @@ export function registerFunctionsTool(server: McpServer): void {
         filePaths = [resolvedPath];
       }
 
-      if (args.max_files !== undefined && args.max_files > 0 && filePaths.length > args.max_files) {
-        filePaths = filePaths.slice(0, args.max_files);
-      }
-
       if (detail === "lines") {
         return handleLinesMode(filePaths, resolvedPath, isDirectory, args);
       }
@@ -86,9 +82,10 @@ async function handleCountsMode(
     grep?: string;
     sort_by?: "count_desc" | "count_asc" | "lines_desc" | "lines_asc" | "name";
     limit?: number;
+    max_files?: number;
   }
 ): Promise<ReturnType<typeof createSuccessResponse>> {
-  let files = await analyzeFilesForCounts(filePaths, resolvedPath, isDirectory);
+  let files = await analyzeFilesForCounts(filePaths, resolvedPath, isDirectory, args.max_files);
 
   if (args.grep !== undefined && args.grep !== "") {
     const pattern = args.grep.toLowerCase();
@@ -140,9 +137,16 @@ async function handleLinesMode(
     grep?: string;
     sort_by?: "count_desc" | "count_asc" | "lines_desc" | "lines_asc" | "name";
     limit?: number;
+    max_files?: number;
   }
 ): Promise<ReturnType<typeof createSuccessResponse>> {
-  let files = await analyzeFilesForLines(filePaths, resolvedPath, isDirectory, args.min_lines);
+  let files = await analyzeFilesForLines(
+    filePaths,
+    resolvedPath,
+    isDirectory,
+    args.max_files,
+    args.min_lines
+  );
 
   if (args.grep !== undefined && args.grep !== "") {
     const pattern = args.grep.toLowerCase();

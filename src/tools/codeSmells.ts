@@ -1,7 +1,7 @@
-import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
+import { walkSourceFiles } from "../lib/sourceFileWalker.js";
 import type { FileSmells } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
@@ -47,7 +47,7 @@ export function registerCodeSmellsTool(server: McpServer): void {
       const { resolvedPath, isDirectory } = pathValidation;
       const typesToDetect = args.types ?? ALL_SMELL_TYPES;
 
-      let filePaths = isDirectory
+      const filePaths = isDirectory
         ? await findFiles({
             cwd: resolvedPath,
             includeHidden: args.include_hidden,
@@ -57,19 +57,19 @@ export function registerCodeSmellsTool(server: McpServer): void {
           })
         : [resolvedPath];
 
-      if (args.max_files !== undefined && args.max_files > 0 && filePaths.length > args.max_files) {
-        filePaths = filePaths.slice(0, args.max_files);
-      }
-
       const files: FileSmells[] = [];
       const byType = createEmptySmellCounts();
+      let totalFilesScanned = 0;
 
-      for (const filePath of filePaths) {
-        const fullPath = isDirectory ? join(resolvedPath, filePath) : filePath;
-        const relativePath = isDirectory ? filePath : fullPath;
+      for await (const file of walkSourceFiles(
+        filePaths,
+        resolvedPath,
+        isDirectory,
+        args.max_files
+      )) {
+        totalFilesScanned++;
         const fileSmells = await processFileForSmells(
-          fullPath,
-          relativePath,
+          file,
           typesToDetect,
           args.include_text === true
         );
@@ -85,7 +85,7 @@ export function registerCodeSmellsTool(server: McpServer): void {
         isDirectory,
         files,
         byType,
-        totalFilesScanned: filePaths.length,
+        totalFilesScanned,
         limit: args.limit ?? DEFAULT_LIMIT,
       });
 

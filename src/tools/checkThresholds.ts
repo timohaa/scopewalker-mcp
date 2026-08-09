@@ -62,7 +62,7 @@ export function registerCheckThresholdsTool(server: McpServer): void {
         maxFileLines
       );
 
-      let filePaths = isDirectory
+      const filePaths = isDirectory
         ? await findFiles({
             cwd: resolvedPath,
             includeHidden: args.include_hidden,
@@ -72,15 +72,12 @@ export function registerCheckThresholdsTool(server: McpServer): void {
           })
         : [resolvedPath];
 
-      if (args.max_files !== undefined && args.max_files > 0 && filePaths.length > args.max_files) {
-        filePaths = filePaths.slice(0, args.max_files);
-      }
-
       const { oversizedFunctions, totalFunctions } = await findOversizedFunctions(
         filePaths,
         resolvedPath,
         isDirectory,
-        maxFunctionLines
+        maxFunctionLines,
+        args.max_files
       );
 
       const limit = args.limit ?? DEFAULT_LIMIT;

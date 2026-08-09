@@ -1,9 +1,8 @@
-import { readFile } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { relative } from "node:path";
+import { walkSourceFiles } from "../lib/sourceFileWalker.js";
 import type { TokeiOutput } from "../lib/tokei.js";
-import { detectLanguage, getFunctions } from "../lib/treeSitter.js";
+import { getFunctions } from "../lib/treeSitter.js";
 import type { CheckThresholdsResult, OversizedFile, OversizedFunction } from "../types/index.js";
-import { isFileWithinSizeLimit } from "../utils/fileGuards.js";
 
 /** Configuration for threshold checking. */
 export interface ThresholdConfig {
@@ -59,40 +58,32 @@ export async function findOversizedFunctions(
   filePaths: string[],
   basePath: string,
   isDirectory: boolean,
-  maxLines: number
+  maxLines: number,
+  maxFiles?: number
 ): Promise<{ oversizedFunctions: OversizedFunction[]; totalFunctions: number }> {
   const oversizedFunctions: OversizedFunction[] = [];
   let totalFunctions = 0;
 
-  for (const filePath of filePaths) {
-    const fullPath = isDirectory ? join(basePath, filePath) : filePath;
-    const relativePath = isDirectory ? filePath : fullPath;
-    const language = detectLanguage(fullPath);
+  for await (const { relativePath, language, code } of walkSourceFiles(
+    filePaths,
+    basePath,
+    isDirectory,
+    maxFiles
+  )) {
+    const functions = await getFunctions(code, language);
+    totalFunctions += functions.length;
 
-    if (!language) continue;
-
-    try {
-      const withinLimit = await isFileWithinSizeLimit(fullPath);
-      if (!withinLimit) continue;
-
-      const code = await readFile(fullPath, "utf-8");
-      const functions = await getFunctions(code, language);
-      totalFunctions += functions.length;
-
-      for (const fn of functions) {
-        const lines = fn.endLine - fn.startLine + 1;
-        if (lines > maxLines) {
-          oversizedFunctions.push({
-            path: relativePath,
-            function_name: fn.name,
-            lines,
-            exceeds_by: lines - maxLines,
-            start_line: fn.startLine,
-          });
-        }
+    for (const fn of functions) {
+      const lines = fn.endLine - fn.startLine + 1;
+      if (lines > maxLines) {
+        oversizedFunctions.push({
+          path: relativePath,
+          function_name: fn.name,
+          lines,
+          exceeds_by: lines - maxLines,
+          start_line: fn.startLine,
+        });
       }
-    } catch {
-      // Skip unreadable files without failing the whole scan
     }
   }
 

@@ -1,6 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { detectLanguage, getComments, getFunctions } from "../lib/treeSitter.js";
+import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { getComments, getFunctions } from "../lib/treeSitter.js";
 import type {
   FileFunctionCount,
   FileFunctionLineCount,
@@ -8,45 +7,36 @@ import type {
   FunctionInfo,
   FunctionLineInfo,
 } from "../types/index.js";
-import { isFileWithinSizeLimit } from "../utils/fileGuards.js";
 import { calculateFunctionLineStats } from "./functionLineCountsHelpers.js";
 
 /** Parses each file path and extracts function names and counts. */
 export async function analyzeFilesForCounts(
   filePaths: string[],
   basePath: string,
-  isDirectory: boolean
+  isDirectory: boolean,
+  maxFiles?: number
 ): Promise<FileFunctionCount[]> {
   const results: FileFunctionCount[] = [];
 
-  for (const filePath of filePaths) {
-    const fullPath = isDirectory ? join(basePath, filePath) : filePath;
-    const relativePath = isDirectory ? filePath : fullPath;
-    const language = detectLanguage(fullPath);
+  for await (const { relativePath, language, code } of walkSourceFiles(
+    filePaths,
+    basePath,
+    isDirectory,
+    maxFiles
+  )) {
+    const functionLocations = await getFunctions(code, language);
 
-    if (!language) continue;
+    const functions: FunctionInfo[] = functionLocations.map((fn) => ({
+      name: fn.name,
+      line: fn.startLine,
+    }));
 
-    try {
-      const withinLimit = await isFileWithinSizeLimit(fullPath);
-      if (!withinLimit) continue;
-
-      const code = await readFile(fullPath, "utf-8");
-      const functionLocations = await getFunctions(code, language);
-
-      const functions: FunctionInfo[] = functionLocations.map((fn) => ({
-        name: fn.name,
-        line: fn.startLine,
-      }));
-
-      results.push({
-        path: relativePath,
-        language,
-        function_count: functions.length,
-        functions,
-      });
-    } catch (err) {
-      console.error(`Failed to read ${fullPath}:`, err);
-    }
+    results.push({
+      path: relativePath,
+      language,
+      function_count: functions.length,
+      functions,
+    });
   }
 
   return results;
@@ -57,46 +47,38 @@ export async function analyzeFilesForLines(
   filePaths: string[],
   basePath: string,
   isDirectory: boolean,
+  maxFiles?: number,
   minLines?: number
 ): Promise<FileFunctionLineCount[]> {
   const results: FileFunctionLineCount[] = [];
 
-  for (const filePath of filePaths) {
-    const fullPath = isDirectory ? join(basePath, filePath) : filePath;
-    const relativePath = isDirectory ? filePath : fullPath;
-    const language = detectLanguage(fullPath);
+  for await (const { relativePath, language, code } of walkSourceFiles(
+    filePaths,
+    basePath,
+    isDirectory,
+    maxFiles
+  )) {
+    const lines = code.split("\n");
+    const [functionLocations, comments] = await Promise.all([
+      getFunctions(code, language),
+      getComments(code, language),
+    ]);
 
-    if (!language) continue;
+    const functions: FunctionLineInfo[] = [];
+    for (const fn of functionLocations) {
+      const totalLines = fn.endLine - fn.startLine + 1;
+      if (minLines !== undefined && minLines > 0 && totalLines < minLines) continue;
 
-    try {
-      const withinLimit = await isFileWithinSizeLimit(fullPath);
-      if (!withinLimit) continue;
+      functions.push({
+        name: fn.name,
+        start_line: fn.startLine,
+        end_line: fn.endLine,
+        lines: calculateFunctionLineStats(lines, fn, comments),
+      });
+    }
 
-      const code = await readFile(fullPath, "utf-8");
-      const lines = code.split("\n");
-      const [functionLocations, comments] = await Promise.all([
-        getFunctions(code, language),
-        getComments(code, language),
-      ]);
-
-      const functions: FunctionLineInfo[] = [];
-      for (const fn of functionLocations) {
-        const totalLines = fn.endLine - fn.startLine + 1;
-        if (minLines !== undefined && minLines > 0 && totalLines < minLines) continue;
-
-        functions.push({
-          name: fn.name,
-          start_line: fn.startLine,
-          end_line: fn.endLine,
-          lines: calculateFunctionLineStats(lines, fn, comments),
-        });
-      }
-
-      if (functions.length > 0) {
-        results.push({ path: relativePath, language, functions });
-      }
-    } catch (err) {
-      console.error(`Failed to read ${fullPath}:`, err);
+    if (functions.length > 0) {
+      results.push({ path: relativePath, language, functions });
     }
   }
 

@@ -1,9 +1,8 @@
-import { readFile } from "node:fs/promises";
 import type Parser from "tree-sitter";
-import { detectLanguage, parseCode } from "../lib/treeSitter.js";
+import type { SourceFile } from "../lib/sourceFileWalker.js";
+import { parseCode } from "../lib/treeSitter.js";
 import { getComments } from "../lib/treeSitterComments.js";
 import type { CodeSmell, CodeSmellsResult, CodeSmellType, FileSmells } from "../types/index.js";
-import { isFileWithinSizeLimit } from "../utils/fileGuards.js";
 
 /** Maximum number of smells per file to include in response. */
 const MAX_SMELLS_PER_FILE = 50;
@@ -82,33 +81,20 @@ export function updateSmellCounts(
   }
 }
 
-/** Processes a single file for code smells. Returns FileSmells if any found, null otherwise. */
+/** Processes a single walked file for code smells. Returns FileSmells if any found, null otherwise. */
 export async function processFileForSmells(
-  fullPath: string,
-  relativePath: string,
+  file: SourceFile,
   typesToDetect: CodeSmellType[],
   includeText: boolean
 ): Promise<FileSmells | null> {
+  const { relativePath, language, code } = file;
+
   try {
-    const language = detectLanguage(fullPath);
-
-    // Skip files with unrecognized languages to avoid false positives from binary/non-code files
-    if (!language) {
-      return null;
-    }
-
-    const withinLimit = await isFileWithinSizeLimit(fullPath);
-    if (!withinLimit) {
-      return null;
-    }
-
-    const content = await readFile(fullPath, "utf-8");
     const smells: CodeSmell[] = [];
 
-    // Detect comment-based smells
     const commentTypesToDetect = typesToDetect.filter((t) => COMMENT_SMELL_TYPES.includes(t));
     if (commentTypesToDetect.length > 0) {
-      const comments = await getComments(content, language);
+      const comments = await getComments(code, language);
       const commentSmells = detectSmellsInComments(
         comments,
         relativePath,
@@ -118,11 +104,10 @@ export async function processFileForSmells(
       smells.push(...commentSmells);
     }
 
-    // Detect code-based smells (AST patterns)
     const codeTypesToDetect = typesToDetect.filter((t) => CODE_SMELL_TYPES.includes(t));
     if (codeTypesToDetect.length > 0 && (language === "typescript" || language === "javascript")) {
       const codeSmells = await detectCodeBasedSmells({
-        content,
+        content: code,
         language,
         filePath: relativePath,
         typesToDetect: codeTypesToDetect,
@@ -221,17 +206,13 @@ function walkTreeForUnsafeCasts(
   matches: UnsafeCastMatch[],
   content: string
 ): void {
-  // Look for "as_expression" nodes that represent "as unknown as T" pattern
-  // The AST structure is: as_expression(as_expression(expr, unknown), T)
-  // tree-sitter TypeScript doesn't use field names, so we access children positionally
+  // "as unknown as T" nests as as_expression(as_expression(expr, unknown), T);
+  // tree-sitter's TypeScript grammar exposes no field names for it, so children
+  // are read positionally: first is the expression, last is the target type.
   if (node.type === "as_expression") {
     const namedChildren = node.namedChildren;
-    // First named child is the expression (could be another as_expression)
-    // Last named child is the target type
     if (namedChildren.length > 0 && namedChildren[0].type === "as_expression") {
       const innerExpr = namedChildren[0];
-      // Check if the inner as_expression casts to "unknown" or "any"
-      // Inner as_expression: first child is expr, last child is the intermediate type
       const innerNamedChildren = innerExpr.namedChildren;
       if (
         innerNamedChildren.length > 0 &&
