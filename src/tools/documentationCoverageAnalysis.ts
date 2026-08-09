@@ -37,28 +37,33 @@ export interface FileAnalysis {
   items: UndocumentedItem[];
 }
 
+/** Returns true when a sibling node is itself a documentation comment. */
+function isDocSibling(sibling: Parser.SyntaxNode, language: SupportedLanguage): boolean {
+  return isCommentNode(sibling) && isDocCommentText(sibling.text, language);
+}
+
+/**
+ * Returns true for nodes the backward scan may walk past.
+ * Decorators sit between a doc comment and the node it documents, so stopping
+ * at one would hide the comment above it.
+ */
+function isSkippableSibling(sibling: Parser.SyntaxNode): boolean {
+  const isWhitespace = sibling.type.includes("newline") || sibling.text.trim() === "";
+  return isWhitespace || isCommentNode(sibling) || sibling.type === "decorator";
+}
+
 /** Checks preceding siblings for documentation comments. */
 function hasDocInSiblings(node: Parser.SyntaxNode, language: SupportedLanguage): boolean {
   const prevNamed = node.previousNamedSibling;
-  if (
-    prevNamed !== null &&
-    isCommentNode(prevNamed) &&
-    isDocCommentText(prevNamed.text, language)
-  ) {
-    return true;
-  }
+  if (prevNamed !== null && isDocSibling(prevNamed, language)) return true;
 
   let sibling = node.previousSibling;
   while (sibling !== null) {
-    if (isCommentNode(sibling) && isDocCommentText(sibling.text, language)) {
-      return true;
-    }
-    const isWhitespace = sibling.type.includes("newline") || sibling.text.trim() === "";
-    // TS decorators sit between the doc comment and the decorated node; walk past them
-    const isSkippable = isWhitespace || isCommentNode(sibling) || sibling.type === "decorator";
-    if (!isSkippable) break;
+    if (isDocSibling(sibling, language)) return true;
+    if (!isSkippableSibling(sibling)) break;
     sibling = sibling.previousSibling;
   }
+
   return false;
 }
 

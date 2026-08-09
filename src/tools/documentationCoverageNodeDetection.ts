@@ -28,22 +28,26 @@ const METHOD_TYPES = ["method_definition", "method_declaration"];
 // module-level defs and class members, distinguished only by parent.
 const RUBY_DEF_TYPES = ["method", "singleton_method"];
 
-/** Classifies a node as function, class, or method, or null if not documentable. */
-function getDocumentableType(node: Parser.SyntaxNode): "function" | "class" | "method" | null {
-  if (CLASS_TYPES.includes(node.type)) return "class";
-  if (METHOD_TYPES.includes(node.type)) return "method";
+type DocumentableType = "function" | "class" | "method";
 
+/**
+ * Classifies the node types whose meaning depends on what encloses them.
+ * Ruby has no distinct method node, and C/C++ members share their node types
+ * with free functions and data fields, so in both cases only the parent
+ * separates a method from a plain function.
+ */
+function classifyByParent(node: Parser.SyntaxNode): DocumentableType | null {
   // Mirrors the parent check in getItemType so both tools label a Ruby def the same way.
   if (RUBY_DEF_TYPES.includes(node.type)) {
     return node.parent?.type === "body_statement" ? "method" : "function";
   }
 
-  // C/C++ members share their node types with free functions and data fields,
-  // so the enclosing record body is what marks them as methods.
   const inRecordBody = node.parent?.type === "field_declaration_list";
+
   if (node.type === "field_declaration") {
     return inRecordBody && hasFunctionDeclarator(node) ? "method" : null;
   }
+
   if (FUNC_TYPES.includes(node.type)) {
     return inRecordBody ? "method" : "function";
   }
@@ -52,6 +56,14 @@ function getDocumentableType(node: Parser.SyntaxNode): "function" | "class" | "m
   if (node.type === "declaration" && hasFunctionDeclarator(node)) return "function";
 
   return null;
+}
+
+/** Classifies a node as function, class, or method, or null if not documentable. */
+function getDocumentableType(node: Parser.SyntaxNode): DocumentableType | null {
+  if (CLASS_TYPES.includes(node.type)) return "class";
+  if (METHOD_TYPES.includes(node.type)) return "method";
+
+  return classifyByParent(node);
 }
 
 /** Returns documentable info if node is a function, class, or method. */

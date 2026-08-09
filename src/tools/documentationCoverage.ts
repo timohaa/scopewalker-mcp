@@ -1,11 +1,9 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
-import { detectLanguage, parseCode } from "../lib/treeSitter.js";
+import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { parseCode } from "../lib/treeSitter.js";
 import type { FileDocumentation, UndocumentedItem } from "../types/index.js";
-import { isFileWithinSizeLimit } from "../utils/fileGuards.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
@@ -44,7 +42,7 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
 
       const { resolvedPath, isDirectory } = pathValidation;
 
-      let filePaths = isDirectory
+      const filePaths = isDirectory
         ? await findFiles({
             cwd: resolvedPath,
             includeHidden: args.include_hidden,
@@ -54,12 +52,14 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
           })
         : [resolvedPath];
 
-      if (args.max_files !== undefined && args.max_files > 0 && filePaths.length > args.max_files) {
-        filePaths = filePaths.slice(0, args.max_files);
-      }
-
       const { byFile, undocumentedItems, totalDocumented, totalUndocumented } =
-        await analyzeCoverage(filePaths, resolvedPath, isDirectory, args.min_lines ?? 1);
+        await analyzeCoverage(
+          filePaths,
+          resolvedPath,
+          isDirectory,
+          args.max_files,
+          args.min_lines ?? 1
+        );
 
       const result = buildDocumentationCoverageResult(
         {
@@ -87,6 +87,7 @@ async function analyzeCoverage(
   filePaths: string[],
   basePath: string,
   isDirectory: boolean,
+  maxFiles: number | undefined,
   minLines: number
 ): Promise<CoverageAnalysis> {
   const byFile: FileDocumentation[] = [];
@@ -94,42 +95,32 @@ async function analyzeCoverage(
   let totalDocumented = 0;
   let totalUndocumented = 0;
 
-  for (const filePath of filePaths) {
-    const fullPath = isDirectory ? join(basePath, filePath) : filePath;
-    const relativePath = isDirectory ? filePath : fullPath;
-    const language = detectLanguage(fullPath);
+  for await (const { relativePath, language, code } of walkSourceFiles(
+    filePaths,
+    basePath,
+    isDirectory,
+    maxFiles
+  )) {
+    const tree = await parseCode(code, language);
+    if (!tree) continue;
 
-    if (!language) continue;
+    const { documented, undocumented, items } = analyzeFileDocumentation({
+      rootNode: tree.rootNode,
+      lines: code.split("\n"),
+      language,
+      filePath: relativePath,
+      minLines,
+    });
 
-    try {
-      const withinLimit = await isFileWithinSizeLimit(fullPath);
-      if (!withinLimit) continue;
+    totalDocumented += documented;
+    totalUndocumented += undocumented;
 
-      const code = await readFile(fullPath, "utf-8");
-      const lines = code.split("\n");
-      const tree = await parseCode(code, language);
-      if (!tree) continue;
-
-      const { documented, undocumented, items } = analyzeFileDocumentation({
-        rootNode: tree.rootNode,
-        lines,
-        language,
-        filePath: relativePath,
-        minLines,
-      });
-
-      totalDocumented += documented;
-      totalUndocumented += undocumented;
-
-      if (documented + undocumented > 0) {
-        const percentage = Math.round((documented / (documented + undocumented)) * 1000) / 10;
-        byFile.push({ path: relativePath, documented, undocumented, percentage });
-      }
-
-      undocumentedItems.push(...items);
-    } catch {
-      // Skip files that can't be read
+    if (documented + undocumented > 0) {
+      const percentage = Math.round((documented / (documented + undocumented)) * 1000) / 10;
+      byFile.push({ path: relativePath, documented, undocumented, percentage });
     }
+
+    undocumentedItems.push(...items);
   }
 
   return { byFile, undocumentedItems, totalDocumented, totalUndocumented };
