@@ -1,14 +1,16 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
-import { detectLanguage, parseCode } from "../lib/treeSitter.js";
+import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { parseCode } from "../lib/treeSitter.js";
 import type { CodeInventoryResult, FileInventory, InventoryItem } from "../types/index.js";
-import { isFileWithinSizeLimit } from "../utils/fileGuards.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
-import { attachGoMethods } from "./codeInventoryGoMethods.js";
+import {
+  attachGoMethods,
+  collectGoMethods,
+  type PendingGoMethod,
+} from "./codeInventoryGoMethods.js";
 import { walkNode, extractItem, calculateSummary } from "./codeInventoryHelpers.js";
 
 const DEFAULT_LIMIT = 20;
@@ -57,15 +59,12 @@ export function registerCodeInventoryTool(server: McpServer): void {
         filePaths = [resolvedPath];
       }
 
-      if (args.max_files !== undefined && args.max_files > 0 && filePaths.length > args.max_files) {
-        filePaths = filePaths.slice(0, args.max_files);
-      }
-
       let inventory = await analyzeInventory(
         filePaths,
         resolvedPath,
         isDirectory,
-        args.include_private ?? false
+        args.include_private ?? false,
+        args.max_files
       );
 
       if (args.grep !== undefined && args.grep !== "") {
@@ -110,37 +109,37 @@ async function analyzeInventory(
   filePaths: string[],
   basePath: string,
   isDirectory: boolean,
-  includePrivate: boolean
+  includePrivate: boolean,
+  maxFiles?: number
 ): Promise<FileInventory[]> {
   const results: FileInventory[] = [];
+  // Go receivers can only be matched once every file in the package has been read.
+  const pendingGoMethods: PendingGoMethod[] = [];
 
-  for (const filePath of filePaths) {
-    const fullPath = isDirectory ? join(basePath, filePath) : filePath;
-    const relativePath = isDirectory ? filePath : fullPath;
-    const language = detectLanguage(fullPath);
+  for await (const { relativePath, language, code } of walkSourceFiles(
+    filePaths,
+    basePath,
+    isDirectory,
+    maxFiles
+  )) {
+    const tree = await parseCode(code, language);
+    if (!tree) continue;
 
-    if (!language) continue;
+    const items = extractInventoryItems(tree.rootNode, language, includePrivate);
 
-    try {
-      const withinLimit = await isFileWithinSizeLimit(fullPath);
-      if (!withinLimit) continue;
+    if (language === "go") {
+      pendingGoMethods.push(...collectGoMethods(tree.rootNode, relativePath, includePrivate));
+    }
 
-      const code = await readFile(fullPath, "utf-8");
-      const tree = await parseCode(code, language);
-      if (!tree) continue;
-
-      const items = extractInventoryItems(tree.rootNode, language, includePrivate);
-
-      if (items.length > 0) {
-        results.push({
-          file: relativePath,
-          items,
-        });
-      }
-    } catch {
-      // Skip files that can't be read
+    if (items.length > 0) {
+      results.push({
+        file: relativePath,
+        items,
+      });
     }
   }
+
+  attachGoMethods(pendingGoMethods, results);
 
   return results;
 }
@@ -159,10 +158,6 @@ function extractInventoryItems(
       items.push(item);
     }
   });
-
-  if (language === "go") {
-    attachGoMethods(rootNode, items, includePrivate);
-  }
 
   return items;
 }

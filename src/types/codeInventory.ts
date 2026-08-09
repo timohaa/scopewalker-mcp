@@ -1,7 +1,9 @@
+export type MethodVisibility = "public" | "private" | "protected";
+
 export interface MethodInfo {
   name: string;
   line: number;
-  visibility: "public" | "private" | "protected";
+  visibility: MethodVisibility;
 }
 
 export interface InventoryItem {

@@ -6,11 +6,18 @@ import type {
   FileInventory,
   InventoryItem,
   MethodInfo,
+  MethodVisibility,
   SupportedLanguage,
 } from "../types/index.js";
 import { getItemType } from "./codeInventoryItemTypes.js";
 export { getItemType };
-import { isExported, isPrivateSymbol } from "./codeInventoryVisibility.js";
+import {
+  defaultSectionVisibility,
+  readInlineVisibilityCall,
+  readRetroactiveMarks,
+  readSectionMarker,
+} from "./codeInventoryMemberVisibility.js";
+import { getJavaAccessModifier, isExported, isPrivateSymbol } from "./codeInventoryVisibility.js";
 export { isExported, isPrivateSymbol };
 
 /** Extracts an inventory item from an AST node if it represents a class, function, etc. */
@@ -122,23 +129,68 @@ export function extractMethods(
   if (!body) return [];
 
   const methods: MethodInfo[] = [];
-  for (const node of body.children) {
-    if (!isMethodNode(node)) continue;
+  const retroactive = new Map<string, MethodVisibility>();
+  let section = defaultSectionVisibility(classNode, language);
 
+  const record = (node: Parser.SyntaxNode, visibility: MethodVisibility): void => {
     const name = extractMethodName(node);
-    if (name === null) continue;
-
-    const isPrivate = isPrivateSymbol(name, node, language);
-    if (isPrivate && !includePrivate) continue;
+    if (name === null) return;
 
     methods.push({
       name,
       line: node.startPosition.row + 1,
-      visibility: isPrivate ? "private" : "public",
+      // A naming convention still applies on top of the declared visibility: an
+      // underscore-prefixed Ruby or Python method is private wherever it sits.
+      visibility: isPrivateSymbol(name, node, language) ? "private" : visibility,
     });
+  };
+
+  for (const node of body.children) {
+    const marker = readSectionMarker(node, language);
+    if (marker) {
+      section = marker;
+      continue;
+    }
+
+    const marks = readRetroactiveMarks(node, language);
+    if (marks) {
+      for (const name of marks.names) retroactive.set(name, marks.visibility);
+      continue;
+    }
+
+    const inlined = readInlineVisibilityCall(node, language);
+    if (inlined.length > 0) {
+      for (const { methodNode, visibility } of inlined) record(methodNode, visibility);
+      continue;
+    }
+
+    if (isMethodNode(node)) record(node, memberVisibility(node, language, section));
   }
 
-  return methods;
+  // `private :a` trails the definition it names, so filtering can only happen
+  // once the whole body has been read.
+  const resolved = methods.map((method) => ({
+    ...method,
+    visibility: retroactive.get(method.name) ?? method.visibility,
+  }));
+
+  return includePrivate ? resolved : resolved.filter((m) => m.visibility !== "private");
+}
+
+/** A per-declaration access modifier overrides the section it sits in; otherwise the section stands. */
+function memberVisibility(
+  node: Parser.SyntaxNode,
+  language: SupportedLanguage,
+  section: MethodVisibility
+): MethodVisibility {
+  if (language === "java") return getJavaAccessModifier(node) ?? "private";
+
+  if (language === "typescript" || language === "javascript") {
+    const modifier = node.children.find((child) => child.type === "accessibility_modifier");
+    return (modifier?.text as MethodVisibility | undefined) ?? section;
+  }
+
+  return section;
 }
 
 /** Checks if an AST node represents a method definition. */

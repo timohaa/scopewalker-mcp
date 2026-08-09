@@ -11,6 +11,26 @@ function getRustVisibility(node: Parser.SyntaxNode): string | null {
   return modifier?.text ?? null;
 }
 
+/**
+ * Reads a Java access modifier off a declaration's optional `modifiers` child.
+ *
+ * Returns null when the declaration carries no access modifier at all, which is
+ * Java's package-private default rather than an absence of information.
+ */
+export function getJavaAccessModifier(
+  node: Parser.SyntaxNode
+): "public" | "private" | "protected" | null {
+  const modifiers = node.children.find((child) => child.type === "modifiers");
+  if (!modifiers) return null;
+
+  for (const child of modifiers.children) {
+    if (child.type === "public" || child.type === "private" || child.type === "protected") {
+      return child.type;
+    }
+  }
+  return null;
+}
+
 /** Determines if a symbol is private based on naming conventions or access modifiers. */
 export function isPrivateSymbol(
   name: string,
@@ -27,6 +47,13 @@ export function isPrivateSymbol(
     return node.children.some(
       (child) => child.type === "accessibility_modifier" && child.text === "private"
     );
+  }
+
+  // Java's default access is package-private, so an absent modifier is a positive
+  // statement that the symbol is not part of the type's outside-facing API.
+  if (language === "java") {
+    const access = getJavaAccessModifier(node);
+    return access === "private" || access === null;
   }
 
   return false;
@@ -46,6 +73,10 @@ export function isExported(
   // `pub(crate)` and `pub(super)` confine a symbol to its own crate or module,
   // so only a bare `pub` puts it on the public API surface.
   if (language === "rust") return getRustVisibility(node) === "pub";
+
+  // Java has no module-export keyword; `public` is the closest declaration-site
+  // statement that a type is meant to be used from outside its own package.
+  if (language === "java") return getJavaAccessModifier(node) === "public";
 
   if (
     parent.type === "export_statement" ||
