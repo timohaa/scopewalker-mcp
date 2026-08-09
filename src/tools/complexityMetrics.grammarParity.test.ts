@@ -126,6 +126,100 @@ func outer() func(int) int {
 `,
 };
 
+// One if plus two else-if branches plus a final else, in seven grammars. Each
+// grammar spells the middle branches differently: a nested if_statement after an
+// `else` keyword in the C family, elif_clause in Python, elsif in Ruby. Before the
+// else-if fix these scored 6/5/6 respectively — the chain was charged as if each
+// branch nested inside the previous one.
+const ELSE_IF_SOURCES = {
+  "e.ts": `function pick(k: number): number {
+  if (k === 1) {
+    return 1;
+  } else if (k === 2) {
+    return 2;
+  } else if (k === 3) {
+    return 3;
+  } else {
+    return 0;
+  }
+}
+`,
+  "e.py": `def pick(k):
+    if k == 1:
+        return 1
+    elif k == 2:
+        return 2
+    elif k == 3:
+        return 3
+    else:
+        return 0
+`,
+  "e.rb": `def pick(k)
+  if k == 1
+    1
+  elsif k == 2
+    2
+  elsif k == 3
+    3
+  else
+    0
+  end
+end
+`,
+  "E.java": `class E {
+  int pick(int k) {
+    if (k == 1) {
+      return 1;
+    } else if (k == 2) {
+      return 2;
+    } else if (k == 3) {
+      return 3;
+    } else {
+      return 0;
+    }
+  }
+}
+`,
+  "e.rs": `fn pick(k: i32) -> i32 {
+    if k == 1 {
+        1
+    } else if k == 2 {
+        2
+    } else if k == 3 {
+        3
+    } else {
+        0
+    }
+}
+`,
+  "e.go": `package main
+
+func pick(k int) int {
+	if k == 1 {
+		return 1
+	} else if k == 2 {
+		return 2
+	} else if k == 3 {
+		return 3
+	} else {
+		return 0
+	}
+}
+`,
+  "e.cpp": `int pick(int k) {
+  if (k == 1) {
+    return 1;
+  } else if (k == 2) {
+    return 2;
+  } else if (k == 3) {
+    return 3;
+  } else {
+    return 0;
+  }
+}
+`,
+};
+
 // These pin symmetry rather than absolute scores: the same logic written in
 // different languages must score the same. Every mismatch here has been a real
 // bug where one language silently scored zero.
@@ -136,6 +230,21 @@ describe("grammar-name parity", () => {
     for (const [file, m] of Object.entries(metrics)) {
       expect(m.cognitive_complexity, `${file} cognitive complexity`).toBe(4);
       expect(m.max_nesting_depth, `${file} nesting depth`).toBe(1);
+    }
+  });
+
+  // Exact values, not lower bounds: the else-if bug survived for so long because
+  // every fixture that touched it asserted `toBeGreaterThan(1)`, which 6, 5 and 3
+  // all satisfy.
+  it("scores an else-if chain as flat sibling branches in every grammar", async () => {
+    const metrics = await measure("elseif", ELSE_IF_SOURCES);
+
+    for (const [file, m] of Object.entries(metrics)) {
+      expect(m.cognitive_complexity, `${file} cognitive complexity`).toBe(3);
+      expect(m.max_nesting_depth, `${file} nesting depth`).toBe(1);
+      // Same fixture, opposite rule: an else-if is a real predicate, so McCabe
+      // counts it. This is what catches the suppression leaking into cyclomatic.
+      expect(m.max_cyclomatic_complexity, `${file} cyclomatic complexity`).toBe(4);
     }
   });
 

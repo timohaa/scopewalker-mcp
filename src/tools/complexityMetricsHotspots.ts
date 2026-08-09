@@ -1,63 +1,58 @@
 import type Parser from "tree-sitter";
 import { walkNode } from "../lib/astWalker.js";
-import type { ComplexityHotspot, FileComplexity, SupportedLanguage } from "../types/index.js";
+import type { ComplexityHotspot, ComplexityMetricsResult, FileComplexity } from "../types/index.js";
+import type { FunctionAnalysis } from "./complexityMetricsFunctions.js";
 import {
   HIGH_NESTING_THRESHOLD,
   HIGH_PARAMS_THRESHOLD,
   HIGH_COMPLEXITY_THRESHOLD,
-  calculateNestingDepth,
-  countParameters,
   countJsxProps,
   extractJsxComponentName,
-  extractFunctionName,
 } from "./complexityMetricsHelpers.js";
 
-/** Identifies functions exceeding nesting or parameter thresholds. */
+/** Cross-file function tallies the summary needs, accumulated before files are limited. */
+export interface FunctionStats {
+  highComplexityFunctions: number;
+  mostComplexFunction: ComplexityMetricsResult["summary"]["most_complex_function"];
+}
+
+/**
+ * Identifies functions exceeding nesting or parameter thresholds.
+ *
+ * Takes the already-measured functions rather than re-walking for them: a second
+ * function-node list here is how this file and lib/treeSitter.ts drifted apart in
+ * the first place. The JSX pass stays node-based because props hang off elements,
+ * not functions.
+ */
 export function findHotspots(
   rootNode: Parser.SyntaxNode,
-  language?: SupportedLanguage
+  functions: FunctionAnalysis[]
 ): ComplexityHotspot[] {
   const hotspots: ComplexityHotspot[] = [];
 
-  walkNode(rootNode, (node) => {
-    const funcTypes = [
-      "function_declaration",
-      "function_definition",
-      "function_item", // Rust functions
-      "method_definition",
-      "method_declaration", // Java and Go methods
-      "method", // Ruby defs
-      "singleton_method", // Ruby `def self.x`
-      "arrow_function",
-    ];
-
-    if (funcTypes.includes(node.type)) {
-      const funcName = extractFunctionName(node) ?? "<anonymous>";
-      const line = node.startPosition.row + 1;
-
-      const depth = calculateNestingDepth(node, 0);
-      if (depth > HIGH_NESTING_THRESHOLD) {
-        hotspots.push({
-          function: funcName,
-          line,
-          issue: "nesting_depth",
-          value: depth,
-          recommendation: "Consider extracting nested logic into helper functions",
-        });
-      }
-
-      const params = countParameters(node, language);
-      if (params !== null && params > HIGH_PARAMS_THRESHOLD) {
-        hotspots.push({
-          function: funcName,
-          line,
-          issue: "parameters",
-          value: params,
-          recommendation: "Consider using an options object or splitting the function",
-        });
-      }
+  for (const fn of functions) {
+    if (fn.nesting > HIGH_NESTING_THRESHOLD) {
+      hotspots.push({
+        function: fn.name,
+        line: fn.line,
+        issue: "nesting_depth",
+        value: fn.nesting,
+        recommendation: "Consider extracting nested logic into helper functions",
+      });
     }
 
+    if (fn.parameters !== null && fn.parameters > HIGH_PARAMS_THRESHOLD) {
+      hotspots.push({
+        function: fn.name,
+        line: fn.line,
+        issue: "parameters",
+        value: fn.parameters,
+        recommendation: "Consider using an options object or splitting the function",
+      });
+    }
+  }
+
+  walkNode(rootNode, (node) => {
     const jsxProps = countJsxProps(node);
     if (jsxProps !== null && jsxProps > HIGH_PARAMS_THRESHOLD) {
       const componentName = extractJsxComponentName(node) ?? "<unknown>";
@@ -76,12 +71,10 @@ export function findHotspots(
 }
 
 /** Aggregates complexity metrics into summary statistics. */
-export function calculateSummary(files: FileComplexity[]): {
-  files_analyzed: number;
-  high_complexity_files: number;
-  total_hotspots: number;
-  most_complex_file: { path: string; cognitive_complexity: number } | null;
-} {
+export function calculateSummary(
+  files: FileComplexity[],
+  functionStats: FunctionStats
+): ComplexityMetricsResult["summary"] {
   let totalHotspots = 0;
   let highComplexityFiles = 0;
   let mostComplexFile: { path: string; cognitive_complexity: number } | null = null;
@@ -107,7 +100,9 @@ export function calculateSummary(files: FileComplexity[]): {
   return {
     files_analyzed: files.length,
     high_complexity_files: highComplexityFiles,
+    high_complexity_functions: functionStats.highComplexityFunctions,
     total_hotspots: totalHotspots,
     most_complex_file: mostComplexFile,
+    most_complex_function: functionStats.mostComplexFunction,
   };
 }

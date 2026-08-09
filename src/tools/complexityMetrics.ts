@@ -1,14 +1,19 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type Parser from "tree-sitter";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
-import { detectLanguage, parseCode } from "../lib/treeSitter.js";
+import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { parseCode } from "../lib/treeSitter.js";
 import type { ComplexityMetricsResult, FileComplexity, SupportedLanguage } from "../types/index.js";
-import { isFileWithinSizeLimit } from "../utils/fileGuards.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  collectFunctions,
+  rollUpFunctionMetrics,
+  selectReportedFunctions,
+  HIGH_CYCLOMATIC_THRESHOLD,
+  type FunctionAnalysis,
+} from "./complexityMetricsFunctions.js";
 import {
   walkNode,
   calculateNestingDepth,
@@ -19,6 +24,7 @@ import {
   findHotspots,
   calculateSummary,
 } from "./complexityMetricsHelpers.js";
+import type { FunctionStats } from "./complexityMetricsHotspots.js";
 
 const DEFAULT_LIMIT = 20;
 
@@ -39,7 +45,7 @@ export function registerComplexityMetricsTool(server: McpServer): void {
     "get_complexity_metrics",
     {
       description:
-        "Returns complexity metrics (nesting, params, cognitive). Use limit/summary_only to control output.",
+        "Returns complexity metrics (nesting, params, cognitive, per-function cyclomatic). Use limit/summary_only to control output.",
       inputSchema,
     },
     async (args) => {
@@ -63,12 +69,13 @@ export function registerComplexityMetricsTool(server: McpServer): void {
         filePaths = [resolvedPath];
       }
 
-      if (args.max_files !== undefined && args.max_files > 0 && filePaths.length > args.max_files) {
-        filePaths = filePaths.slice(0, args.max_files);
-      }
-
-      const allFiles = await analyzeComplexity(filePaths, resolvedPath, isDirectory);
-      const summary = calculateSummary(allFiles);
+      const { files: allFiles, functionStats } = await analyzeComplexity(
+        filePaths,
+        resolvedPath,
+        isDirectory,
+        args.max_files
+      );
+      const summary = calculateSummary(allFiles, functionStats);
 
       // Sort by cognitive complexity so the highest-complexity files appear first after slicing
       const sortedFiles = [...allFiles].sort(
@@ -89,56 +96,87 @@ export function registerComplexityMetricsTool(server: McpServer): void {
   );
 }
 
-/** Parses files and calculates complexity metrics for each. */
+/**
+ * Parses files and calculates complexity metrics for each.
+ *
+ * Function tallies accumulate as files are processed rather than from the returned
+ * records: those are capped per file and the caller then slices them by `limit`,
+ * while the summary has to describe every function that was analysed.
+ */
 async function analyzeComplexity(
   filePaths: string[],
   basePath: string,
-  isDirectory: boolean
-): Promise<FileComplexity[]> {
+  isDirectory: boolean,
+  maxFiles?: number
+): Promise<{ files: FileComplexity[]; functionStats: FunctionStats }> {
   const results: FileComplexity[] = [];
+  const functionStats: FunctionStats = {
+    highComplexityFunctions: 0,
+    mostComplexFunction: null,
+  };
 
-  for (const filePath of filePaths) {
-    const fullPath = isDirectory ? join(basePath, filePath) : filePath;
-    const relativePath = isDirectory ? filePath : fullPath;
-    const language = detectLanguage(fullPath);
+  for await (const { relativePath, language, code } of walkSourceFiles(
+    filePaths,
+    basePath,
+    isDirectory,
+    maxFiles
+  )) {
+    const tree = await parseCode(code, language);
+    if (!tree) continue;
 
-    if (!language) continue;
+    const functions = collectFunctions(tree.rootNode, language);
+    const metrics = await calculateMetrics(tree.rootNode, code, language, functions);
+    const hotspots = findHotspots(tree.rootNode, functions);
+    accumulateFunctionStats(functionStats, functions, relativePath);
 
-    try {
-      const withinLimit = await isFileWithinSizeLimit(fullPath);
-      if (!withinLimit) continue;
-
-      const code = await readFile(fullPath, "utf-8");
-      const tree = await parseCode(code, language);
-      if (!tree) continue;
-
-      const metrics = await calculateMetrics(tree.rootNode, code, language);
-      const hotspots = findHotspots(tree.rootNode, language);
-
-      results.push({
-        path: relativePath,
-        metrics,
-        hotspots,
-      });
-    } catch {
-      // Skip files that can't be read
-    }
+    results.push({
+      path: relativePath,
+      metrics,
+      functions: selectReportedFunctions(functions),
+      hotspots,
+    });
   }
 
-  return results;
+  return { files: results, functionStats };
 }
 
-/** Computes nesting, parameter, dependency, and cognitive complexity metrics. */
+/** Folds one file's functions into the running cross-file tallies. */
+function accumulateFunctionStats(
+  stats: FunctionStats,
+  functions: FunctionAnalysis[],
+  path: string
+): void {
+  for (const fn of functions) {
+    if (fn.cyclomatic > HIGH_CYCLOMATIC_THRESHOLD) {
+      stats.highComplexityFunctions++;
+    }
+
+    if (
+      !stats.mostComplexFunction ||
+      fn.cyclomatic > stats.mostComplexFunction.cyclomatic_complexity
+    ) {
+      stats.mostComplexFunction = {
+        path,
+        function: fn.name,
+        line: fn.line,
+        cyclomatic_complexity: fn.cyclomatic,
+      };
+    }
+  }
+}
+
+/** Computes nesting, parameter, dependency, cognitive, and per-function roll-up metrics. */
 async function calculateMetrics(
   rootNode: Parser.SyntaxNode,
   code: string,
-  language: SupportedLanguage
+  language: SupportedLanguage,
+  functions: FunctionAnalysis[]
 ): Promise<FileComplexity["metrics"]> {
   const nestingDepths: number[] = [];
   const paramCounts: number[] = [];
 
   walkNode(rootNode, (node) => {
-    const depth = calculateNestingDepth(node, 0);
+    const depth = calculateNestingDepth(node, 0, language);
     if (depth > 0) {
       nestingDepths.push(depth);
     }
@@ -172,5 +210,6 @@ async function calculateMetrics(
     avg_parameters: Math.round(avgParams * 10) / 10,
     dependency_count: depCount,
     cognitive_complexity: cognitive,
+    ...rollUpFunctionMetrics(functions),
   };
 }
