@@ -1,20 +1,10 @@
 import type Parser from "tree-sitter";
+import {
+  findParameterList,
+  isPythonReceiver,
+  PYTHON_NON_PARAMETER_TYPES,
+} from "../lib/parameterList.js";
 import type { SupportedLanguage } from "../types/index.js";
-
-/** Finds the parameter list node within a function node. */
-function findParamListNode(funcNode: Parser.SyntaxNode): Parser.SyntaxNode | null {
-  for (const child of funcNode.children) {
-    if (
-      child.type === "formal_parameters" ||
-      child.type === "parameters" ||
-      child.type === "parameter_list" ||
-      child.type === "method_parameters"
-    ) {
-      return child;
-    }
-  }
-  return null;
-}
 
 /**
  * Extracts parameter names from a function node.
@@ -24,7 +14,7 @@ export function extractParameterNames(
   funcNode: Parser.SyntaxNode,
   language: SupportedLanguage
 ): string[] {
-  const paramListNode = findParamListNode(funcNode);
+  const paramListNode = findParameterList(funcNode);
   if (paramListNode === null) return [];
 
   const names: string[] = [];
@@ -40,30 +30,46 @@ export function extractParameterNames(
   return names;
 }
 
-/** Extracts Python parameter names, skipping self/cls/*args/**kwargs. */
+// Python wrappers that hold the bound name in an identifier child rather than
+// being one: `a: int`, `a=1`, `a: int = 1`.
+const PYTHON_NAMED_WRAPPERS = ["typed_parameter", "default_parameter", "typed_default_parameter"];
+
+/** Pushes the name a single Python parameter node binds, if it binds one. */
+function pushPythonParamName(child: Parser.SyntaxNode, names: string[]): void {
+  if (child.type === "identifier") {
+    names.push(child.text);
+    return;
+  }
+
+  if (PYTHON_NAMED_WRAPPERS.includes(child.type)) {
+    const id = child.namedChildren.find((c) => c.type === "identifier");
+    if (id !== undefined) names.push(id.text);
+  }
+}
+
+/**
+ * Extracts Python parameter names, skipping self/cls and splats.
+ *
+ * Only the very first child can be the receiver, so the flag clears on every
+ * iteration including skipped ones — otherwise `def m(*args, self)` would drop
+ * `self`, which is a real parameter there.
+ *
+ * Deliberately not merged with countPythonParameters in complexityMetricsParameters.ts
+ * despite sharing the skip rules above: counting counts every child it does not skip,
+ * while extraction only yields names for identifiers and the wrapper types above,
+ * so the two legitimately disagree on any other node.
+ */
 function extractPythonParamNames(paramListNode: Parser.SyntaxNode, names: string[]): void {
   let isFirst = true;
 
   for (const child of paramListNode.namedChildren) {
-    if (child.type === "keyword_separator") continue;
-    if (child.type === "list_splat_pattern" || child.type === "dictionary_splat_pattern") continue;
+    const wasFirst = isFirst;
+    isFirst = false;
 
-    if (isFirst) {
-      isFirst = false;
-      const paramName = child.type === "identifier" ? child.text : null;
-      if (paramName === "self" || paramName === "cls") continue;
-    }
+    if (PYTHON_NON_PARAMETER_TYPES.includes(child.type)) continue;
+    if (wasFirst && isPythonReceiver(child)) continue;
 
-    if (child.type === "identifier") {
-      names.push(child.text);
-    } else if (
-      child.type === "typed_parameter" ||
-      child.type === "default_parameter" ||
-      child.type === "typed_default_parameter"
-    ) {
-      const id = child.namedChildren.find((c) => c.type === "identifier");
-      if (id !== undefined) names.push(id.text);
-    }
+    pushPythonParamName(child, names);
   }
 }
 
@@ -95,70 +101,88 @@ function extractFirstIdentifierChild(node: Parser.SyntaxNode): string | null {
   return null;
 }
 
+/** Pushes every direct identifier child, for the flat destructuring patterns. */
+function collectDirectIdentifiers(node: Parser.SyntaxNode, names: string[]): void {
+  for (const child of node.namedChildren) {
+    if (child.type === "identifier") names.push(child.text);
+  }
+}
+
+/** Pushes the first identifier child, if there is one. */
+function pushFirstIdentifierChild(node: Parser.SyntaxNode, names: string[]): void {
+  const id = extractFirstIdentifierChild(node);
+  if (id !== null) names.push(id);
+}
+
+/** Unwraps a TS typed parameter to the pattern it wraps. */
+function unwrapTypedParameter(
+  node: Parser.SyntaxNode,
+  names: string[],
+  language: SupportedLanguage
+): void {
+  if (node.namedChildren.length > 0) {
+    extractNamesFromParamNode(node.namedChildren[0], names, language);
+  }
+}
+
+/**
+ * Per-node-type name extractors, keyed by the grammar node each language emits
+ * for a parameter. A table rather than a switch so adding a grammar is one entry
+ * and the arms cannot accumulate fallthrough between languages.
+ */
+const PARAM_NODE_EXTRACTORS: Record<
+  string,
+  (node: Parser.SyntaxNode, names: string[], language: SupportedLanguage) => void
+> = {
+  identifier: (node, names) => names.push(node.text),
+
+  // TS/JS destructured object parameter: { userId, theme }
+  object_pattern: extractObjectPatternNames,
+  // TS/JS array destructuring: [first, second]
+  array_pattern: collectDirectIdentifiers,
+  // TS/JS rest parameter: ...rest
+  rest_pattern: collectDirectIdentifiers,
+
+  // TS typed params wrap the pattern one level down
+  required_parameter: unwrapTypedParameter,
+  optional_parameter: unwrapTypedParameter,
+
+  // Go/C/C++: `name Type`, and Go allows multiple names per declaration (`a, b int`)
+  parameter_declaration: collectDeepIdentifiers,
+  // Java: Type name
+  formal_parameter: collectDeepIdentifiers,
+  // Rust: pattern: Type
+  parameter: pushFirstIdentifierChild,
+};
+
 /** Recursively extracts identifiers from a single parameter node. */
 function extractNamesFromParamNode(
   node: Parser.SyntaxNode,
   names: string[],
   language: SupportedLanguage
 ): void {
-  switch (node.type) {
-    case "identifier":
-      names.push(node.text);
-      return;
+  // Fallback for unlisted node types: any identifier child is the best guess.
+  const extract = PARAM_NODE_EXTRACTORS[node.type] ?? pushFirstIdentifierChild;
+  extract(node, names, language);
+}
 
-    // TS/JS destructured object parameter: { userId, theme }
-    case "object_pattern":
-      extractObjectPatternNames(node, names);
-      return;
+/**
+ * Finds the declared name inside a chain of declarators.
+ *
+ * C nests one declarator per level of indirection, so `char **z` is
+ * pointer_declarator > pointer_declarator > identifier, and `void (*cb)(int)`
+ * adds a function_declarator too. A single-level lookup finds neither.
+ */
+function findNameInDeclarators(node: Parser.SyntaxNode): string | null {
+  for (const child of node.namedChildren) {
+    if (child.type === "identifier") return child.text;
 
-    // TS/JS array destructuring: [first, second]
-    case "array_pattern":
-      for (const child of node.namedChildren) {
-        if (child.type === "identifier") names.push(child.text);
-      }
-      return;
-
-    // TS/JS rest parameter: ...rest
-    case "rest_pattern":
-      for (const child of node.namedChildren) {
-        if (child.type === "identifier") names.push(child.text);
-      }
-      return;
-
-    // TS typed params: required_parameter, optional_parameter
-    case "required_parameter":
-    case "optional_parameter": {
-      if (node.namedChildren.length > 0) {
-        extractNamesFromParamNode(node.namedChildren[0], names, language);
-      }
-      return;
-    }
-
-    // Go/C/C++: parameter_declaration — `name Type` (Go allows multiple names: `a, b int`)
-    case "parameter_declaration": {
-      collectDeepIdentifiers(node, names);
-      return;
-    }
-
-    // Rust: parameter — pattern: Type
-    case "parameter": {
-      const rustId = extractFirstIdentifierChild(node);
-      if (rustId !== null) names.push(rustId);
-      return;
-    }
-
-    // Java: formal_parameter — Type name
-    case "formal_parameter": {
-      collectDeepIdentifiers(node, names);
-      return;
-    }
-
-    // Fallback: try to find an identifier child
-    default: {
-      const fallbackId = extractFirstIdentifierChild(node);
-      if (fallbackId !== null) names.push(fallbackId);
+    if (child.type.includes("declarator")) {
+      const nested = findNameInDeclarators(child);
+      if (nested !== null) return nested;
     }
   }
+  return null;
 }
 
 /**
@@ -175,14 +199,8 @@ function collectDeepIdentifiers(node: Parser.SyntaxNode, names: string[]): void 
     }
   }
   if (found) return;
-  for (const child of node.namedChildren) {
-    if (child.type.includes("declarator")) {
-      for (const grandchild of child.namedChildren) {
-        if (grandchild.type === "identifier") {
-          names.push(grandchild.text);
-          return;
-        }
-      }
-    }
-  }
+
+  // Only one name can hide in the declarator chain, unlike the Go case above.
+  const declaredName = findNameInDeclarators(node);
+  if (declaredName !== null) names.push(declaredName);
 }

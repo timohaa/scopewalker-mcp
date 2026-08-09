@@ -1,30 +1,10 @@
 import type Parser from "tree-sitter";
+import {
+  findParameterList,
+  isPythonReceiver,
+  PYTHON_NON_PARAMETER_TYPES,
+} from "../lib/parameterList.js";
 import type { SupportedLanguage } from "../types/index.js";
-
-// Parameter-list node types across grammars: TS/JS (formal_parameters),
-// Python/Rust (parameters), C/C++/Go (parameter_list), Ruby (method_parameters).
-const PARAM_LIST_TYPES = ["formal_parameters", "parameters", "parameter_list", "method_parameters"];
-
-/**
- * Locates a function's parameter list.
- * The named field is preferred because Go's method_declaration also carries a
- * receiver parameter_list, which a positional scan would match first.
- * C/C++ expose no such field and nest the list inside the declarator instead.
- */
-function findParameterList(node: Parser.SyntaxNode): Parser.SyntaxNode | null {
-  const byField = node.childForFieldName("parameters");
-  if (byField !== null) return byField;
-
-  for (const child of node.children) {
-    if (PARAM_LIST_TYPES.includes(child.type)) return child;
-    if (child.type === "function_declarator" || child.type === "pointer_declarator") {
-      const nested = findParameterList(child);
-      if (nested !== null) return nested;
-    }
-  }
-
-  return null;
-}
 
 /** Returns parameter count for function nodes, null for non-function nodes. */
 export function countParameters(
@@ -81,53 +61,39 @@ function countGoParameters(children: Parser.SyntaxNode[]): number {
 }
 
 /**
- * Counts actual parameters, excluding language-specific non-parameter nodes.
- * For Python: excludes keyword_separator (*), list_splat_pattern (*args),
- * dictionary_splat_pattern (**kwargs), and self/cls as first parameter.
+ * Counts Python parameters, excluding splats, the keyword-only separator, and a
+ * leading self/cls receiver.
+ *
+ * Only the very first child can be the receiver, so the flag clears on every
+ * iteration including skipped ones — otherwise `def m(*args, self)` would drop
+ * `self`, which is a real parameter there.
  */
+function countPythonParameters(children: Parser.SyntaxNode[]): number {
+  let count = 0;
+  let isFirst = true;
+
+  for (const child of children) {
+    const wasFirst = isFirst;
+    isFirst = false;
+
+    if (PYTHON_NON_PARAMETER_TYPES.includes(child.type)) continue;
+    if (wasFirst && isPythonReceiver(child)) continue;
+
+    count++;
+  }
+
+  return count;
+}
+
+/** Counts actual parameters, excluding language-specific non-parameter nodes. */
 function countActualParameters(
   paramsNode: Parser.SyntaxNode,
   language?: SupportedLanguage
 ): number {
   const children = paramsNode.namedChildren;
 
-  if (language === "go") {
-    return countGoParameters(children);
-  }
-
-  if (language === "python") {
-    let count = 0;
-    let isFirst = true;
-
-    for (const child of children) {
-      // Only the first child can be the receiver; clear the flag unconditionally
-      // so params after skipped splats/separators are not mistaken for it
-      const wasFirst = isFirst;
-      isFirst = false;
-
-      // Skip keyword_separator (*) used to mark keyword-only parameters
-      if (child.type === "keyword_separator") {
-        continue;
-      }
-
-      // Skip list_splat_pattern (*args) and dictionary_splat_pattern (**kwargs)
-      if (child.type === "list_splat_pattern" || child.type === "dictionary_splat_pattern") {
-        continue;
-      }
-
-      // Skip self/cls as first parameter (method receiver)
-      if (wasFirst) {
-        const paramName = child.type === "identifier" ? child.text : null;
-        if (paramName === "self" || paramName === "cls") {
-          continue;
-        }
-      }
-
-      count++;
-    }
-
-    return count;
-  }
+  if (language === "go") return countGoParameters(children);
+  if (language === "python") return countPythonParameters(children);
 
   return children.length;
 }
