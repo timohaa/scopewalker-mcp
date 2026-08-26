@@ -14,7 +14,7 @@ import { BINARY_TYPES, LOGICAL_OPERATORS } from "./complexityMetricsHelpers.js";
 // nodes only in Ruby; every other grammar emits same-named unnamed tokens, which
 // is why the walk guards on isNamed.
 // Exported so the grammar-name guard test can assert every entry still exists in
-// some installed grammar. A renamed node otherwise just scores zero, in silence.
+// some installed grammar. A renamed node otherwise scores zero without an error.
 export const DECISION_TYPES = [
   // --- conditionals ---
   "if_statement", // TypeScript, JavaScript, Python, Go, Java, C, C++

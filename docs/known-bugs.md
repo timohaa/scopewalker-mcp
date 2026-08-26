@@ -2,7 +2,7 @@
 
 Behaviour that is wrong or incomplete today. Every entry here was reproduced against the
 tools rather than inferred from reading the code; each one lists the input that triggers
-it and what the tool actually returns.
+it and the observed response.
 
 Two kinds of entry:
 
@@ -87,7 +87,7 @@ anything in it at all.
 and Go's lowercase-initial rule, but none for Rust. A crate with `pub fn draw`, `fn secret`,
 and `fn private_fn` returns all three whether `include_private` is `true` or `false`.
 Visibility is still *reported* correctly (non-`pub` items are marked `exported: false`);
-it just is not used as a filter.
+the filter ignores it.
 
 Documented in `docs/tools-health.md`.
 

@@ -8,7 +8,7 @@ import { isElseIf } from "./complexityMetricsElseIf.js";
 // Anonymous functions carry five names across the nine grammars and all five are
 // listed, so a callback nests the same amount whatever it is written in.
 // Exported so the grammar-name guard test can assert every entry still exists in
-// some installed grammar. A renamed node otherwise just scores zero, in silence.
+// some installed grammar. A renamed node otherwise scores zero without an error.
 export const NESTING_TYPES = [
   "if_statement",
   "for_statement",

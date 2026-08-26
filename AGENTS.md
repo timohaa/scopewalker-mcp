@@ -52,5 +52,6 @@ Applies to chat responses, commit messages, PR descriptions, and docs. Ban the r
 - One idea per sentence; prefer sentences under ~20 words.
 
 Examples:
+
 - "Two honest caveats, because they are the actual insight." -> "Note that"
 - "Watch what dissolves. Each piece of the current machinery becomes a line of ordinary code." -> "The current machinery simplifies to"

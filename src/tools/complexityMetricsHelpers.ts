@@ -78,7 +78,7 @@ export const CONTROL_FLOW_TYPES = [
 
 // Ruby names its binary operator node `binary` and Python splits logical
 // operators out into `boolean_operator`; every other grammar here uses
-// `binary_expression`. All three only score when the operator is actually logical.
+// `binary_expression`. All three score only logical operators.
 export const BINARY_TYPES = ["binary_expression", "binary", "boolean_operator"];
 
 // Python spells its logical operators `and`/`or`, as does Ruby alongside `&&`/`||`.

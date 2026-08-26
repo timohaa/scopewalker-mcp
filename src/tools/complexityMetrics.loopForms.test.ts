@@ -46,7 +46,7 @@ async function expectEquivalent(
 }
 
 // Each of these loop forms scored 0 for both cognitive complexity and nesting
-// while the classic form of the same loop scored 1 — they were simply missing
+// while the classic form of the same loop scored 1 — they were missing
 // from the node lists. Java for-each and C++ range-for are the idiomatic forms in
 // modern code, so a codebase written that way scored near zero on all its loops.
 describe("loop form parity", () => {

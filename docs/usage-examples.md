@@ -56,7 +56,7 @@ change. A C project would use `[".c", ".h"]` and describe
 
 ### Threshold section that delegates detail
 
-If `AGENTS.md` is getting long, just state the limits and point at the
+If `AGENTS.md` is getting long, state the limits and point at the
 skill or agent that carries the full tool reference:
 
 ```markdown
@@ -130,7 +130,7 @@ counts, and documentation gaps. End with a one-line verdict: **CLEAN**
 (nothing actionable) or **NEEDS ATTENTION** (list the top items).
 ```
 
-Two things you'll want to write into the skill next to the tool table:
+Add these rules next to the tool table:
 
 - An arrow-function component (`const Card = () => {...}`) has no name in
   the AST, so its whole body is reported as one `<anonymous>` function;
@@ -209,15 +209,14 @@ of those steps:
   (see the agent below).
 - After the code-changing steps, a verification gate reruns
   `npm run check` and the tests, but only if the standards enforcer or
-  comment fixer actually changed files. A clean run stays cheap.
+  comment fixer changed files. A clean run stays cheap.
 
 ## Subagents
 
 ### standards-enforcer
 
-This agent uses the whole tool set: it detects violations and refactors
-to fix them. The interesting parts of
-`.claude/agents/standards-enforcer.md`:
+This agent uses the whole tool set to detect and fix violations. Its
+`.claude/agents/standards-enforcer.md` definition includes:
 
 ```markdown
 ---
@@ -245,11 +244,10 @@ get_documentation_coverage → undocumented functions/classes
 get_prop_drilling          → parameter threading (prop drilling) across function chains
 ```
 
-Two other rules the agent definition should include: after refactoring,
-rerun the Scopewalker tool that flagged the violation to confirm it's
-actually gone (don't trust the diff). And gate structural refactors on
-existing or newly written characterization tests, since fixing threshold
-violations usually means moving code around.
+After refactoring, rerun the Scopewalker tool that flagged the violation
+to confirm the new result. Gate structural refactors on existing or newly
+written characterization tests, since fixing threshold violations usually
+means moving code around.
 
 ### docs-reality-sync
 
@@ -270,7 +268,7 @@ tools: Bash, Read, Edit, Write, Glob, Grep, WebFetch, WebSearch, mcp__scopewalke
 ```
 
 With the inventory tools in its allowlist it can confirm documented
-symbols actually exist. Its checklist should also cover: skill/agent
+symbols exist. Its checklist should also cover: skill/agent
 frontmatter `tools:` entries reference tools that exist, and documented
 commands, defaults, and thresholds match the code.
 
@@ -343,7 +341,7 @@ reference or symlink it from each, rather than duplicating them.
 
 ## Conventions
 
-A few things apply no matter which integration point you use:
+Apply these rules to every integration point:
 
 - Always pass `extensions` matched to the project language(s), so runs
   stay fast and results stay relevant. Caveat: on the tokei-backed tools

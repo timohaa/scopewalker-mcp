@@ -46,7 +46,7 @@ const generatorExpression = function* (): Generator<number> { yield 6; };
     );
 
     expect(functions).toHaveLength(6);
-    // Named forms keep their names; only the genuinely anonymous ones are unnamed.
+    // Named forms keep their names; anonymous forms remain unnamed.
     expect(functions.map((f) => f.name)).toEqual([
       "declared",
       "<anonymous>",

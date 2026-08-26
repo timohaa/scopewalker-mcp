@@ -141,7 +141,7 @@ Returns code complexity metrics to identify code that may need refactoring.
 - `max_cyclomatic_complexity` / `avg_cyclomatic_complexity`: classic McCabe, per function
 - `max_cognitive_complexity`: the worst single function's cognitive score
 
-`cognitive_complexity` and `max_cognitive_complexity` are different numbers on purpose: the first is the whole-file sum, so it partly tracks file length, while the second names how bad the worst function actually is. A file of many simple functions scores high on the first and low on the second.
+`cognitive_complexity` and `max_cognitive_complexity` measure different scopes: the first is the whole-file sum, so it partly tracks file length, while the second reports the worst function. A file of many simple functions scores high on the first and low on the second.
 
 **Per-function reporting:** the `functions` array lists functions whose cyclomatic complexity exceeds 10, worst first, capped at 10 per file. Each entry carries a `severity` of `high` (over 10) or `extreme` (over 30) — radon's bands. The array is empty for files where nothing crosses the threshold. `summary.high_complexity_functions` and `summary.most_complex_function` count every function analyzed, ignoring both the per-file cap and `limit`.
 

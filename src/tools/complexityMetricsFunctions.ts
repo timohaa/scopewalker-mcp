@@ -53,7 +53,7 @@ export function collectFunctions(
   const functions: FunctionAnalysis[] = [];
 
   walkNode(rootNode, (node) => {
-    // The isNamed guard is load-bearing, not defensive — see getFunctionNodeTypes.
+    // The isNamed guard prevents keyword tokens from being classified as functions.
     if (!node.isNamed || !funcTypes.includes(node.type)) return;
 
     functions.push({

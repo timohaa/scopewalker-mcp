@@ -60,7 +60,7 @@ describe("analyze - extension filtering", () => {
     }
   });
 
-  it("returns an empty result for a truly unknown extension instead of all languages", async () => {
+  it("returns an empty result for an unrecognized extension instead of all languages", async () => {
     const result = await analyze(testDir, { extensions: ["nosuchlang"] });
     expect(result.success).toBe(true);
     if (result.success) {

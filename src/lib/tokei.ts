@@ -96,7 +96,7 @@ function extensionsToLanguages(extensions: string[]): string[] {
   const languages = new Set<string>();
   for (const ext of extensions) {
     // Tokei's -t matching is case-insensitive, so "zig" matches its "Zig" language;
-    // a truly unknown name simply yields an empty result.
+    // an unrecognized name yields an empty result.
     languages.add(EXTENSION_TO_LANGUAGE[ext.toLowerCase()] ?? ext);
   }
   return Array.from(languages);

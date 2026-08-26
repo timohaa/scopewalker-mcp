@@ -54,7 +54,7 @@ describe("else-if nesting suppression", () => {
     expect(m.cognitive_complexity).toBe(4);
   });
 
-  it("still charges nesting to a genuinely nested if", async () => {
+  it("still charges nesting to a nested if", async () => {
     // The mirror image: same three ifs, but the second is nested rather than
     // chained, so the suppression must not apply. 1 + 2 + 3.
     const m = await metricsFor(
