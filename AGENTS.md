@@ -46,6 +46,7 @@ Applies to chat responses, commit messages, PR descriptions, and docs. Ban the r
 - No closing aphorisms ("that's the whole game", "that's the tell").
 - No sentence fragments used for emphasis, no sentence that exists only for rhythm.
 - No vague jargon standing in for a plain claim ("load-bearing", "surface area", "first-class", "at scale", "does the heavy lifting").
+- Do not use "gate" or "gating" as generic verbs or metaphors. Reserve them for actual gates, such as physical, noise, or logic gates.
 - No intensifiers propping up a claim that should stand on its own ("genuinely", "truly", "actually", "honestly").
 - No rule-of-three or "two things:" list where an item is filler.
 - Lead with the action, not the topic: "I'd skip the architecture doc," not "The architecture doc is the bit I'd skip."
