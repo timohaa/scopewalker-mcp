@@ -2,11 +2,7 @@
 
 ## What
 
-MCP server providing codebase analysis tools for AI assistants. Thin orchestration layer over external parsing, line-counting (via the `tokei` binary), and file-discovery tools; see `package.json` for npm dependencies.
-
-## Why
-
-Gives AI coding agents quantitative visibility into codebases (complexity, prop drilling, documentation coverage, code smells) so they can make informed refactoring and review decisions.
+MCP server providing codebase analysis tools for AI assistants. It is a thin orchestration layer over external parsing, file discovery, and line counting via `tokei`.
 
 ## How
 
@@ -23,10 +19,10 @@ If LSP tools are available in your session, prefer them (`workspaceSymbol`, `fin
 
 ## Behavior
 
-- **Think before coding.** If a request is ambiguous, sketch a short plan and surface assumptions/tradeoffs before editing.
-- **Minimum footprint.** Write the minimum code that solves the problem: no speculative abstractions, no drive-by renames, no unrelated cleanup bundled into the same change.
-- **Verify, don't trust.** Define a success criterion before starting and loop until it's met. `npm run check` is necessary but not sufficient to confirm a tool's actual output; verify behavior with the tool itself or its tests.
-- **Batch multi-file commands.** Pass every target file to one invocation (`npx vitest run a.test.ts b.test.ts`, `npx markdownlint f1 f2`, one `grep -nE` across all files) — never one Bash call per file.
+- For ambiguous requests, sketch a short plan and state assumptions and tradeoffs before editing.
+- Write the minimum code that solves the problem. Avoid speculative abstractions, drive-by renames, and unrelated cleanup.
+- Define a success criterion before starting and loop until it passes. Verify tool output with the tool itself or its tests; `npm run check` alone is insufficient.
+- Pass every target file to one command (`npx vitest run a.test.ts b.test.ts`, `npx markdownlint f1 f2`, or one `grep -nE` across all files).
 - **Never create `_enhanced`, `_v2`, or `_new` duplicate file variants**; edit the original file.
 
 ## Reference Docs

@@ -239,7 +239,6 @@ function walkTreeForUnsafeCasts(
 
 /** Checks if a type node represents "unknown" or "any". */
 function isUnknownOrAnyType(typeNode: Parser.SyntaxNode): boolean {
-  // For simple type identifiers like "unknown" or "any"
   if (typeNode.type === "predefined_type" || typeNode.type === "type_identifier") {
     const text = typeNode.text.toLowerCase();
     return text === "unknown" || text === "any";

@@ -43,7 +43,7 @@ To build from source instead, see [Development](#development).
 ### Claude Code
 
 ```bash
-claude mcp add scopewalker-mcp --scope user -- npx -y scopewalker-mcp
+claude mcp add --scope user scopewalker-mcp -- npx -y scopewalker-mcp
 ```
 
 Or add to `~/.claude.json`:
@@ -194,7 +194,7 @@ npm install
 npm run build
 ```
 
-Then point your MCP client at the build output, e.g. `claude mcp add scopewalker-mcp --scope user -- node /path/to/scopewalker-mcp/dist/index.js`.
+Then point your MCP client at the build output, e.g. `claude mcp add --scope user scopewalker-mcp -- node /path/to/scopewalker-mcp/dist/index.js`.
 
 ```bash
 npm run build          # Build the project

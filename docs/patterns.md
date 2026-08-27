@@ -24,12 +24,12 @@ server.registerTool(
 );
 ```
 
-Every file-scanning tool repeats the same handler shape after `validatePath`:
+AST-based file-scanning tools generally use this handler shape after `validatePath`:
 
 1. Directory input → `findFiles({ cwd, includeHidden, ignorePatterns, extensions, maxDepth })`; file input → single-element list.
 2. Iterate that list with `walkSourceFiles(filePaths, basePath, isDirectory, args.max_files)` from `src/lib/sourceFileWalker.ts`, which yields `{ fullPath, relativePath, language, code }`. It handles language detection, the `isFileWithinSizeLimit` guard (`DEFAULT_MAX_FILE_BYTES`, 1 MB), and the read — skipping silently on each. Files that fail to parse are the caller's to skip.
 3. Pass `args.max_files` to the walker rather than slicing the path list up front. The walker counts files it *yields*, so unsupported and oversized files no longer spend the budget; slicing beforehand meant `max_files: 1` on a directory led by a README analyzed nothing.
-4. Sort results, slice to `args.limit ?? DEFAULT_LIMIT` (20), and honor `summary_only` by returning an empty details array.
+4. Sort results and slice to `args.limit ?? DEFAULT_LIMIT` (20). Tools that accept `summary_only` return an empty details array when it is true.
 
 New tools should copy this shape from an existing tool (e.g. `src/tools/complexityMetrics.ts`) rather than invent a variant.
 
@@ -57,7 +57,7 @@ walkNode(tree.rootNode, (node) => {
 
 ## Server Registration
 
-`createServer` in `src/server.ts` registers every tool, then calls `applySchemaStrippingOverride`, which replaces the SDK's `tools/list` handler so it can delete `$schema` from each emitted JSON Schema — Zod v4 emits it and some API providers silently reject tool definitions that include it. The override reads the SDK's private `_registeredTools`, so an upstream rename would produce an empty tool list rather than an error; `src/server.test.ts` asserts the advertised names, the absent `$schema`, and preserved descriptions to make that fail loudly. A new tool needs nothing beyond its `register*` call — the override covers it automatically.
+`createServer` in `src/server.ts` registers every tool, then calls `applySchemaStrippingOverride`, which replaces the SDK's `tools/list` handler so it can delete `$schema` from each emitted JSON Schema — Zod v4 emits it and some API providers silently reject tool definitions that include it. The override reads the SDK's private `_registeredTools`, so an upstream rename would break the tool-list request; `src/server.test.ts` asserts the advertised names, the absent `$schema`, and preserved descriptions to make that fail loudly. A new tool needs nothing beyond its `register*` call — the override covers it automatically.
 
 ## Error Handling
 

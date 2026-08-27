@@ -309,9 +309,8 @@ allowlist them in `.claude/settings.local.json` (or share the list via
 }
 ```
 
-The wildcard `"mcp__scopewalker__*"` (or the bare server name
-`"mcp__scopewalker"`) covers all of the server's tools in one entry. Use
-the explicit list above if you prefer per-tool review.
+The wildcard `"mcp__scopewalker__*"` covers all of the server's tools in one
+entry. Use the explicit list above if you prefer per-tool review.
 
 ## Antigravity CLI agents
 

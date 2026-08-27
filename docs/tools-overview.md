@@ -27,8 +27,13 @@ The `grep` parameter provides fast keyword filtering across results. It performs
 Example usage:
 
 ```json
-{ "path": ".", "grep": "handler" }   // Find all files/symbols containing "handler"
-{ "path": ".", "grep": "test" }      // Find test-related files and functions
+{ "path": ".", "grep": "handler" }
+```
+
+To find test-related files and functions:
+
+```json
+{ "path": ".", "grep": "test" }
 ```
 
 Tools supporting grep: `get_line_counts`, `get_functions`, `get_code_inventory`
