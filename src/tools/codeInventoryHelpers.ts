@@ -116,6 +116,25 @@ export function extractName(node: Parser.SyntaxNode): string | null {
 // C/C++/Rust: field_declaration_list).
 const CLASS_BODY_TYPES = ["class_body", "block", "body_statement", "field_declaration_list"];
 
+/** Adds a named method to the inventory with its effective visibility. */
+function recordMethod(
+  methods: MethodInfo[],
+  node: Parser.SyntaxNode,
+  language: SupportedLanguage,
+  visibility: MethodVisibility
+): void {
+  const name = extractMethodName(node);
+  if (name === null) return;
+
+  methods.push({
+    name,
+    line: node.startPosition.row + 1,
+    // A naming convention still applies on top of the declared visibility: an
+    // underscore-prefixed Ruby or Python method is private wherever it sits.
+    visibility: isPrivateSymbol(name, node, language) ? "private" : visibility,
+  });
+}
+
 /**
  * Extracts method definitions from a class node.
  * Only direct class-body children count; defs nested inside method bodies do not.
@@ -132,19 +151,6 @@ export function extractMethods(
   const retroactive = new Map<string, MethodVisibility>();
   let section = defaultSectionVisibility(classNode, language);
 
-  const record = (node: Parser.SyntaxNode, visibility: MethodVisibility): void => {
-    const name = extractMethodName(node);
-    if (name === null) return;
-
-    methods.push({
-      name,
-      line: node.startPosition.row + 1,
-      // A naming convention still applies on top of the declared visibility: an
-      // underscore-prefixed Ruby or Python method is private wherever it sits.
-      visibility: isPrivateSymbol(name, node, language) ? "private" : visibility,
-    });
-  };
-
   for (const node of body.children) {
     const marker = readSectionMarker(node, language);
     if (marker) {
@@ -160,11 +166,15 @@ export function extractMethods(
 
     const inlined = readInlineVisibilityCall(node, language);
     if (inlined.length > 0) {
-      for (const { methodNode, visibility } of inlined) record(methodNode, visibility);
+      for (const { methodNode, visibility } of inlined) {
+        recordMethod(methods, methodNode, language, visibility);
+      }
       continue;
     }
 
-    if (isMethodNode(node)) record(node, memberVisibility(node, language, section));
+    if (isMethodNode(node)) {
+      recordMethod(methods, node, language, memberVisibility(node, language, section));
+    }
   }
 
   // `private :a` trails the definition it names, so filtering can only happen
