@@ -6,6 +6,13 @@ import type { FileSmells } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
+  ignorePatternsSchema,
+  extensionsSchema,
+  maxDepthSchema,
+  maxFilesSchema,
+  limitSchema,
+} from "../utils/schemaLimits.js";
+import {
   ALL_SMELL_TYPES,
   createEmptySmellCounts,
   updateSmellCounts,
@@ -18,15 +25,15 @@ const DEFAULT_LIMIT = 20;
 const inputSchema = {
   path: z.string().describe("Target path"),
   include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: z.array(z.string()).optional().describe("Exclude patterns"),
-  extensions: z.array(z.string()).optional().describe("Filter by extensions"),
-  max_depth: z.number().int().positive().optional().describe("Max depth"),
-  max_files: z.number().int().positive().optional().describe("Max files to scan"),
+  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
+  extensions: extensionsSchema.describe("Filter by extensions"),
+  max_depth: maxDepthSchema.describe("Max depth"),
+  max_files: maxFilesSchema.describe("Max files to scan"),
   types: z
     .array(z.enum(["todo", "fixme", "hack", "xxx", "bug", "unused", "deprecated", "unsafe_cast"]))
     .optional()
     .describe("Smell types to detect"),
-  limit: z.number().int().positive().optional().describe("Max results"),
+  limit: limitSchema.describe("Max results"),
   include_text: z.boolean().optional().describe("Include comment text"),
 };
 

@@ -5,6 +5,14 @@ import type { FunctionCountsResult, FunctionLineCountsResult } from "../types/in
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
+  boundedInt,
+  ignorePatternsSchema,
+  extensionsSchema,
+  maxDepthSchema,
+  maxFilesSchema,
+  limitSchema,
+} from "../utils/schemaLimits.js";
+import {
   calculateSummary as calculateLinesSummary,
   sortFiles as sortLineFiles,
 } from "./functionLineCountsHelpers.js";
@@ -22,16 +30,16 @@ const inputSchema = {
   path: z.string().describe("Target path"),
   detail: z.enum(["counts", "lines"]).optional().describe("Detail level"),
   include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: z.array(z.string()).optional().describe("Exclude patterns"),
-  extensions: z.array(z.string()).optional().describe("Filter by extensions"),
-  max_depth: z.number().int().positive().optional().describe("Max depth"),
-  max_files: z.number().int().positive().optional().describe("Max files to scan"),
-  min_lines: z.number().int().positive().optional().describe("Min lines (lines mode)"),
+  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
+  extensions: extensionsSchema.describe("Filter by extensions"),
+  max_depth: maxDepthSchema.describe("Max depth"),
+  max_files: maxFilesSchema.describe("Max files to scan"),
+  min_lines: boundedInt(10_000).describe("Min lines (lines mode)"),
   sort_by: z
     .enum(["count_desc", "count_asc", "lines_desc", "lines_asc", "name"])
     .optional()
     .describe("Sort order"),
-  limit: z.number().int().positive().optional().describe("Max results"),
+  limit: limitSchema.describe("Max results"),
   grep: z.string().optional().describe("Filter by keyword"),
 };
 

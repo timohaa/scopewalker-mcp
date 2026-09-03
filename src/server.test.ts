@@ -70,3 +70,21 @@ describe("createServer", () => {
     expect(client.getServerVersion()?.version).toBe(version);
   });
 });
+
+describe("input ceilings", () => {
+  it("rejects max_files above the ceiling", async () => {
+    const result = await client.callTool({
+      name: "get_functions",
+      arguments: { path: `${process.cwd()}/src/__fixtures__`, max_files: 10_001 },
+    });
+    expect(result.isError).toBe(true);
+  });
+
+  it("accepts max_files at the ceiling", async () => {
+    const result = await client.callTool({
+      name: "get_functions",
+      arguments: { path: `${process.cwd()}/src/__fixtures__`, max_files: 10_000 },
+    });
+    expect(result.isError).not.toBe(true);
+  });
+});

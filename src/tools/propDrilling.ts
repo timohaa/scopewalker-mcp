@@ -9,6 +9,14 @@ import type {
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
+  boundedInt,
+  ignorePatternsSchema,
+  extensionsSchema,
+  maxDepthSchema,
+  maxFilesSchema,
+  limitSchema,
+} from "../utils/schemaLimits.js";
+import {
   analyzeFilesForParameters,
   aggregateParameters,
   COMMON_PARAMETER_NAMES,
@@ -32,17 +40,12 @@ function selectThreadedParameters(
 const inputSchema = {
   path: z.string().describe("Target path"),
   include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: z.array(z.string()).optional().describe("Exclude patterns"),
-  extensions: z.array(z.string()).optional().describe("Filter by extensions"),
-  max_depth: z.number().int().positive().optional().describe("Max depth"),
-  max_files: z.number().int().positive().optional().describe("Max files to scan"),
-  limit: z.number().int().positive().optional().describe("Max results"),
-  min_occurrences: z
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .describe("Minimum function occurrences to flag (default 3)"),
+  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
+  extensions: extensionsSchema.describe("Filter by extensions"),
+  max_depth: maxDepthSchema.describe("Max depth"),
+  max_files: maxFilesSchema.describe("Max files to scan"),
+  limit: limitSchema.describe("Max results"),
+  min_occurrences: boundedInt(1_000).describe("Minimum function occurrences to flag (default 3)"),
   exclude_common: z
     .boolean()
     .optional()

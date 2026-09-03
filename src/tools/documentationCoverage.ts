@@ -7,6 +7,14 @@ import type { FileDocumentation, UndocumentedItem } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
+  boundedInt,
+  ignorePatternsSchema,
+  extensionsSchema,
+  maxDepthSchema,
+  maxFilesSchema,
+  limitSchema,
+} from "../utils/schemaLimits.js";
+import {
   analyzeFileDocumentation,
   buildDocumentationCoverageResult,
 } from "./documentationCoverageHelpers.js";
@@ -16,13 +24,13 @@ const DEFAULT_LIMIT = 20;
 const inputSchema = {
   path: z.string().describe("Target path"),
   include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: z.array(z.string()).optional().describe("Exclude patterns"),
-  extensions: z.array(z.string()).optional().describe("Filter by extensions"),
-  max_depth: z.number().int().positive().optional().describe("Max depth"),
-  max_files: z.number().int().positive().optional().describe("Max files to scan"),
-  min_lines: z.number().int().positive().optional().describe("Min function lines"),
+  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
+  extensions: extensionsSchema.describe("Filter by extensions"),
+  max_depth: maxDepthSchema.describe("Max depth"),
+  max_files: maxFilesSchema.describe("Max files to scan"),
+  min_lines: boundedInt(10_000).describe("Min function lines"),
   summary_only: z.boolean().optional().describe("Summary only"),
-  limit: z.number().int().positive().optional().describe("Max results"),
+  limit: limitSchema.describe("Max results"),
 };
 
 /** Registers the get_documentation_coverage tool for finding undocumented code. */

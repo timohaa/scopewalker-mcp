@@ -6,16 +6,17 @@ import { analyze } from "../lib/tokei.js";
 import type { FileLineCount, LineCountsResult } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import { ignorePatternsSchema, extensionsSchema, limitSchema } from "../utils/schemaLimits.js";
 
 const DEFAULT_LIMIT = 20;
 
 const inputSchema = {
   path: z.string().describe("Target path"),
   include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: z.array(z.string()).optional().describe("Exclude patterns"),
-  extensions: z.array(z.string()).optional().describe("Filter by extensions"),
+  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
+  extensions: extensionsSchema.describe("Filter by extensions"),
   sort_by: z.enum(["lines_desc", "lines_asc", "name"]).optional().describe("Sort order"),
-  limit: z.number().int().positive().optional().describe("Max results"),
+  limit: limitSchema.describe("Max results"),
   grep: z.string().optional().describe("Filter by keyword"),
 };
 

@@ -8,6 +8,13 @@ import type { ComplexityMetricsResult, FileComplexity, SupportedLanguage } from 
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
+  ignorePatternsSchema,
+  extensionsSchema,
+  maxDepthSchema,
+  maxFilesSchema,
+  limitSchema,
+} from "../utils/schemaLimits.js";
+import {
   collectFunctions,
   rollUpFunctionMetrics,
   selectReportedFunctions,
@@ -31,12 +38,12 @@ const DEFAULT_LIMIT = 20;
 const inputSchema = {
   path: z.string().describe("Target path"),
   include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: z.array(z.string()).optional().describe("Exclude patterns"),
-  extensions: z.array(z.string()).optional().describe("Filter by extensions"),
-  max_depth: z.number().int().positive().optional().describe("Max depth"),
-  max_files: z.number().int().positive().optional().describe("Max files to scan"),
+  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
+  extensions: extensionsSchema.describe("Filter by extensions"),
+  max_depth: maxDepthSchema.describe("Max depth"),
+  max_files: maxFilesSchema.describe("Max files to scan"),
   summary_only: z.boolean().optional().describe("Summary only"),
-  limit: z.number().int().positive().optional().describe("Max results"),
+  limit: limitSchema.describe("Max results"),
 };
 
 /** Registers the get_complexity_metrics tool for nesting, parameters, and cognitive complexity. */

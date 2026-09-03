@@ -5,6 +5,14 @@ import { analyze } from "../lib/tokei.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
+  boundedInt,
+  ignorePatternsSchema,
+  extensionsSchema,
+  maxDepthSchema,
+  maxFilesSchema,
+  limitSchema,
+} from "../utils/schemaLimits.js";
+import {
   findOversizedFiles,
   findOversizedFunctions,
   sortAndLimitViolations,
@@ -13,14 +21,14 @@ import {
 
 const inputSchema = {
   path: z.string().describe("Target path"),
-  max_file_lines: z.number().int().positive().optional().describe("File line threshold"),
-  max_function_lines: z.number().int().positive().optional().describe("Function line threshold"),
+  max_file_lines: boundedInt(10_000).describe("File line threshold"),
+  max_function_lines: boundedInt(10_000).describe("Function line threshold"),
   include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: z.array(z.string()).optional().describe("Exclude patterns"),
-  extensions: z.array(z.string()).optional().describe("Filter by extensions"),
-  max_depth: z.number().int().positive().optional().describe("Max depth"),
-  max_files: z.number().int().positive().optional().describe("Max files to scan"),
-  limit: z.number().int().positive().optional().describe("Max violations"),
+  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
+  extensions: extensionsSchema.describe("Filter by extensions"),
+  max_depth: maxDepthSchema.describe("Max depth"),
+  max_files: maxFilesSchema.describe("Max files to scan"),
+  limit: limitSchema.describe("Max violations"),
 };
 
 const DEFAULT_MAX_FILE_LINES = 300;
