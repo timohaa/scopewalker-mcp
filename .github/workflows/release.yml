@@ -6,6 +6,8 @@ on:
 
 env:
   TOKEI_VERSION: "14.0.0"
+  # Pinned and checksummed against the published release checksums file below.
+  MCP_PUBLISHER_VERSION: "v1.8.1"
 
 jobs:
   release:
@@ -72,7 +74,16 @@ jobs:
 
       - name: Install mcp-publisher
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          set -euo pipefail
+          OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          ASSET="mcp-publisher_${OS}_${ARCH}.tar.gz"
+          BASE_URL="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl -fsSLO "${BASE_URL}/${ASSET}"
+          curl -fsSLO "${BASE_URL}/registry_${MCP_PUBLISHER_VERSION#v}_checksums.txt"
+          grep " ${ASSET}$" "registry_${MCP_PUBLISHER_VERSION#v}_checksums.txt" | sha256sum -c -
+          tar xzf "$ASSET" mcp-publisher
+          rm -f "$ASSET" "registry_${MCP_PUBLISHER_VERSION#v}_checksums.txt"
 
       - name: Publish to MCP Registry
         run: |
