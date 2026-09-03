@@ -17,10 +17,9 @@ export interface SourceFile {
  * Yields every readable, supported, within-size-limit file from a scan list,
  * stopping after `maxFiles` of them.
  *
- * Six tools repeated this preamble verbatim before their own analysis. A
- * generator rather than a callback because the callers' accumulators have
- * nothing in common — arrays, running totals, and paired stats objects — and a
- * generic reduce would fit none of them.
+ * Six tools repeated this preamble verbatim before their own analysis. This
+ * uses a generator because the callers accumulate different result shapes.
+ * A generic reduction would not suit all of them.
  *
  * Files are skipped, not reported, when the language is unrecognised, the file
  * exceeds the size guard, or the read fails; a scan must survive an unreadable

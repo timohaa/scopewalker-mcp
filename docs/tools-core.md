@@ -7,7 +7,7 @@ Returns line count metrics for files in a directory tree or a single file. Uses 
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                       |
-| ----------------- | -------- | -------- | ----------------------------------------------------------------- |
+|-------------------|----------|----------|-------------------------------------------------------------------|
 | `path`            | string   | Yes      | Path to file or directory                                         |
 | `include_hidden`  | boolean  | No       | Include hidden files                                              |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                          |
@@ -72,7 +72,7 @@ Returns function/method information. Use `detail` parameter to control output le
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                                                                                                                                                                                                                                     |
-| ----------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|-------------------|----------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `path`            | string   | Yes      | Path to file or directory                                                                                                                                                                                                                                                       |
 | `detail`          | string   | No       | `"counts"` for function counts per file, `"lines"` for per-function line metrics (default: `"counts"`)                                                                                                                                                                          |
 | `include_hidden`  | boolean  | No       | Include hidden files                                                                                                                                                                                                                                                            |

@@ -20,9 +20,9 @@ instead of guessing.
 
 ## Scope
 
-In scope (edit these): `AGENTS.md` at the repo root, any per-subproject
-`AGENTS.md`, `CLAUDE.md` files with substantive content of their own,
-and anything they import via `@path`; those load every session too.
+Edit the root and per-subproject `AGENTS.md` files. Also edit substantive
+`CLAUDE.md` files and anything they import through `@path`. Imported files load
+in every session.
 
 Out of scope: pure-pointer `CLAUDE.md` files (e.g. a single line
 `@AGENTS.md`), agent definitions under `.claude/agents/`, skill files
@@ -46,7 +46,7 @@ Apply with judgement, not mechanically.
    describe, or cut.
 4. **Voice**: direct imperative ("Never modify X", "Run `npm test`
    before pushing"). Reserve `IMPORTANT` / `NEVER` / `ALWAYS` /
-   `YOU MUST` for rules that have actually caused incidents; flag any
+   `YOU MUST` for rules backed by recorded incidents; flag any
    file with more than ~3 such markers.
 5. **Keep**: non-guessable commands, style rules that differ from
    language defaults, testing instructions, repo etiquette,
@@ -59,9 +59,9 @@ Apply with judgement, not mechanically.
    info (sprint status, owners, deadlines), personality instructions,
    emojis/completion percentages/time estimates, secrets, and content
    duplicated between root and subproject files.
-7. **Structure**: headers and bullets over dense paragraphs; group
-   related rules under one header; lead with the rule, then rationale
-   if non-obvious; critical rules (security, "never do X") in the
+7. **Structure**: headers and bullets over dense paragraphs. Group
+   related rules under one header. Lead with the rule, then rationale
+   if non-obvious. Put critical rules (security, "never do X") in the
    first ~40 lines.
 8. **Consistency**: two contradicting rules are worse than no rule.
    Resolve clear-cut contradictions; flag ambiguous ones.
@@ -78,26 +78,24 @@ Apply with judgement, not mechanically.
    (rewrite for concision/specificity/voice, same meaning), **Cut**
    (derivable, standard convention, stale, platitude, duplicate), or
    **Flag** (possibly wrong, contradictory, or subjective; report,
-   don't edit). Verify every named script, path, command, and symbol;
-   collect them all first, then check them in a **single** batched Bash
-   call (`test -e` / `ls` over the paths, one `grep -nE` over
-   `package.json` for the scripts) rather than one call per reference.
+   don't edit). Collect every named script, path, command, and symbol. Verify
+   them in a **single** batched Bash call: `test -e` or `ls` for paths and one
+   `grep -nE` over `package.json` for scripts. Do not make one call per reference.
    Stale references are high-priority cuts.
 3. **Apply**: make only **Tighten** and **Cut** edits via `Edit`.
    Preserve every rule's semantic content even when rephrasing.
-   Do **not**: move content between files (flag instead; that's a
-   human decision), invent rules, strengthen a rule beyond its
-   original intent, merge rules with different meanings, remove a
-   rule just because it looks obvious (it may have followed a real
-   incident; cut only what you can positively identify as derivable/
-   redundant/decorative), touch terminology or architecture reference
-   tables (load-bearing even if verbose), reformat for taste, or
-   create new files. When a rule names a specific past incident or
-   non-obvious constraint, that's the highest-value content in the
-   file; keep it, and flag it rather than touch it if unsure.
-4. **Verify**: re-run the step 1 `wc -l` and the step 2 batched reference
-   check together in one Bash call, then re-read each edited file end to
-   end for flow and contradictions.
+   Do **not** move content between files; flag that decision for a human.
+   Do not invent rules, strengthen a rule beyond its original intent, or
+   merge rules with different meanings. Do not remove a rule just because
+   it looks obvious; it may have followed a real incident. Cut only what
+   you can positively identify as derivable, redundant, or decorative.
+   Preserve terminology and architecture reference tables even when
+   verbose. Do not reformat for taste or create new files. When a rule
+   names a specific past incident or non-obvious constraint, that's the
+   highest-value content in the file; keep it, and flag it rather than
+   touch it if unsure.
+4. **Verify**: re-run the step 1 `wc -l` and step 2 reference check in one
+   Bash call. Then read every edited file end to end for contradictions.
 5. **Report**: under ~300 words, no full diff:
    - **Size**: before/after line counts, PASS / OVER BUDGET.
    - **Tightened** / **Cut**: bullet list with one-line justification each.
@@ -108,4 +106,4 @@ Apply with judgement, not mechanically.
 
 ## Guardrails
 
-- Report honestly; if the files are already in good shape, say so and exit.
+- Report accurately; if the files are already in good shape, say so and exit.

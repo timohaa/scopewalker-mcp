@@ -42,8 +42,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # lint:fix, not lint — `npm run check` is the documented pre-commit gate
-      # and CI must run the same command. Any fix it applies is reported by the
+      # `npm run check` is the documented pre-commit check and includes lint:fix.
+      # CI must run the same command. Any fix it applies is reported by the
       # working-tree check below rather than silently accepted.
       - name: Lint and typecheck
         run: npm run check
@@ -52,7 +52,7 @@ jobs:
         run: git diff --exit-code
 
       # Coverage, not plain test: vitest.config.ts carries coverage thresholds
-      # and they only gate when the run collects coverage. Safe after the
+      # and are enforced only when the run collects coverage. Safe after the
       # working-tree check above, since coverage/ is gitignored.
       - name: Test
         run: npm run test:coverage

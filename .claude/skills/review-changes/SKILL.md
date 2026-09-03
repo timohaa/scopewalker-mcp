@@ -1,6 +1,6 @@
 ---
 name: review-changes
-description: Review uncommitted changes against project standards, or run the full-codebase quality gate with `full`. Use before committing or when asked to review the working tree or verify code quality.
+description: Review uncommitted changes against project standards, or run every repository check with `full`. Use before committing or when asked to review the working tree or verify code quality.
 ---
 
 # Review Changes
@@ -10,7 +10,7 @@ Review all uncommitted changes against project standards before committing.
 ## Scope
 
 Default: uncommitted changes (the workflow below). If invoked with `full`, skip
-steps 1–2 and run the whole-codebase gate instead:
+steps 1–2 and run the whole-codebase checks instead:
 
 ```bash
 npm run check          # check:versions + lint:fix + typecheck

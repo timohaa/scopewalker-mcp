@@ -7,7 +7,7 @@ Scopewalker MCP provides 8 tools for codebase analysis.
 Most tools share these parameters:
 
 | Name              | Type     | Description                                                                                              |
-| ----------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+|-------------------|----------|----------------------------------------------------------------------------------------------------------|
 | `path`            | string   | Path to file or directory (required)                                                                     |
 | `include_hidden`  | boolean  | Include hidden files (default: false)                                                                    |
 | `ignore_patterns` | string[] | Glob patterns to exclude (max 100 entries, 512 characters each)                                          |
@@ -40,16 +40,16 @@ Tools supporting grep: `get_line_counts`, `get_functions`, `get_code_inventory`
 
 **Path scoping:** All tools resolve paths with `realpath` and will reject requests outside allowed roots. Defaults: current working directory and system temp. Override with `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`.
 
-**Default ignores:** File discovery skips common build artifacts, caches, and lock files (e.g., `node_modules`, `dist`, `package-lock.json`). Directory-scanning tools respect the single `.gitignore` at the scanned path via the `ignore` library — nested `.gitignore` files in subdirectories are not read, and neither is the repository root's when you scan a subdirectory (see [known-bugs.md](./known-bugs.md)); tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) respect `.gitignore` through tokei's built-in ignore handling (which only applies inside a git repository) in addition to those explicit ignore lists.
+**Default ignores:** File discovery skips common build artifacts, caches, and lock files. Examples include `node_modules`, `dist`, and `package-lock.json`. Directory-scanning tools respect the single `.gitignore` at the scanned path via the `ignore` library. Nested `.gitignore` files in subdirectories are not read, and neither is the repository root's when you scan a subdirectory (see [known-bugs.md](./known-bugs.md)). Tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) also respect `.gitignore` through tokei's built-in ignore handling, which only applies inside a git repository.
 
-**Resource guardrails:** AST-based tools skip files over 1 MB to prevent runaway memory/CPU usage. Tokei-based line counts do not enforce this limit. Use extension filters, `ignore_patterns`, and `limit` to reduce scan size further. Most directory-scanning tools also accept `max_depth` and `max_files` to bound traversal. Directory scans do not follow symbolic links; a symlink to a file or directory inside the scanned path is skipped. This applies to every AST-based tool except `get_line_counts`; `check_thresholds` uses tokei for its file-size pass, and tokei already skips symlinks. AST traversal stops at 500 nested levels; deeper nodes are silently omitted from `get_code_inventory`, `get_complexity_metrics`, `get_documentation_coverage`, `get_functions`, and `get_prop_drilling` results. The tokei subprocess behind `get_line_counts` and `check_thresholds` is killed after 30 seconds and returns a `PARSE_ERROR`. A file that throws during parsing or analysis is skipped, and the scan continues.
+**Resource guardrails:** AST-based tools skip files over 1 MB to limit memory and CPU use. Tokei-based line counts do not enforce this limit. Use extension filters, `ignore_patterns`, and `limit` to reduce scan size. Most directory-scanning tools also accept `max_depth` and `max_files`. Directory scans do not follow symbolic links; a symlink to a file or directory inside the scanned path is skipped. This applies to every AST-based tool. `get_line_counts` and the file-size pass in `check_thresholds` use tokei, which already skips symlinks. AST traversal stops at 500 nested levels; deeper nodes are silently omitted from `get_code_inventory`, `get_complexity_metrics`, `get_documentation_coverage`, `get_functions`, and `get_prop_drilling` results. The tokei subprocess behind `get_line_counts` and `check_thresholds` is killed after 30 seconds and returns a `PARSE_ERROR`. A parse or analysis failure skips that file while the scan continues.
 
 ## Supported Languages
 
 Function detection and parsing support:
 
 | Language              | Extensions                                   | Detection                            |
-| --------------------- | -------------------------------------------- | ------------------------------------ |
+|-----------------------|----------------------------------------------|--------------------------------------|
 | TypeScript/JavaScript | `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs` | `function`, arrow functions, methods |
 | Python                | `.py`                                        | `def`, `async def`                   |
 | Go                    | `.go`                                        | `func`, methods with receivers       |
@@ -60,14 +60,14 @@ Function detection and parsing support:
 
 Files with any other extension are skipped by the AST-based tools. `get_line_counts` uses tokei instead, so it reports on every language tokei recognizes.
 
-**Extension filtering on tokei-backed tools:** `get_line_counts` and `check_thresholds` translate `extensions` into tokei language names through a fixed table covering the languages listed above plus common others. An extension outside that table is passed to tokei verbatim and only matches when it happens to name a tokei language: `.zig` works, but `.tf` does not, because tokei calls that language HCL. A non-matching filter silently returns nothing rather than erroring.
+**Extension filtering on tokei-backed tools:** `get_line_counts` and `check_thresholds` translate `extensions` into tokei language names through a fixed table covering the languages listed above plus common others. An extension outside that table is passed to tokei verbatim. It matches only when the extension also names a tokei language. For example, `.zig` works while `.tf` does not because tokei calls that language HCL. A non-matching filter returns an empty result without an error.
 
 ## Error Codes
 
 All tools return structured errors:
 
 | Code                   | Description                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------- |
+|------------------------|----------------------------------------------------------------------------------------------|
 | `PATH_NOT_FOUND`       | Path does not exist                                                                          |
 | `NOT_A_DIRECTORY`      | Expected directory, got file (reserved; every tool accepts both)                             |
 | `NOT_A_FILE`           | Expected file, got directory (reserved; every tool accepts both)                             |

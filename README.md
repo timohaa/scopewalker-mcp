@@ -181,7 +181,7 @@ It picks the right tool and parameters for the request.
 
 This repo also dogfoods its own tools via Claude Code skills and agents:
 
-- [`.claude/skills/review-changes/SKILL.md`](.claude/skills/review-changes/SKILL.md): runs `check_thresholds` and `get_code_smells` as part of the pre-commit review and full quality gate
+- [`.claude/skills/review-changes/SKILL.md`](.claude/skills/review-changes/SKILL.md): runs `check_thresholds` and `get_code_smells` during pre-commit and full-repository reviews
 - [`.claude/agents/standards-enforcer.md`](.claude/agents/standards-enforcer.md): uses the full tool set to find and fix standards violations
 - [`.claude/agents/docs-reality-sync.md`](.claude/agents/docs-reality-sync.md): uses `get_code_inventory` and `get_functions` to keep docs in sync with code
 

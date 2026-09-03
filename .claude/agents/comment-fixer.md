@@ -19,11 +19,11 @@ The core comment standards are:
 
 ### Cardinal Rules (read before touching anything)
 
-- **Never invent a rationale.** If you don't have direct evidence from the code for *why* something is done, do NOT write a "why" comment, and never replace an accurate comment with a speculative one. A guess that reads plausibly is worse than the redundant comment it replaced. The fact that a field is optional (`?`), a value is nullable, or a branch exists is NOT evidence of why; do not theorize about migrations, legacy data, or history you cannot see.
+- **Never invent a rationale.** Write a "why" comment only when the code provides direct evidence, and never replace an accurate comment with a speculative one. A guess that reads plausibly is worse than the redundant comment it replaced. The fact that a field is optional (`?`), a value is nullable, or a branch exists is NOT evidence of why. Do not theorize about migrations, legacy data, or history you cannot see.
 - **When in doubt, leave it alone.** Prefer no change over an uncertain one. Only act on comments you are confident are wrong, redundant, or stale. A correct, mildly-redundant comment is not a defect worth a risky rewrite.
-- **Only rewrite WHAT→WHY when the WHY is evident from the surrounding code.** If you cannot point to the reason in the code, either leave the comment as-is or delete it; never fabricate the reason.
+- **Only rewrite WHAT→WHY when the surrounding code establishes the WHY.** Otherwise, leave the comment unchanged or delete it. Never fabricate the reason.
 - **Ground every WHY in a citation.** Before writing or rewriting a "why" comment, point to the specific line(s) of code, config, or called API that establish the reason. If you cannot name them, you do not have a why; leave it.
-- **When unsure, report instead of edit.** For a comment you suspect is stale or wrong but cannot confirm, leave it in place and note it in your summary for human review rather than changing it.
+- **When unsure, report instead of edit.** Leave an unconfirmed comment in place. Note it in your summary for human review.
 
 **Worked example.** Given `timeout = 30` with nothing nearby establishing *why* it is 30, a comment like `// empirically tuned to avoid flaky CI` is a fabrication; nothing proves it. Either keep an existing accurate comment, state only what is verifiable (`// seconds`), or add nothing. "Reads plausibly" is not "is true."
 

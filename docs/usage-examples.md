@@ -79,9 +79,8 @@ file <300 / function <100 line limits.
 
 ### Replacing derivable documentation
 
-A related trick: instead of maintaining file lists or per-module
-inventories in `AGENTS.md` (they go stale), tell the agent to derive
-them:
+Derive file lists and per-module inventories when needed because maintained
+copies in `AGENTS.md` become stale:
 
 ```markdown
 `DIRECTORY_STRUCTURE.md` documents the top-level layout; update it only when
@@ -132,14 +131,13 @@ counts, and documentation gaps. End with a one-line verdict: **CLEAN**
 
 Add these rules next to the tool table:
 
-- An arrow-function component (`const Card = () => {...}`) has no name in
-  the AST, so its whole body is reported as one `<anonymous>` function;
-  `function Card() {}` declarations keep their name. Either way, most
-  non-trivial components show up as >100-line "functions" in
-  `check_thresholds` and `get_functions detail=lines`. Have the agent list
-  oversized component bodies separately
-  from oversized plain functions, because extracting a subcomponent or
-  hook is a different (riskier) refactor than splitting a helper.
+- An arrow-function component (`const Card = () => {...}`) has no AST name.
+  Its body appears as one `<anonymous>` function. A `function Card() {}`
+  declaration keeps its name. Either way, most non-trivial components show
+  up as >100-line "functions" in `check_thresholds` and
+  `get_functions detail=lines`. Have the agent list oversized component
+  bodies separately from oversized plain functions, because extracting a
+  subcomponent or hook is a riskier refactor than splitting a helper.
 - Run `get_prop_drilling` with `exclude_common: true` to cut noise from
   `id`/`key`-style names. If your standards prohibit prop drilling
   outright, tell the agent to treat hits as violations, not suggestions.
@@ -207,7 +205,7 @@ of those steps:
 
 - The `standards-enforcer` step is the one that uses the full tool set
   (see the agent below).
-- After the code-changing steps, a verification gate reruns
+- After the code-changing steps, a verification step reruns
   `npm run check` and the tests, but only if the standards enforcer or
   comment fixer changed files. A clean run stays cheap.
 
@@ -221,11 +219,9 @@ This agent uses the whole tool set to detect and fix violations. Its
 ```markdown
 ---
 name: standards-enforcer
-description: Analyzes the codebase for coding-standards violations
-  (file/function length, nesting depth, parameter counts, TODO/FIXME
-  markers) using the scopewalker tools, then refactors to fix them
-  while keeping checks and tests green. Use proactively after
-  significant code changes or for a full standards audit.
+description: Find coding-standards violations with Scopewalker and fix
+  them while checks and tests stay green. Use after significant changes
+  or for a full standards audit.
 model: sonnet
 tools: Bash, Read, Edit, Write, Glob, Grep, mcp__scopewalker__check_thresholds, mcp__scopewalker__get_code_smells, mcp__scopewalker__get_complexity_metrics, mcp__scopewalker__get_functions, mcp__scopewalker__get_line_counts, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_documentation_coverage, mcp__scopewalker__get_prop_drilling
 ---
@@ -245,8 +241,8 @@ get_prop_drilling          → parameter threading (prop drilling) across functi
 ```
 
 After refactoring, rerun the Scopewalker tool that flagged the violation
-to confirm the new result. Gate structural refactors on existing or newly
-written characterization tests, since fixing threshold violations usually
+to confirm the new result. Require existing or newly written characterization
+tests before structural refactors, since fixing threshold violations usually
 means moving code around.
 
 ### docs-reality-sync

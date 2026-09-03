@@ -2,8 +2,8 @@
 // package.json is the single source of truth for the version. release.yml rewrites
 // manifest.json and server.json from the git tag at publish time but never commits
 // the result, so without this check the committed copies drift silently and mislead
-// anyone reading the repo. Runs as part of `npm run check`, which is both the
-// documented pre-commit gate and what CI runs.
+// anyone reading the repo. Runs as part of the documented pre-commit and CI
+// command, `npm run check`.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

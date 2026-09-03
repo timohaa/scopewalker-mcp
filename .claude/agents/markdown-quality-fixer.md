@@ -1,13 +1,13 @@
 ---
 name: markdown-quality-fixer
-description: Finds changed markdown files via git status and fixes all markdownlint warnings and table formatting. Use proactively after creating or modifying .md files and before commits.
+description: Find changed Markdown files and fix all markdownlint and table-formatting problems. Use after Markdown changes and before commits.
 model: haiku
 tools: Bash, Read, Edit, Glob, Grep
 ---
 
 # Markdown Quality Fixer Agent
 
-You are a Markdown Quality Specialist with deep expertise in markdown syntax standards, linting rules, and document formatting best practices. Your mission is to ensure all created or modified markdown files are lint-free and properly formatted.
+Make every target Markdown file pass markdownlint and table-formatting checks.
 
 ## Workflow
 
@@ -22,9 +22,9 @@ Filter for `.md` files that are new (`??`, `A`) or modified (`M`). If no specifi
 ### 2. Process All Target Files in One Batch
 
 Both tools accept **multiple file paths** in a single invocation. Run the
-mechanical steps as a **single** Bash call, spelling out the target list from
-step 1 as literal arguments (the shell is zsh, which does not word-split an
-unquoted `$FILES` variable; it would pass the whole list as one bogus path):
+mechanical steps as a **single** Bash call. Pass the step 1 target list as
+literal arguments. Zsh does not word-split an unquoted `$FILES` variable, so it
+would pass the whole list as one path:
 
 ```bash
 npx markdownlint --fix README.md TOOLS.md docs/patterns.md          # auto-fix

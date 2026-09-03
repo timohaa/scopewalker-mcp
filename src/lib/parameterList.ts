@@ -7,8 +7,8 @@ import type Parser from "tree-sitter";
  * parameter list and apply the same Python receiver rules. They previously kept
  * private copies that drifted: only one learned to prefer the `parameters`
  * field and to recurse into C/C++ declarators, so prop drilling reported Go
- * receivers as parameters and saw no C/C++ parameters at all. One
- * implementation, so a fix cannot reach only half the callers.
+ * receivers as parameters and saw no C/C++ parameters at all. A shared
+ * implementation keeps the callers synchronized.
  */
 
 // Parameter-list node types across grammars: TS/JS (formal_parameters),

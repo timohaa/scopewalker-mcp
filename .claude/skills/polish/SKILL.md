@@ -35,14 +35,13 @@ other step to complete before starting the next.
 
 ## Workflow
 
-For each step, announce it (e.g., "**Step 1/6: Fixing lint, types, and formatting...**";
-announce 4a and 4b together as "**Step 4/6: Comment cleanup ∥ docs sync...**"),
-launch the subagent(s) via the **Agent tool** with the `subagent_type` from the
-table, wait for completion, and summarize the result before moving on.
+Announce each step, then launch the listed `subagent_type` through the **Agent
+tool**. Announce 4a and 4b together because they run concurrently. Wait for the
+current step and summarize its result before continuing.
 
 Verification lives inside the agents: step 3 runs the full suite only when it
 changed files, and step 4a runs `npm run check` only when it edited. There is no
-separate verification-gate step. If a step reports a check or test failure it
+separate verification step. If a step reports a check or test failure it
 could not fix, launch the matching fixer (`lint-type-format-fixer` for check
 failures, `smart-test-fixer` for test failures) before continuing.
 

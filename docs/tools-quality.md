@@ -7,7 +7,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                                |
-| ----------------- | -------- | -------- | -------------------------------------------------------------------------- |
+|-------------------|----------|----------|----------------------------------------------------------------------------|
 | `path`            | string   | Yes      | Path to file or directory                                                  |
 | `include_hidden`  | boolean  | No       | Include hidden files                                                       |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                                   |
@@ -21,7 +21,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 **Documentation Detection:**
 
 | Language              | Recognized Formats          |
-| --------------------- | --------------------------- |
+|-----------------------|-----------------------------|
 | JavaScript/TypeScript | JSDoc (`/** */`), TSDoc     |
 | Python                | Docstrings (`"""`, `'''`)   |
 | Go                    | Godoc comments (`//`)       |
@@ -30,7 +30,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 | C/C++                 | JSDoc-style (`/** */`)      |
 | Ruby                  | Line comments (`#`)         |
 
-**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods, though Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes. A Ruby top-level `def` is typed as a function and a `def` inside a class or module body as a method. `get_code_inventory` labels the same code the same way for class bodies, but drops module-body defs entirely: `module` is not one of its symbol types, so there is nothing to nest them under.
+**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods. Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes. A Ruby top-level `def` is typed as a function, and a `def` inside a class or module body as a method. `get_code_inventory` labels the same code the same way for class bodies, but drops module-body defs entirely: `module` is not one of its symbol types, so there is nothing to nest them under.
 
 **Response:**
 
@@ -77,12 +77,12 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 
 Detects code smells like TODO, FIXME, HACK, XXX, BUG, UNUSED, and DEPRECATED comments, plus unsafe casts in TypeScript.
 
-**Note:** Comment-based smells use tree-sitter to scan actual comments, avoiding false positives from string literals and code. The `unsafe_cast` smell is detected via AST patterns and covers double casts that launder a type through `unknown` or `any` (`x as unknown as T`, `x as any as T`); it is TypeScript-only, since JavaScript has no `as` expressions.
+**Note:** Comment-based smells use tree-sitter to avoid matches in string literals and code. The `unsafe_cast` smell detects TypeScript double casts through `unknown` or `any`. Examples include `x as unknown as T` and `x as any as T`. JavaScript has no corresponding `as` expression.
 
 **Parameters:**
 
 | Name              | Type     | Required | Description                                             |
-| ----------------- | -------- | -------- | ------------------------------------------------------- |
+|-------------------|----------|----------|---------------------------------------------------------|
 | `path`            | string   | Yes      | Path to file or directory                               |
 | `include_hidden`  | boolean  | No       | Include hidden files                                    |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                |
@@ -154,7 +154,7 @@ Detects parameter threading (prop drilling) by finding parameter names passed th
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                                   |
-| ----------------- | -------- | -------- | ----------------------------------------------------------------------------- |
+|-------------------|----------|----------|-------------------------------------------------------------------------------|
 | `path`            | string   | Yes      | Path to file or directory                                                     |
 | `include_hidden`  | boolean  | No       | Include hidden files                                                          |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                                      |

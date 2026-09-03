@@ -1,16 +1,16 @@
 # Known Bugs and Limitations
 
-Behaviour that is wrong or incomplete today. Every entry here was reproduced against the
-tools rather than inferred from reading the code; each one lists the input that triggers
-it and the observed response.
+This document records behavior that is wrong or incomplete. Every entry was
+reproduced with the tools. Each entry lists the triggering input and observed
+response.
 
-Two kinds of entry:
+Entries fall into two categories:
 
 - **Bugs**: the tool returns something wrong, or silently drops data the user asked for.
 - **Limitations**: the tool is knowingly incomplete, and the behaviour is documented in
-  `docs/tools-*.md`. Listed here so the gaps are visible in one place.
+  `docs/tools-*.md`. This list collects those gaps in one place.
 
-Verified against version 1.1.0.
+The entries were verified against version 1.1.0.
 
 ---
 
@@ -23,15 +23,15 @@ Verified against version 1.1.0.
 A file containing only `const MaxRetries = 3` (Go) or `pub const MAX: i32 = 3;` /
 `pub static NAME: &str = "x";` (Rust) yields an empty inventory.
 
-Two separate causes:
+Two defects cause this behavior:
 
 - Go's `const_declaration` is mapped to `constant`, but the name lives on a nested
   `const_spec`, so `extractName` finds nothing and the item is dropped.
 - Rust's `const_item` and `static_item` are not in `NODE_TYPE_MAP` at all.
 
 The Constant column in the language table in `docs/tools-health.md` shows `-` for both
-languages, so the table is accurate, but it reads as "this language has no constants"
-rather than "the tool cannot see them".
+languages, so the table is accurate. It reads as "this language has no constants" rather
+than "the tool cannot see them".
 
 ### Grouped Go `type (...)` declarations report only their first type
 
@@ -42,7 +42,7 @@ the surrounding walk emits one item per declaration rather than one per spec. Go
 form declares several types under a single `type_declaration`, so everything after the first
 is silently dropped.
 
-Given a file containing only:
+For example, consider a file containing only:
 
 ```go
 type (
@@ -65,13 +65,13 @@ one-item-per-node mapping does not do.
 **Tools:** `get_code_inventory`
 
 `getItemType` treats a `method` node as a function only when its parent is not
-`body_statement`. Class methods are expected to be nested under their class already, but
+`body_statement`. Class methods are expected to be nested under their class already. A
 `module` has no entry in `NODE_TYPE_MAP` for a method to nest under, so a method whose
-parent is a module's `body_statement` has nowhere to attach and is dropped instead.
+parent is a module's `body_statement` has nowhere to attach and is dropped.
 
 A file containing only `module Helpers; def helper; end; end` returns an empty inventory
-(`total_files: 0`): the whole file disappears, files with no matched items being dropped
-the same as the Go case above. `get_documentation_coverage` runs a separate walk and still
+with `total_files: 0`. Files without matched items are omitted, as in the Go case above.
+`get_documentation_coverage` runs a separate walk and still
 sees `helper` as type `method`, so the two tools disagree about whether the file has
 anything in it at all.
 
@@ -103,7 +103,7 @@ and `fn private_fn` returns all three whether `include_private` is `true` or `fa
 Visibility is still *reported* correctly (non-`pub` items are marked `exported: false`);
 the filter ignores it.
 
-Documented in `docs/tools-health.md`.
+See `docs/tools-health.md`.
 
 ### Rust `impl` methods are reported as standalone functions
 
@@ -115,18 +115,19 @@ Methods inside an `impl Widget` block are not nested under `Widget`. The invento
 
 Go, C/C++, Python, and Ruby all attach members to their type. Rust is the outlier.
 
-Documented in `docs/tools-health.md`.
+See `docs/tools-health.md`.
 
 ### Go and Rust type declarations are not documentable classes
 
 **Tools:** `get_documentation_coverage`
 
-`CLASS_TYPES` covers the `class`/`struct` node types of TS/JS, Python, Java, Ruby, and
-C/C++. Go `struct`/`interface` and Rust `struct`/`trait`/`enum` are absent, so an
-undocumented Rust `pub struct Widget` does not count against coverage: a file declaring
-`Widget` plus three functions reports `total_symbols: 3`, not 4.
+`CLASS_TYPES` covers the class and struct nodes of TS/JS, Python, Java, Ruby, and
+C/C++. It omits Go `struct` and `interface` declarations. Rust `struct`,
+`trait`, and `enum` declarations are also absent. An undocumented Rust
+`pub struct Widget` therefore does not count against coverage. A file with that
+struct and three functions reports `total_symbols: 3`.
 
-Documented in `docs/tools-quality.md`.
+See `docs/tools-quality.md`.
 
 ### Ruby iterator blocks do not count toward cognitive or cyclomatic complexity
 
@@ -136,17 +137,17 @@ Documented in `docs/tools-quality.md`.
 call with a block — structurally identical to `map`, `tap`, `Array.new`, or `File.open`.
 Nothing in the tree distinguishes an iteration from any other block-taking call.
 
-The effect is a cross-grammar gap in the branch counts: two nested `for..in` loops score 3
-in Ruby like everywhere else, while the same logic written with `.each do` scores 1. The
+This creates a cross-grammar gap in branch counts. Two nested `for..in` loops score 3
+in Ruby, while the same logic written with `.each do` scores 1. The
 cross-grammar parity fixtures deliberately use `for..in` for this reason.
 
-Both block forms *do* count toward `max_nesting_depth`, which is the deliberate asymmetry —
-a block is a level of indentation whether or not it loops, so nesting can count it without
+Both block forms *do* count toward `max_nesting_depth`, and that asymmetry is deliberate.
+A block is a level of indentation whether or not it loops, so nesting can count it without
 being wrong, while a branch count would be. A method-name allowlist (`each`, `map`, `times`,
-…) was considered and rejected: it would be silently wrong for every iterator not on the
-list, which is a worse failure than a known, uniform gap.
+and so on) was considered and rejected: it would be silently wrong for every iterator not
+on the list, which is a worse failure than a known, uniform gap.
 
-Documented in `docs/tools-health.md`.
+See `docs/tools-health.md`.
 
 ### `exported` is always false for C/C++ and Ruby
 
@@ -161,7 +162,7 @@ C++ has candidates — a header declaration, an `export` in a module interface u
 is visible from the definition alone, which is all the inventory walk sees. Ruby has nothing
 at all. Reporting `false` under-claims; inventing a `true` would be worse.
 
-Documented in `docs/tools-health.md`.
+See `docs/tools-health.md`.
 
 ### Ruby visibility set outside the class body is not tracked
 
@@ -181,7 +182,7 @@ read:
 The first covers everything an ordinary class writes; the rest are metaprogramming, where the
 declaration site no longer states the answer.
 
-Documented in `docs/tools-health.md`.
+See `docs/tools-health.md`.
 
 ### Only the `.gitignore` at the scanned path is honored
 
@@ -192,7 +193,7 @@ Documented in `docs/tools-health.md`.
 Git resolves ignore rules from every `.gitignore` between the repository root and the file;
 these tools do not walk in either direction, so two cases diverge from `git status`.
 
-Given a root holding `.gitignore` (`ignored-root.ts`, `sub/ignored-by-root.ts`) and
+Consider a root holding `.gitignore` (`ignored-root.ts`, `sub/ignored-by-root.ts`) and
 `sub/.gitignore` (`ignored-nested.ts`):
 
 - Scanning the root returns `keep.ts`, `sub/keep2.ts`, **and** `sub/ignored-nested.ts` — the
@@ -207,7 +208,7 @@ missed patterns through `ignore_patterns` is the workaround.
 The tokei-backed tools (`get_line_counts`, file-size checks in `check_thresholds`) are not
 affected: tokei applies full git ignore semantics, though only inside a git repository.
 
-Documented in `docs/tools-overview.md`.
+See `docs/tools-overview.md`.
 
 ### Extension filters silently return nothing on tokei-backed tools
 
@@ -219,7 +220,7 @@ tokei language. `.zig` works because the language is called Zig; `.tf` does not,
 tokei calls that language HCL. The mismatch returns an empty result rather than an error,
 which is indistinguishable from "no such files".
 
-Documented in `docs/tools-overview.md`.
+See `docs/tools-overview.md`.
 
 ### `max_files` does not bound `check_thresholds`' file-size scan
 

@@ -7,7 +7,7 @@ Identifies files and functions that exceed configurable size thresholds.
 **Parameters:**
 
 | Name                 | Type     | Required | Description                                                   |
-| -------------------- | -------- | -------- | ------------------------------------------------------------- |
+|----------------------|----------|----------|---------------------------------------------------------------|
 | `path`               | string   | Yes      | Path to file or directory                                     |
 | `max_file_lines`     | integer  | No       | Flag files exceeding this (default: 300)                      |
 | `max_function_lines` | integer  | No       | Flag functions exceeding this (default: 100)                  |
@@ -57,7 +57,7 @@ Generates a comprehensive inventory of classes, methods, functions, and exports.
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                  |
-| ----------------- | -------- | -------- | ------------------------------------------------------------ |
+|-------------------|----------|----------|--------------------------------------------------------------|
 | `path`            | string   | Yes      | Path to file or directory                                    |
 | `include_hidden`  | boolean  | No       | Include hidden files                                         |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                     |
@@ -73,7 +73,7 @@ Generates a comprehensive inventory of classes, methods, functions, and exports.
 Each language's declarations map onto those five types:
 
 | Language              | Class             | Interface                       | Enum   | Function                                      | Constant                  |
-| --------------------- | ----------------- | ------------------------------- | ------ | --------------------------------------------- | ------------------------- |
+|-----------------------|-------------------|---------------------------------|--------|-----------------------------------------------|---------------------------|
 | TypeScript/JavaScript | `class`           | `interface`, `type`             | `enum` | `function`, `const`/`let` bound to a function | other `const`/`let`/`var` |
 | Python                | `class`           | -                               | -      | module-level `def`                            | -                         |
 | Go                    | `struct` types    | `interface` types, type aliases | -      | `func`                                        | -                         |
@@ -85,11 +85,11 @@ Each language's declarations map onto those five types:
 Notes:
 
 - Results are grouped by file.
-- Each file returns at most 100 items to prevent oversized responses; `limit` trims the number of files. Files with no matching items are omitted from `inventory` entirely.
-- Methods are nested under the class they belong to, not repeated as top-level functions. Go methods are matched to their type by receiver (`func (p *Point) Scale()`) across every file in the package, so a type declared in `types.go` still collects methods declared in `methods.go`. Matching is scoped to the directory, so same-named types in different packages stay separate. C/C++ member functions are picked up from the record body, including declaration-only members. Rust `impl` methods are currently reported as standalone functions.
-- `exported` follows each language's own convention: the TS/JS `export` keyword, module scope in Python, an initial uppercase letter in Go, a bare `pub` in Rust, and a `public` modifier in Java. `pub(crate)` and `pub(super)` stop at the crate boundary and so count as unexported. C/C++ and Ruby have no equivalent marker and always report `exported: false`.
-- `include_private` filters on each language's own notion of private: a leading underscore, a lowercase initial in Go, or an explicit access modifier. Because unexported is Go's only form of private, the default view of a Go package is its exported API surface; pass `include_private: true` for the rest. Rust visibility is reported but not filtered: non-`pub` items still appear, marked `exported: false`.
-- A nested method's `visibility` is read from the source in every language that states it. TypeScript and Java put a modifier on the declaration; C++ and Ruby set it _sectionally_, so a `private:` label or a bare `private` governs every member after it until the next marker. Ruby's `private :sym` and `private def x` forms are read too. Defaults follow the language: a C++ `class` starts private and a `struct` starts public, and a Java method with no modifier is package-private, which the tool reports as `private` because it is not part of the type's outside-facing API. `protected` is reported as itself and survives `include_private: false`, being part of the inheritable API. Underscore-prefixed names stay private whatever the section says.
+- Each file returns at most 100 items. The `limit` parameter trims the number of files. Files with no matching items are omitted from `inventory`.
+- Methods are nested under their class and omitted from the top-level function list. Go methods match their type by receiver across every file in the package. A type in `types.go` can therefore collect methods from `methods.go`. Matching stays within each directory, which separates same-named types in different packages. C/C++ member functions are picked up from the record body, including declaration-only members. Rust `impl` methods are currently reported as standalone functions.
+- `exported` follows each language's convention. It recognizes TS/JS `export`, Python module scope, Go capitalization, bare Rust `pub`, and Java `public`. Rust `pub(crate)` and `pub(super)` count as unexported. C/C++ and Ruby always report `exported: false` because they lack an equivalent declaration marker.
+- `include_private` recognizes leading underscores, lowercase Go names, and explicit access modifiers. Because unexported is Go's only form of private, the default view of a Go package is its exported API. Pass `include_private: true` for the rest. Rust visibility is reported but not filtered. Non-`pub` Rust items still appear with `exported: false`.
+- Nested method visibility comes from language-specific syntax. TypeScript and Java use declaration modifiers. C++ and Ruby use sections that govern members until the next marker. Ruby's `private :sym` and `private def x` forms are also recognized. A C++ `class` defaults to private, while a `struct` defaults to public. A Java method with no modifier is package-private, which the tool reports as `private` because it is not part of the type's outside-facing API. `protected` is reported as itself and survives `include_private: false`, being part of the inheritable API. Underscore-prefixed names remain private regardless of their section.
 
 **Response:**
 
@@ -130,7 +130,7 @@ Returns code complexity metrics to identify code that may need refactoring.
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                       |
-| ----------------- | -------- | -------- | ----------------------------------------------------------------- |
+|-------------------|----------|----------|-------------------------------------------------------------------|
 | `path`            | string   | Yes      | Path to file or directory                                         |
 | `include_hidden`  | boolean  | No       | Include hidden files                                              |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                          |
@@ -152,25 +152,25 @@ Returns code complexity metrics to identify code that may need refactoring.
 
 `cognitive_complexity` and `max_cognitive_complexity` measure different scopes: the first is the whole-file sum, so it partly tracks file length, while the second reports the worst function. A file of many simple functions scores high on the first and low on the second.
 
-**Per-function reporting:** the `functions` array lists functions whose cyclomatic complexity exceeds 10, worst first, capped at 10 per file. Each entry carries a `severity` of `high` (over 10) or `extreme` (over 30) — radon's bands. The array is empty for files where nothing crosses the threshold. `summary.high_complexity_functions` and `summary.most_complex_function` count every function analyzed, ignoring both the per-file cap and `limit`.
+**Per-function reporting:** The `functions` array lists functions whose cyclomatic complexity exceeds 10. Results are ordered worst first and capped at 10 per file. Severity follows radon's bands: `high` above 10 and `extreme` above 30. Files without a qualifying function return an empty array. `summary.high_complexity_functions` and `summary.most_complex_function` count every function analyzed, ignoring both the per-file cap and `limit`.
 
-Cyclomatic complexity is 1 plus the decision points in a function: conditionals, loops, exception handlers, ternaries, individual `switch`/`when`/`match` arms, and each logical operator. Unlike cognitive complexity it applies no nesting weight, so three nested `if`s score the same as three sequential ones, and it counts `else if` as the real predicate it is. A `default`/`else`/`_` arm adds nothing, and anonymous functions are not branches.
+Cyclomatic complexity is 1 plus the decision points in a function. Decision points include conditionals, loops, exception handlers, ternaries, individual `switch`/`when`/`match` arms, and each logical operator. Unlike cognitive complexity it applies no nesting weight, so three nested `if`s score the same as three sequential ones. Each `else if` counts as the predicate it is. A `default`/`else`/`_` arm adds nothing, and anonymous functions are not branches.
 
-The rules are uniform across all nine grammars rather than matching radon exactly. Radon additionally charges for Python's `with`, `assert`, and comprehensions, which have no detectable counterpart in the other eight languages — counting them would make the same algorithm score higher in Python than in TypeScript. Expect scopewalker's Python numbers to sit slightly below radon's for code using those constructs.
+The rules are uniform across all nine grammars rather than matching radon exactly. Radon additionally charges for Python's `with`, `assert`, and comprehensions, which have no detectable counterpart in the other eight languages. Counting them would make the same algorithm score higher in Python than in TypeScript. Expect scopewalker's Python numbers to sit slightly below radon's for code using those constructs.
 
-Parameter counting is language-aware: Python skips `self`/`cls`, `*args`, `**kwargs`, and the bare `*` keyword-only marker; Go excludes the method receiver and expands grouped declarations (`func f(a, b, c int)` counts as 3); C/C++ parameter lists are read out of the function declarator.
+Parameter counting follows each grammar. Python skips `self`/`cls`, `*args`, `**kwargs`, and the bare `*` keyword-only marker. Go excludes the method receiver and expands grouped declarations, so `func f(a, b, c int)` counts as 3. C/C++ parameter lists are read out of the function declarator.
 
-Nesting and cognitive complexity likewise follow each grammar's own shape, but each runs off its own node list, so a construct can count toward one metric, both, or neither:
+Nesting and cognitive complexity use separate node lists for each grammar. A construct can count toward either metric, both, or neither:
 
-- **Both metrics:** `if`, `for`, and `while` in every grammar, including the less common loop spellings (`do`-`while` in TypeScript, JavaScript, Java, C, and C++, Java's for-each, C++ range-for); switches everywhere (`switch_statement` in C, C++, TypeScript, and JavaScript, `expression_switch_statement` and `type_switch_statement` in Go, `switch_expression` in Java); Rust's expression forms (`if`/`for`/`while`/`loop`/`match` and closures); Ruby's keyword-named `if`, `unless`, `while`, `until`, `for`, `case`, and `case ... in`.
+- **Both metrics:** `if`, `for`, and `while` in every grammar, including the less common loop spellings (`do`-`while` in TypeScript, JavaScript, Java, C, and C++, Java's for-each, C++ range-for). Switches everywhere: `switch_statement` in C, C++, TypeScript, and JavaScript, `expression_switch_statement` and `type_switch_statement` in Go, `switch_expression` in Java. Rust's expression forms (`if`/`for`/`while`/`loop`/`match` and closures). Ruby's keyword-named `if`, `unless`, `while`, `until`, `for`, `case`, and `case ... in`.
 - **Nesting only:** `try` blocks, anonymous functions in every grammar (`arrow_function` in TypeScript and JavaScript, `lambda` in Python and Ruby's stabby `->(x){}`, `func_literal` in Go, `lambda_expression` in Java and C++), and Ruby's `begin` plus both of its block forms. A lambda's own body is not an extra level: `->(x) { ... }` nests one deep, the same as the arrow function it corresponds to.
-- **Cognitive complexity only:** `catch` clauses in every grammar that has one (`catch_clause` in TypeScript, JavaScript, Java, and C++, `except_clause` in Python, `rescue` in Ruby); ternaries in every grammar that has one (`ternary_expression` in TypeScript, JavaScript, and Java, `conditional_expression` in Python, C, and C++, `conditional` in Ruby; Go and Rust have no ternary operator); logical operators, both the `&&`/`||` form and the `and`/`or` keywords Python and Ruby also accept; and the `elif`/`elsif` nodes Python and Ruby give else-if chains. An else-if branch scores a flat 1 whatever its grammar calls it, so a chain of three branches costs 3 in every supported language. Ruby's statement modifiers (`b if a`, `c while x`, `g rescue nil`) also land here: they are branches, but with no block there is nothing to nest.
+- **Cognitive complexity only:** `catch` clauses in every grammar that has one (`catch_clause` in TypeScript, JavaScript, Java, and C++, `except_clause` in Python, `rescue` in Ruby). Ternaries in every grammar that has one (`ternary_expression` in TypeScript, JavaScript, and Java, `conditional_expression` in Python, C, and C++, `conditional` in Ruby; Go and Rust have no ternary operator). Logical operators, both the `&&`/`||` form and the `and`/`or` keywords Python and Ruby also accept. The `elif`/`elsif` nodes Python and Ruby give else-if chains. An else-if branch scores a flat 1 whatever its grammar calls it, so a chain of three branches costs 3 in every supported language. Ruby's statement modifiers (`b if a`, `c while x`, `g rescue nil`) also land here: they are branches, but with no block there is nothing to nest.
 
-Cyclomatic complexity runs off a third list again, and diverges from the other two in three ways worth knowing: it counts each `switch` arm individually rather than charging once for the container (`switch_case` in TypeScript and JavaScript, `expression_case` and `type_case` in Go, `match_arm` in Rust, `switch_label` in Java, `case_statement` in C and C++, `case_clause` in Python, `when` and `in_clause` in Ruby), so a twelve-case switch scores 13 where cognitive complexity scores 1; it excludes anonymous functions entirely; and it counts `else if` rather than flattening it.
+Cyclomatic complexity runs off a third list and diverges from the other two in three ways. It counts each `switch` arm individually rather than charging once for the container (`switch_case` in TypeScript and JavaScript, `expression_case` and `type_case` in Go, `match_arm` in Rust, `switch_label` in Java, `case_statement` in C and C++, `case_clause` in Python, `when` and `in_clause` in Ruby), so a twelve-case switch scores 13 where cognitive complexity scores 1. It excludes anonymous functions entirely. It counts `else if` rather than flattening it.
 
-Ruby's iterator blocks (`xs.each do ... end` and `xs.each { |x| ... }`) count toward nesting but toward neither cognitive nor cyclomatic complexity. Both forms parse identically to any other block-taking call — `x.tap do ... end` is the same shape — so a loop cannot be told apart from a non-loop. Nesting can count them anyway because a block is a level of indentation either way; a branch count cannot. See [known-bugs.md](./known-bugs.md).
+Ruby's iterator blocks (`xs.each do ... end` and `xs.each { |x| ... }`) count toward nesting but toward neither cognitive nor cyclomatic complexity. Both forms parse identically to any other block-taking call, so `x.tap do ... end` has the same shape and a loop cannot be told apart from a non-loop. Nesting can count them anyway because a block is a level of indentation either way; a branch count cannot. See [known-bugs.md](./known-bugs.md).
 
-Each hotspot's `issue` field is one of `nesting_depth`, `parameters`, or `jsx_props` (a JSX component receiving more than 5 props). Cyclomatic and cognitive scores are reported through the `functions` array instead, not as hotspots.
+Each hotspot's `issue` is `nesting_depth`, `parameters`, or `jsx_props`. The last value marks a JSX component with more than five props. The `functions` array reports cyclomatic and cognitive scores.
 
 **Response:**
 

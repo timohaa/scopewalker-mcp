@@ -55,13 +55,13 @@ npm run test:coverage  # Run tests with coverage report
 2. Make changes following the code standards
 3. Run `npm run check` and fix any issues
 4. Submit PR with clear description of changes
-5. Ensure CI checks pass: `.github/workflows/ci.yml` runs `npm run check`, `npm run test:coverage`, and `npm run build` on every pull request. It fails if `npm run check` modifies a tracked file (commit the fixes it applies) or if coverage drops below the thresholds in `vitest.config.ts`
+5. Ensure CI checks pass. `.github/workflows/ci.yml` runs `npm run check`, `npm run test:coverage`, and `npm run build` on every pull request. CI fails if `npm run check` modifies a tracked file, so commit the fixes it applies. It also fails if coverage drops below the thresholds in `vitest.config.ts`.
 
 ## Releasing (maintainers)
 
 Releases are automated by `.github/workflows/release.yml`, triggered by a version tag:
 
-`package.json`, `manifest.json`, and `server.json` all carry the version, and `npm run check:versions` (part of `npm run check`, which `prepublishOnly` runs) fails the release if they disagree. `npm version` only touches `package.json`, so bump all three in the same commit:
+`package.json`, `manifest.json`, and `server.json` all carry the version. The `npm run check:versions` command fails if they disagree. It runs through `npm run check` and `prepublishOnly`. Update all three files in the same commit because `npm version` changes only `package.json`:
 
 ```bash
 npm version patch --no-git-tag-version   # or minor / major; bumps package.json only
@@ -74,4 +74,4 @@ git tag "v$VERSION"
 git push --follow-tags
 ```
 
-The workflow runs checks and tests, publishes to npm with provenance, publishes to the [MCP Registry](https://registry.modelcontextprotocol.io), builds the `.mcpb` bundle (`npm run bundle:mcpb`, which can also be run locally to inspect the bundle), and attaches it to a GitHub Release. It also rewrites the version into `manifest.json` and `server.json` at publish time, but never commits the result, which is what `check:versions` guards against drifting.
+The workflow runs checks and tests, then publishes to npm with provenance and to the [MCP Registry](https://registry.modelcontextprotocol.io). It builds the `.mcpb` bundle and attaches it to a GitHub Release. Run `npm run bundle:mcpb` to inspect the bundle locally. The workflow also writes the release version into `manifest.json` and `server.json` without committing those changes. The `check:versions` command prevents the committed versions from drifting.

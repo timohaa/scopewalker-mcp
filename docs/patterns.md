@@ -2,7 +2,7 @@
 
 ## Module Layout
 
-Each tool lives in `src/tools/[toolName].ts`, which holds the zod `inputSchema` and the registration/handler. Analysis logic that would push the file past the 300-line limit is split into sibling helper modules (`[toolName]Helpers.ts`, plus further concern-named files like `codeInventoryVisibility.ts` when helpers grow). Tests sit next to the code as `[toolName].test.ts`, with focused suites split by concern (`complexityMetrics.jsx.test.ts`).
+Each tool lives in `src/tools/[toolName].ts`. That file holds the zod `inputSchema`, registration, and handler. Move analysis logic into sibling helper modules before the tool reaches 300 lines. Use `[toolName]Helpers.ts`, then concern-named files such as `codeInventoryVisibility.ts`. Tests sit beside the code as `[toolName].test.ts`. Split focused suites by concern, as in `complexityMetrics.jsx.test.ts`.
 
 ## MCP Tool Registration
 
@@ -27,8 +27,8 @@ server.registerTool(
 AST-based file-scanning tools generally use this handler shape after `validatePath`:
 
 1. Directory input → `findFiles({ cwd, includeHidden, ignorePatterns, extensions, maxDepth })`; file input → single-element list.
-2. Iterate that list with `walkSourceFiles(filePaths, basePath, isDirectory, args.max_files)` from `src/lib/sourceFileWalker.ts`, which yields `{ fullPath, relativePath, language, code }`. It handles language detection, the `isFileWithinSizeLimit` guard (`DEFAULT_MAX_FILE_BYTES`, 1 MB), and the read — skipping silently on each. Files that fail to parse are the caller's to skip.
-3. Pass `args.max_files` to the walker rather than slicing the path list up front. The walker counts files it *yields*, so unsupported and oversized files no longer spend the budget; slicing beforehand meant `max_files: 1` on a directory led by a README analyzed nothing.
+2. Iterate that list with `walkSourceFiles(filePaths, basePath, isDirectory, args.max_files)` from `src/lib/sourceFileWalker.ts`. It yields `{ fullPath, relativePath, language, code }`. It handles language detection, the `isFileWithinSizeLimit` guard (`DEFAULT_MAX_FILE_BYTES`, 1 MB), and the read, skipping silently on each. Files that fail to parse are the caller's to skip.
+3. Pass `args.max_files` to the walker rather than slicing the path list first. The walker counts files it yields. Unsupported and oversized files therefore do not spend the budget. Slicing first caused `max_files: 1` to analyze nothing when a README led the directory.
 4. Sort results and slice to `args.limit ?? DEFAULT_LIMIT` (20). Tools that accept `summary_only` return an empty details array when it is true.
 
 New tools should copy this shape from an existing tool (e.g. `src/tools/complexityMetrics.ts`) rather than invent a variant.
@@ -49,15 +49,15 @@ walkNode(tree.rootNode, (node) => {
 });
 ```
 
-- `detectLanguage` and `parseCode` live in `src/lib/treeSitter.ts`. Both return `null` instead of throwing, which is what lets step 3 of the handler shape above skip bad files without a branch per failure mode.
-- `walkNode` (`src/lib/astWalker.ts`) is the single shared traversal: pre-order, callback on every node. `codeInventoryHelpers.ts` and `complexityMetricsHelpers.ts` re-export it for their own tool modules; new tools should import it from `../lib/astWalker.js` directly.
+- `detectLanguage` and `parseCode` live in `src/lib/treeSitter.ts`. Both return `null` instead of throwing. This lets the handler skip bad files without branching for each failure mode.
+- `walkNode` (`src/lib/astWalker.ts`) provides the shared pre-order traversal. It calls the callback on every node. `codeInventoryHelpers.ts` and `complexityMetricsHelpers.ts` re-export it for their own tool modules. New tools should import it from `../lib/astWalker.js` directly.
 - Grammars are lazily imported and cached per language in `src/lib/treeSitterGrammars.ts`. Adding a language means a loader there, an entry in `EXTENSION_MAP` (`treeSitter.ts`), and a member on `SupportedLanguage` (`src/types/languages.ts`).
-- Node type names differ per grammar, so anything matching `node.type` needs a per-language list — copy the shape of `getFunctionNodeTypes` in `treeSitter.ts`. Grammar-name mismatches are the single most common source of entries in [known-bugs.md](./known-bugs.md); check the node names against each grammar rather than assuming they carry over.
+- Node type names differ per grammar, so `node.type` matches need per-language lists. Copy the shape of `getFunctionNodeTypes` in `treeSitter.ts`. Grammar-name mismatches are the single most common source of entries in [known-bugs.md](./known-bugs.md). Check the node names against each grammar rather than assuming they carry over.
 - `getFunctions` (function locations), `getComments`, and `countImports` already wrap the walk for the three cross-cutting queries. Prefer them over a fresh traversal.
 
 ## Server Registration
 
-`createServer` in `src/server.ts` registers every tool, then calls `applySchemaStrippingOverride`, which replaces the SDK's `tools/list` handler so it can delete `$schema` from each emitted JSON Schema — Zod v4 emits it and some API providers silently reject tool definitions that include it. The override reads the SDK's private `_registeredTools`, so an upstream rename would break the tool-list request; `src/server.test.ts` asserts the advertised names, the absent `$schema`, and preserved descriptions to make that fail loudly. A new tool needs nothing beyond its `register*` call — the override covers it automatically.
+`createServer` in `src/server.ts` registers every tool and calls `applySchemaStrippingOverride`. The override removes `$schema` from each emitted JSON Schema. Zod v4 emits it, and some API providers silently reject tool definitions that include it. It replaces the SDK's `tools/list` handler and reads the private `_registeredTools` field. An upstream field rename would therefore break tool listing. `src/server.test.ts` checks the advertised names, absent `$schema`, and preserved descriptions. The override automatically covers each new `register*` call.
 
 ## Error Handling
 
