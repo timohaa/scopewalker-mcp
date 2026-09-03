@@ -253,7 +253,6 @@ export function buildCodeSmellsResult(options: BuildCodeSmellsResultOptions): Co
   const sortedFiles = files.sort((a, b) => b.smells.length - a.smells.length);
   const limitedFiles = limit !== undefined ? sortedFiles.slice(0, limit) : sortedFiles;
 
-  // Apply per-file smell limit to prevent huge responses
   const cappedFiles = limitedFiles.map((file) => ({
     ...file,
     smells: file.smells.slice(0, MAX_SMELLS_PER_FILE),

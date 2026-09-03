@@ -92,7 +92,6 @@ export function registerCodeInventoryTool(server: McpServer): void {
       const limit = args.limit ?? DEFAULT_LIMIT;
       const limitedInventory = inventory.slice(0, limit);
 
-      // Cap items per file to prevent huge responses
       const cappedInventory = limitedInventory.map((file) => ({
         ...file,
         items: file.items.slice(0, MAX_ITEMS_PER_FILE),
