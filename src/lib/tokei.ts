@@ -127,6 +127,8 @@ export async function analyze(
   try {
     const { stdout } = await execFileAsync("tokei", args, {
       maxBuffer: 50 * 1024 * 1024, // 50MB buffer for large codebases
+      timeout: 30_000, // don't let a hung tokei process block the MCP request forever
+      killSignal: "SIGKILL",
     });
 
     const data = JSON.parse(stdout) as TokeiOutput;

@@ -77,6 +77,19 @@ describe("analyze - failure paths", () => {
       expect(result.error.error.code).toBe("PARSE_ERROR");
     }
   });
+
+  it("reports a killed tokei process as PARSE_ERROR", async () => {
+    execFileMock.mockRejectedValue(
+      Object.assign(new Error("killed"), { killed: true, signal: "SIGKILL" })
+    );
+
+    const result = await analyze("/some/path");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.error.code).toBe("PARSE_ERROR");
+    }
+  });
 });
 
 describe("analyze - argument construction", () => {
@@ -106,5 +119,13 @@ describe("analyze - argument construction", () => {
     expect(args.filter((arg) => arg === "-e")).toHaveLength(2);
     expect(args).toContain("dist");
     expect(args).toContain("vendor");
+  });
+
+  it("bounds the tokei process with a timeout and hard kill signal", async () => {
+    await analyze("/some/path");
+
+    const call = execFileMock.mock.calls.at(-1);
+    const options = (call as unknown[] | undefined)?.[2];
+    expect(options).toMatchObject({ timeout: 30_000, killSignal: "SIGKILL" });
   });
 });
