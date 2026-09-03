@@ -42,6 +42,9 @@ export interface GlobOptions {
   maxDepth?: number;
 }
 
+/** Extension entries must be plain alphanumeric tokens; anything else could inject extra glob alternatives (e.g. "../x"). */
+const EXTENSION_PATTERN = /^[A-Za-z0-9_+-]+$/;
+
 /**
  * Finds files matching criteria using fast-glob.
  * Automatically respects .gitignore if present using the `ignore` library.
@@ -51,8 +54,12 @@ export async function findFiles(options: GlobOptions): Promise<string[]> {
 
   let pattern = "**/*";
   if (extensions && extensions.length > 0) {
-    const exts = extensions.map((e) => (e.startsWith(".") ? e.slice(1) : e));
-    pattern = exts.length === 1 ? `**/*.${exts[0]}` : `**/*.{${exts.join(",")}}`;
+    const exts = extensions
+      .map((e) => (e.startsWith(".") ? e.slice(1) : e))
+      .filter((e) => EXTENSION_PATTERN.test(e));
+    if (exts.length > 0) {
+      pattern = exts.length === 1 ? `**/*.${exts[0]}` : `**/*.{${exts.join(",")}}`;
+    }
   }
 
   const ig = await createIgnoreFilter(cwd, ignorePatterns);
@@ -63,6 +70,9 @@ export async function findFiles(options: GlobOptions): Promise<string[]> {
     onlyFiles: true,
     deep: maxDepth,
     ignore: [...DEFAULT_IGNORE_PATTERNS],
+    // Don't follow symlinks: validatePath only confines the top-level path, so a symlink
+    // inside the scanned tree could otherwise point outside the allowed root.
+    followSymbolicLinks: false,
   });
 
   return files.filter((file) => !ig.ignores(file)).sort();
