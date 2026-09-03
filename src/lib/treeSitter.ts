@@ -1,6 +1,7 @@
 import { extname } from "node:path";
 import Parser from "tree-sitter";
 import type { SupportedLanguage } from "../types/index.js";
+import { MAX_WALK_DEPTH } from "./astWalker.js";
 import { loadGrammar } from "./treeSitterGrammars.js";
 
 // Re-export from split modules for backwards compatibility
@@ -89,8 +90,13 @@ export async function getFunctions(
 function walkTree(
   node: Parser.SyntaxNode,
   language: SupportedLanguage,
-  functions: FunctionLocation[]
+  functions: FunctionLocation[],
+  depth = 0
 ): void {
+  if (depth > MAX_WALK_DEPTH) {
+    return;
+  }
+
   if (isFunctionNode(node, language)) {
     const name = extractFunctionName(node);
     functions.push({
@@ -103,7 +109,7 @@ function walkTree(
   }
 
   for (const child of node.children) {
-    walkTree(child, language, functions);
+    walkTree(child, language, functions, depth + 1);
   }
 }
 

@@ -80,6 +80,15 @@ function second() {}`;
     expect(named.length).toBeGreaterThanOrEqual(2);
     expect(named[0].startLine).toBe(1);
   });
+
+  it("finds a function despite realistic deep nesting (below the walk depth cap)", async () => {
+    const nestCount = 40;
+    const opens = "if (true) {\n".repeat(nestCount);
+    const closes = "}\n".repeat(nestCount);
+    const code = `function deeplyNested() {\n${opens}${closes}}`;
+    const functions = await getFunctions(code, "typescript");
+    expect(functions.map((f) => f.name)).toContain("deeplyNested");
+  });
 });
 
 describe("parseCode", () => {
