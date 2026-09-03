@@ -121,20 +121,25 @@ async function analyzeComplexity(
     isDirectory,
     maxFiles
   )) {
-    const tree = await parseCode(code, language);
-    if (!tree) continue;
+    try {
+      const tree = await parseCode(code, language);
+      if (!tree) continue;
 
-    const functions = collectFunctions(tree.rootNode, language);
-    const metrics = await calculateMetrics(tree.rootNode, code, language, functions);
-    const hotspots = findHotspots(tree.rootNode, functions);
-    accumulateFunctionStats(functionStats, functions, relativePath);
+      const functions = collectFunctions(tree.rootNode, language);
+      const metrics = await calculateMetrics(tree.rootNode, code, language, functions);
+      const hotspots = findHotspots(tree.rootNode, functions);
+      accumulateFunctionStats(functionStats, functions, relativePath);
 
-    results.push({
-      path: relativePath,
-      metrics,
-      functions: selectReportedFunctions(functions),
-      hotspots,
-    });
+      results.push({
+        path: relativePath,
+        metrics,
+        functions: selectReportedFunctions(functions),
+        hotspots,
+      });
+    } catch {
+      // One unparsable file must not abort the scan.
+      continue;
+    }
   }
 
   return { files: results, functionStats };

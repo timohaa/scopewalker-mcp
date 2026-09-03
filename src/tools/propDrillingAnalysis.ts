@@ -121,11 +121,16 @@ export async function analyzeFilesForParameters(
   let totalParamsScanned = 0;
 
   for await (const file of walkSourceFiles(filePaths, basePath, isDirectory, maxFiles)) {
-    const analysis = await analyzeFile(file);
-    if (analysis === null) continue;
+    try {
+      const analysis = await analyzeFile(file);
+      if (analysis === null) continue;
 
-    fileAnalyses.push(analysis);
-    totalParamsScanned += analysis.parameters.length;
+      fileAnalyses.push(analysis);
+      totalParamsScanned += analysis.parameters.length;
+    } catch {
+      // One unparsable file must not abort the scan.
+      continue;
+    }
   }
 
   return { fileAnalyses, totalParamsScanned };

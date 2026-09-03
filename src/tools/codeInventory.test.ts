@@ -1,10 +1,28 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import type Parser from "tree-sitter";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import type * as TreeSitterModule from "../lib/treeSitter.js";
 import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
-import type { CodeInventoryResult } from "../types/index.js";
+import type { CodeInventoryResult, SupportedLanguage } from "../types/index.js";
 import { registerCodeInventoryTool } from "./codeInventory.js";
+
+// A file containing this marker simulates a parse-time throw, so tests can verify
+// that one unparsable file is skipped instead of aborting the whole scan.
+vi.mock("../lib/treeSitter.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof TreeSitterModule>();
+  const parseCode = async (
+    code: string,
+    language: SupportedLanguage
+  ): Promise<Parser.Tree | null> => {
+    if (code.includes("// BOOM")) {
+      throw new Error("Simulated parse failure");
+    }
+    return actual.parseCode(code, language);
+  };
+  return { ...actual, parseCode: vi.fn(parseCode) };
+});
 
 let testDir: string;
 const handler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
@@ -214,5 +232,23 @@ export const MAX_SIZE = 100;
     const maxSize = arrowsFile?.items.find((i) => i.name === "MAX_SIZE");
     expect(maxSize?.type).toBe("constant");
     expect(maxSize?.exported).toBe(true);
+  });
+});
+
+describe("codeInventory tool - resilience", () => {
+  it("skips a file that throws during parsing and still reports the rest", async () => {
+    await writeFile(
+      join(testDir, "boom.ts"),
+      `// BOOM\nexport function shouldBeSkipped(): void {}\n`
+    );
+
+    const response = await handler({ path: testDir });
+    expect(response.isError).toBeFalsy();
+
+    const result = parseContent<CodeInventoryResult>(response);
+    expect(result.inventory.some((file) => file.file.endsWith("boom.ts"))).toBe(false);
+
+    const serviceFile = result.inventory.find((file) => file.file.endsWith("service.ts"));
+    expect(serviceFile?.items.some((item) => item.name === "AuthService")).toBe(true);
   });
 });

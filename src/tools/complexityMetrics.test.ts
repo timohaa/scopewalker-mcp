@@ -1,10 +1,29 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import type Parser from "tree-sitter";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import type * as TreeSitterModule from "../lib/treeSitter.js";
 import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
-import type { ComplexityMetricsResult } from "../types/index.js";
+import type { ComplexityMetricsResult, SupportedLanguage } from "../types/index.js";
 import { registerComplexityMetricsTool } from "./complexityMetrics.js";
+
+// A file containing this marker simulates a parse-time throw, so tests can verify
+// that one unparsable file is skipped instead of aborting the whole scan. Other
+// treeSitter exports (countImports, getFunctionNodeTypes) pass through untouched.
+vi.mock("../lib/treeSitter.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof TreeSitterModule>();
+  const parseCode = async (
+    code: string,
+    language: SupportedLanguage
+  ): Promise<Parser.Tree | null> => {
+    if (code.includes("// BOOM")) {
+      throw new Error("Simulated parse failure");
+    }
+    return actual.parseCode(code, language);
+  };
+  return { ...actual, parseCode: vi.fn(parseCode) };
+});
 
 let testDir: string;
 const handler = getToolHandler(registerComplexityMetricsTool, "get_complexity_metrics");
@@ -243,5 +262,21 @@ describe("get_complexity_metrics - request limits and path validation", () => {
     expect(response.isError).toBe(true);
     const failure = parseContent<{ error: { code: string } }>(response);
     expect(failure.error.code).toBe("PATH_NOT_FOUND");
+  });
+});
+
+describe("get_complexity_metrics - resilience", () => {
+  it("skips a file that throws during parsing and still reports the rest", async () => {
+    await writeFile(
+      join(testDir, "boom.ts"),
+      `// BOOM\nexport function shouldBeSkipped(): void {}\n`
+    );
+
+    const response = await handler({ path: testDir });
+    expect(response.isError).toBeFalsy();
+
+    const result = parseContent<ComplexityMetricsResult>(response);
+    expect(result.files.some((file) => file.path.endsWith("boom.ts"))).toBe(false);
+    expect(result.files.some((file) => file.path.endsWith("nested.ts"))).toBe(true);
   });
 });

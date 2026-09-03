@@ -101,26 +101,31 @@ async function analyzeCoverage(
     isDirectory,
     maxFiles
   )) {
-    const tree = await parseCode(code, language);
-    if (!tree) continue;
+    try {
+      const tree = await parseCode(code, language);
+      if (!tree) continue;
 
-    const { documented, undocumented, items } = analyzeFileDocumentation({
-      rootNode: tree.rootNode,
-      lines: code.split("\n"),
-      language,
-      filePath: relativePath,
-      minLines,
-    });
+      const { documented, undocumented, items } = analyzeFileDocumentation({
+        rootNode: tree.rootNode,
+        lines: code.split("\n"),
+        language,
+        filePath: relativePath,
+        minLines,
+      });
 
-    totalDocumented += documented;
-    totalUndocumented += undocumented;
+      totalDocumented += documented;
+      totalUndocumented += undocumented;
 
-    if (documented + undocumented > 0) {
-      const percentage = Math.round((documented / (documented + undocumented)) * 1000) / 10;
-      byFile.push({ path: relativePath, documented, undocumented, percentage });
+      if (documented + undocumented > 0) {
+        const percentage = Math.round((documented / (documented + undocumented)) * 1000) / 10;
+        byFile.push({ path: relativePath, documented, undocumented, percentage });
+      }
+
+      undocumentedItems.push(...items);
+    } catch {
+      // One unparsable file must not abort the scan.
+      continue;
     }
-
-    undocumentedItems.push(...items);
   }
 
   return { byFile, undocumentedItems, totalDocumented, totalUndocumented };

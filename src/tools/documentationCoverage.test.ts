@@ -1,10 +1,28 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import type Parser from "tree-sitter";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import type * as TreeSitterModule from "../lib/treeSitter.js";
 import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
-import type { DocumentationCoverageResult } from "../types/index.js";
+import type { DocumentationCoverageResult, SupportedLanguage } from "../types/index.js";
 import { registerDocumentationCoverageTool } from "./documentationCoverage.js";
+
+// A file containing this marker simulates a parse-time throw, so tests can verify
+// that one unparsable file is skipped instead of aborting the whole scan.
+vi.mock("../lib/treeSitter.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof TreeSitterModule>();
+  const parseCode = async (
+    code: string,
+    language: SupportedLanguage
+  ): Promise<Parser.Tree | null> => {
+    if (code.includes("// BOOM")) {
+      throw new Error("Simulated parse failure");
+    }
+    return actual.parseCode(code, language);
+  };
+  return { ...actual, parseCode: vi.fn(parseCode) };
+});
 
 let testDir: string;
 const handler = getToolHandler(registerDocumentationCoverageTool, "get_documentation_coverage");
@@ -245,5 +263,21 @@ export function log(x: string) {
 
     expect(result.coverage.documented).toBe(0);
     expect(result.undocumented_items.map((i) => i.name)).toContain("log");
+  });
+});
+
+describe("documentationCoverage tool - resilience", () => {
+  it("skips a file that throws during parsing and still reports the rest", async () => {
+    await writeFile(
+      join(testDir, "boom.ts"),
+      `// BOOM\nexport function shouldBeSkipped(): void {}\n`
+    );
+
+    const response = await handler({ path: testDir });
+    expect(response.isError).toBeFalsy();
+
+    const result = parseContent<DocumentationCoverageResult>(response);
+    expect(result.by_file.some((file) => file.path.endsWith("boom.ts"))).toBe(false);
+    expect(result.by_file.some((file) => file.path.endsWith("documented.ts"))).toBe(true);
   });
 });

@@ -1,10 +1,29 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import type Parser from "tree-sitter";
+import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
+import type * as TreeSitterModule from "../lib/treeSitter.js";
 import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import type { SupportedLanguage } from "../types/index.js";
 import type { PropDrillingResult } from "../types/propDrilling.js";
 import { registerPropDrillingTool } from "./propDrilling.js";
+
+// A file containing this marker simulates a parse-time throw, so tests can verify
+// that one unparsable file is skipped instead of aborting the whole scan.
+vi.mock("../lib/treeSitter.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof TreeSitterModule>();
+  const parseCode = async (
+    code: string,
+    language: SupportedLanguage
+  ): Promise<Parser.Tree | null> => {
+    if (code.includes("// BOOM")) {
+      throw new Error("Simulated parse failure");
+    }
+    return actual.parseCode(code, language);
+  };
+  return { ...actual, parseCode: vi.fn(parseCode) };
+});
 
 const handler = getToolHandler(registerPropDrillingTool, "get_prop_drilling");
 let testDir: string;
@@ -235,6 +254,27 @@ describe("get_prop_drilling - request limits", () => {
     const response = await handler({ path: testDir, max_files: 1 });
     const result = parseContent<PropDrillingResult>(response);
 
+    expect(result.summary.files_analyzed).toBe(1);
+  });
+});
+
+describe("get_prop_drilling - resilience", () => {
+  it("skips a file that throws during parsing and still reports the rest", async () => {
+    const boomDir = join(testDir, "boom");
+    await mkdir(boomDir, { recursive: true });
+    await writeFile(
+      join(boomDir, "boom.ts"),
+      `// BOOM\nfunction shouldBeSkipped(x: string) { return x; }\n`
+    );
+    await writeFile(
+      join(boomDir, "ok.ts"),
+      `function processRequest(token: string) { return token; }\n`
+    );
+
+    const response = await handler({ path: boomDir });
+    expect(response.isError).toBeFalsy();
+
+    const result = parseContent<PropDrillingResult>(response);
     expect(result.summary.files_analyzed).toBe(1);
   });
 });

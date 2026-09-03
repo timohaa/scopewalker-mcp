@@ -122,20 +122,25 @@ async function analyzeInventory(
     isDirectory,
     maxFiles
   )) {
-    const tree = await parseCode(code, language);
-    if (!tree) continue;
+    try {
+      const tree = await parseCode(code, language);
+      if (!tree) continue;
 
-    const items = extractInventoryItems(tree.rootNode, language, includePrivate);
+      const items = extractInventoryItems(tree.rootNode, language, includePrivate);
 
-    if (language === "go") {
-      pendingGoMethods.push(...collectGoMethods(tree.rootNode, relativePath, includePrivate));
-    }
+      if (language === "go") {
+        pendingGoMethods.push(...collectGoMethods(tree.rootNode, relativePath, includePrivate));
+      }
 
-    if (items.length > 0) {
-      results.push({
-        file: relativePath,
-        items,
-      });
+      if (items.length > 0) {
+        results.push({
+          file: relativePath,
+          items,
+        });
+      }
+    } catch {
+      // One unparsable file must not abort the scan.
+      continue;
     }
   }
 
