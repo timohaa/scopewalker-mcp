@@ -79,6 +79,20 @@ anything in it at all.
 
 ## Limitations
 
+### AST traversal stops at 500 nested levels
+
+**Tools:** `get_code_inventory`, `get_complexity_metrics`, `get_documentation_coverage`,
+`get_functions`, `get_prop_drilling`
+
+Each of these tools walks the tree-sitter AST recursively, and the walk stops descending
+once it reaches 500 nested levels. Nodes beyond that depth are silently omitted from the
+result rather than reported or flagged as truncated.
+
+The limit exists to prevent a stack overflow on adversarial or generated input, such as a
+deeply chained expression or a file with hundreds of nested callbacks. Ordinary source code
+does not come close to 500 levels of nesting, so the cap is not expected to affect normal
+codebases.
+
 ### Rust `include_private: false` does not filter anything
 
 **Tools:** `get_code_inventory`

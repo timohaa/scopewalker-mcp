@@ -6,16 +6,16 @@ Scopewalker MCP provides 8 tools for codebase analysis.
 
 Most tools share these parameters:
 
-| Name              | Type     | Description                                                                                    |
-|-------------------|----------|------------------------------------------------------------------------------------------------|
-| `path`            | string   | Path to file or directory (required)                                                           |
-| `include_hidden`  | boolean  | Include hidden files (default: false)                                                          |
-| `ignore_patterns` | string[] | Glob patterns to exclude                                                                       |
-| `extensions`      | string[] | Filter by file extensions (e.g., `[".ts", ".js"]`)                                             |
-| `max_depth`       | integer  | (When supported) Maximum directory depth to traverse                                           |
-| `max_files`       | integer  | (When supported) Maximum number of files to scan                                               |
-| `grep`            | string   | (When supported) Filter results by keyword (case-insensitive substring match)                  |
-| `limit`           | integer  | (When supported) Maximum number of items/files to return (default: 20; meaning varies by tool) |
+| Name              | Type     | Description                                                                                              |
+| ----------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `path`            | string   | Path to file or directory (required)                                                                     |
+| `include_hidden`  | boolean  | Include hidden files (default: false)                                                                    |
+| `ignore_patterns` | string[] | Glob patterns to exclude (max 100 entries, 512 characters each)                                          |
+| `extensions`      | string[] | Filter by file extensions (e.g., `[".ts", ".js"]`) (max 100 entries)                                     |
+| `max_depth`       | integer  | (When supported) Maximum directory depth to traverse (max 64)                                            |
+| `max_files`       | integer  | (When supported) Maximum number of files to scan (max 10000)                                             |
+| `grep`            | string   | (When supported) Filter results by keyword (case-insensitive substring match)                            |
+| `limit`           | integer  | (When supported) Maximum number of items/files to return (default: 20; meaning varies by tool; max 5000) |
 
 ### Grep Filtering
 
@@ -42,14 +42,14 @@ Tools supporting grep: `get_line_counts`, `get_functions`, `get_code_inventory`
 
 **Default ignores:** File discovery skips common build artifacts, caches, and lock files (e.g., `node_modules`, `dist`, `package-lock.json`). Directory-scanning tools respect the single `.gitignore` at the scanned path via the `ignore` library — nested `.gitignore` files in subdirectories are not read, and neither is the repository root's when you scan a subdirectory (see [known-bugs.md](./known-bugs.md)); tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) respect `.gitignore` through tokei's built-in ignore handling (which only applies inside a git repository) in addition to those explicit ignore lists.
 
-**Resource guardrails:** AST-based tools skip files over 1 MB to prevent runaway memory/CPU usage. Tokei-based line counts do not enforce this limit. Use extension filters, `ignore_patterns`, and `limit` to reduce scan size further. Most directory-scanning tools also accept `max_depth` and `max_files` to bound traversal.
+**Resource guardrails:** AST-based tools skip files over 1 MB to prevent runaway memory/CPU usage. Tokei-based line counts do not enforce this limit. Use extension filters, `ignore_patterns`, and `limit` to reduce scan size further. Most directory-scanning tools also accept `max_depth` and `max_files` to bound traversal. Directory scans do not follow symbolic links; a symlink to a file or directory inside the scanned path is skipped. This applies to every AST-based tool except `get_line_counts`; `check_thresholds` uses tokei for its file-size pass, and tokei already skips symlinks. AST traversal stops at 500 nested levels; deeper nodes are silently omitted from `get_code_inventory`, `get_complexity_metrics`, `get_documentation_coverage`, `get_functions`, and `get_prop_drilling` results. The tokei subprocess behind `get_line_counts` and `check_thresholds` is killed after 30 seconds and returns a `PARSE_ERROR`. A file that throws during parsing or analysis is skipped, and the scan continues.
 
 ## Supported Languages
 
 Function detection and parsing support:
 
 | Language              | Extensions                                   | Detection                            |
-|-----------------------|----------------------------------------------|--------------------------------------|
+| --------------------- | -------------------------------------------- | ------------------------------------ |
 | TypeScript/JavaScript | `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs` | `function`, arrow functions, methods |
 | Python                | `.py`                                        | `def`, `async def`                   |
 | Go                    | `.go`                                        | `func`, methods with receivers       |
@@ -67,7 +67,7 @@ Files with any other extension are skipped by the AST-based tools. `get_line_cou
 All tools return structured errors:
 
 | Code                   | Description                                                                                  |
-|------------------------|----------------------------------------------------------------------------------------------|
+| ---------------------- | -------------------------------------------------------------------------------------------- |
 | `PATH_NOT_FOUND`       | Path does not exist                                                                          |
 | `NOT_A_DIRECTORY`      | Expected directory, got file (reserved; every tool accepts both)                             |
 | `NOT_A_FILE`           | Expected file, got directory (reserved; every tool accepts both)                             |

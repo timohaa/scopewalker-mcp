@@ -6,17 +6,17 @@ Identifies files and functions that exceed configurable size thresholds.
 
 **Parameters:**
 
-| Name                 | Type     | Required | Description                                         |
-|----------------------|----------|----------|-----------------------------------------------------|
-| `path`               | string   | Yes      | Path to file or directory                           |
-| `max_file_lines`     | integer  | No       | Flag files exceeding this (default: 300)            |
-| `max_function_lines` | integer  | No       | Flag functions exceeding this (default: 100)        |
-| `include_hidden`     | boolean  | No       | Include hidden files                                |
-| `ignore_patterns`    | string[] | No       | Glob patterns to exclude                            |
-| `extensions`         | string[] | No       | Filter by extensions                                |
-| `max_depth`          | integer  | No       | Maximum directory depth for the function scan       |
-| `max_files`          | integer  | No       | Maximum number of files to scan for functions       |
-| `limit`              | integer  | No       | Max violations to return per category (default: 20) |
+| Name                 | Type     | Required | Description                                                   |
+| -------------------- | -------- | -------- | ------------------------------------------------------------- |
+| `path`               | string   | Yes      | Path to file or directory                                     |
+| `max_file_lines`     | integer  | No       | Flag files exceeding this (default: 300)                      |
+| `max_function_lines` | integer  | No       | Flag functions exceeding this (default: 100)                  |
+| `include_hidden`     | boolean  | No       | Include hidden files                                          |
+| `ignore_patterns`    | string[] | No       | Glob patterns to exclude                                      |
+| `extensions`         | string[] | No       | Filter by extensions                                          |
+| `max_depth`          | integer  | No       | Maximum directory depth for the function scan (max 64)        |
+| `max_files`          | integer  | No       | Maximum number of files to scan for functions (max 10000)     |
+| `limit`              | integer  | No       | Max violations to return per category (default: 20, max 5000) |
 
 **Response:**
 
@@ -28,11 +28,15 @@ Identifies files and functions that exceed configurable size thresholds.
     "max_function_lines": 100
   },
   "violations": {
-    "oversized_files": [
-      { "path": "src/legacy/bigModule.ts", "lines": 487, "exceeds_by": 187 }
-    ],
+    "oversized_files": [{ "path": "src/legacy/bigModule.ts", "lines": 487, "exceeds_by": 187 }],
     "oversized_functions": [
-      { "path": "src/api/handler.ts", "function_name": "processRequest", "lines": 156, "exceeds_by": 56, "start_line": 45 }
+      {
+        "path": "src/api/handler.ts",
+        "function_name": "processRequest",
+        "lines": 156,
+        "exceeds_by": 56,
+        "start_line": 45
+      }
     ]
   },
   "summary": {
@@ -53,15 +57,15 @@ Generates a comprehensive inventory of classes, methods, functions, and exports.
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                  |
-|-------------------|----------|----------|--------------------------------------------------------------|
+| ----------------- | -------- | -------- | ------------------------------------------------------------ |
 | `path`            | string   | Yes      | Path to file or directory                                    |
 | `include_hidden`  | boolean  | No       | Include hidden files                                         |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                     |
 | `extensions`      | string[] | No       | Filter by extensions                                         |
-| `max_depth`       | integer  | No       | Maximum directory depth to traverse                          |
-| `max_files`       | integer  | No       | Maximum number of files to scan                              |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse (max 64)                 |
+| `max_files`       | integer  | No       | Maximum number of files to scan (max 10000)                  |
 | `include_private` | boolean  | No       | Include private/internal symbols (default: false)            |
-| `limit`           | integer  | No       | Maximum number of files to return (default: 20)              |
+| `limit`           | integer  | No       | Maximum number of files to return (default: 20, max 5000)    |
 | `grep`            | string   | No       | Filter results by keyword (case-insensitive substring match) |
 
 **Supported Symbol Types:** Classes, Functions, Interfaces/Types, Enums, Constants (each item includes an `exported` flag)
@@ -69,7 +73,7 @@ Generates a comprehensive inventory of classes, methods, functions, and exports.
 Each language's declarations map onto those five types:
 
 | Language              | Class             | Interface                       | Enum   | Function                                      | Constant                  |
-|-----------------------|-------------------|---------------------------------|--------|-----------------------------------------------|---------------------------|
+| --------------------- | ----------------- | ------------------------------- | ------ | --------------------------------------------- | ------------------------- |
 | TypeScript/JavaScript | `class`           | `interface`, `type`             | `enum` | `function`, `const`/`let` bound to a function | other `const`/`let`/`var` |
 | Python                | `class`           | -                               | -      | module-level `def`                            | -                         |
 | Go                    | `struct` types    | `interface` types, type aliases | -      | `func`                                        | -                         |
@@ -85,7 +89,7 @@ Notes:
 - Methods are nested under the class they belong to, not repeated as top-level functions. Go methods are matched to their type by receiver (`func (p *Point) Scale()`) across every file in the package, so a type declared in `types.go` still collects methods declared in `methods.go`. Matching is scoped to the directory, so same-named types in different packages stay separate. C/C++ member functions are picked up from the record body, including declaration-only members. Rust `impl` methods are currently reported as standalone functions.
 - `exported` follows each language's own convention: the TS/JS `export` keyword, module scope in Python, an initial uppercase letter in Go, a bare `pub` in Rust, and a `public` modifier in Java. `pub(crate)` and `pub(super)` stop at the crate boundary and so count as unexported. C/C++ and Ruby have no equivalent marker and always report `exported: false`.
 - `include_private` filters on each language's own notion of private: a leading underscore, a lowercase initial in Go, or an explicit access modifier. Because unexported is Go's only form of private, the default view of a Go package is its exported API surface; pass `include_private: true` for the rest. Rust visibility is reported but not filtered: non-`pub` items still appear, marked `exported: false`.
-- A nested method's `visibility` is read from the source in every language that states it. TypeScript and Java put a modifier on the declaration; C++ and Ruby set it *sectionally*, so a `private:` label or a bare `private` governs every member after it until the next marker. Ruby's `private :sym` and `private def x` forms are read too. Defaults follow the language: a C++ `class` starts private and a `struct` starts public, and a Java method with no modifier is package-private, which the tool reports as `private` because it is not part of the type's outside-facing API. `protected` is reported as itself and survives `include_private: false`, being part of the inheritable API. Underscore-prefixed names stay private whatever the section says.
+- A nested method's `visibility` is read from the source in every language that states it. TypeScript and Java put a modifier on the declaration; C++ and Ruby set it _sectionally_, so a `private:` label or a bare `private` governs every member after it until the next marker. Ruby's `private :sym` and `private def x` forms are read too. Defaults follow the language: a C++ `class` starts private and a `struct` starts public, and a Java method with no modifier is package-private, which the tool reports as `private` because it is not part of the type's outside-facing API. `protected` is reported as itself and survives `include_private: false`, being part of the inheritable API. Underscore-prefixed names stay private whatever the section says.
 
 **Response:**
 
@@ -96,8 +100,13 @@ Notes:
     {
       "file": "src/services/auth.ts",
       "items": [
-        { "name": "AuthService", "type": "class", "line": 15, "exported": true,
-          "methods": [{ "name": "login", "line": 25, "visibility": "public" }] },
+        {
+          "name": "AuthService",
+          "type": "class",
+          "line": 15,
+          "exported": true,
+          "methods": [{ "name": "login", "line": 25, "visibility": "public" }]
+        },
         { "name": "createAuthContext", "type": "function", "line": 120, "exported": true }
       ]
     }
@@ -120,16 +129,16 @@ Returns code complexity metrics to identify code that may need refactoring.
 
 **Parameters:**
 
-| Name              | Type     | Required | Description                                               |
-|-------------------|----------|----------|-----------------------------------------------------------|
-| `path`            | string   | Yes      | Path to file or directory                                 |
-| `include_hidden`  | boolean  | No       | Include hidden files                                      |
-| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                  |
-| `extensions`      | string[] | No       | Filter by extensions                                      |
-| `max_depth`       | integer  | No       | Maximum directory depth to traverse                       |
-| `max_files`       | integer  | No       | Maximum number of files to scan                           |
-| `summary_only`    | boolean  | No       | Return only summary, no per-file details (default: false) |
-| `limit`           | integer  | No       | Max files to return, sorted by complexity (default: 20)   |
+| Name              | Type     | Required | Description                                                       |
+| ----------------- | -------- | -------- | ----------------------------------------------------------------- |
+| `path`            | string   | Yes      | Path to file or directory                                         |
+| `include_hidden`  | boolean  | No       | Include hidden files                                              |
+| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                          |
+| `extensions`      | string[] | No       | Filter by extensions                                              |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse (max 64)                      |
+| `max_files`       | integer  | No       | Maximum number of files to scan (max 10000)                       |
+| `summary_only`    | boolean  | No       | Return only summary, no per-file details (default: false)         |
+| `limit`           | integer  | No       | Max files to return, sorted by complexity (default: 20, max 5000) |
 
 **Metrics Returned:** every run computes all of them; there is no metric selector.
 
@@ -172,11 +181,16 @@ Each hotspot's `issue` field is one of `nesting_depth`, `parameters`, or `jsx_pr
     {
       "path": "src/utils/parser.ts",
       "metrics": {
-        "max_nesting_depth": 6, "avg_nesting_depth": 2.3,
-        "max_parameters": 8, "avg_parameters": 2.1,
-        "dependency_count": 12, "cognitive_complexity": 45,
-        "function_count": 9, "max_cyclomatic_complexity": 14,
-        "avg_cyclomatic_complexity": 4.2, "max_cognitive_complexity": 21
+        "max_nesting_depth": 6,
+        "avg_nesting_depth": 2.3,
+        "max_parameters": 8,
+        "avg_parameters": 2.1,
+        "dependency_count": 12,
+        "cognitive_complexity": 45,
+        "function_count": 9,
+        "max_cyclomatic_complexity": 14,
+        "avg_cyclomatic_complexity": 4.2,
+        "max_cognitive_complexity": 21
       },
       "functions": [
         {
