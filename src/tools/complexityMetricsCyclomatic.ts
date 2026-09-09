@@ -62,7 +62,7 @@ export const DECISION_TYPES = [
   "in_clause", // Ruby 3 case/in
 ];
 
-// These four grammars reuse one node type for both real arms and the default arm,
+// These node types represent both conditional arms and the default arm,
 // so each needs a discriminator rather than a list entry.
 export const CONDITIONAL_ARM_TYPES = ["case_statement", "switch_label", "case_clause", "match_arm"];
 
@@ -118,6 +118,7 @@ function getDecisionIncrement(node: Parser.SyntaxNode): number {
 export function calculateCyclomaticComplexity(rootNode: Parser.SyntaxNode): number {
   let complexity = 1;
 
+  /** Accumulates decision-point increments across the subtree. */
   function walk(node: Parser.SyntaxNode): void {
     complexity += getDecisionIncrement(node);
     for (const child of node.children) walk(child);

@@ -6,17 +6,17 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 
 **Parameters:**
 
-| Name              | Type     | Required | Description                                                                |
-|-------------------|----------|----------|----------------------------------------------------------------------------|
-| `path`            | string   | Yes      | Path to file or directory                                                  |
-| `include_hidden`  | boolean  | No       | Include hidden files                                                       |
-| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                                   |
-| `extensions`      | string[] | No       | Filter by extensions                                                       |
-| `max_depth`       | integer  | No       | Maximum directory depth to traverse (max 64)                               |
-| `max_files`       | integer  | No       | Maximum number of files to scan (max 10000)                                |
-| `min_lines`       | integer  | No       | Only check functions with at least this many lines (default: 1, max 10000) |
-| `summary_only`    | boolean  | No       | Return only summary, no detailed item lists (default: false)               |
-| `limit`           | integer  | No       | Max undocumented items to return (default: 20, max 5000)                   |
+| Name              | Type     | Required | Description                                                              |
+|-------------------|----------|----------|--------------------------------------------------------------------------|
+| `path`            | string   | Yes      | Path to file or directory                                                |
+| `include_hidden`  | boolean  | No       | Include hidden files                                                     |
+| `ignore_patterns` | string[] | No       | Glob patterns to exclude                                                 |
+| `extensions`      | string[] | No       | Filter by extensions                                                     |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse (max 64)                             |
+| `max_files`       | integer  | No       | Maximum number of files to scan (max 10000)                              |
+| `min_lines`       | integer  | No       | Only check symbols with at least this many lines (default: 1, max 10000) |
+| `summary_only`    | boolean  | No       | Return only summary, no detailed item lists (default: false)             |
+| `limit`           | integer  | No       | Max undocumented items to return (default: 20, max 5000)                 |
 
 **Documentation Detection:**
 
@@ -56,7 +56,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
     "fully_documented_files": 38,
     "zero_documentation_files": 2
   },
-  "truncated": { "items": 20, "total": 120 }
+  "truncated": { "items": 20, "total": 32 }
 }
 ```
 

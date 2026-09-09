@@ -21,6 +21,7 @@ export type PathValidationResult = PathValidationSuccess | PathValidationFailure
 /** Allowed roots default to the current working directory and system temp. */
 function getAllowedRoots(): string[] {
   const fromEnv = process.env.SCOPEWALKER_ALLOWED_ROOTS;
+  /** Resolves symlinks for an allowed root, falling back to its absolute path. */
   const normalizeRoot = (p: string): string => {
     try {
       return realpathSync(resolve(normalize(p)));

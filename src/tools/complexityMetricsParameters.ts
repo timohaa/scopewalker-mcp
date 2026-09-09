@@ -6,7 +6,7 @@ import {
 } from "../lib/parameterList.js";
 import type { SupportedLanguage } from "../types/index.js";
 
-/** Returns parameter count for function nodes, null for non-function nodes. */
+/** Returns a parameter count, or null for node types outside the supported function list. */
 export function countParameters(
   node: Parser.SyntaxNode,
   language?: SupportedLanguage

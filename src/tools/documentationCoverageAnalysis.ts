@@ -92,8 +92,7 @@ function hasDocInPrecedingLines(
 }
 
 /**
- * Checks for documentation using AST-based analysis.
- * Uses tree-sitter to find preceding comment nodes rather than line-based heuristics.
+ * Checks AST docstrings and preceding comment nodes, then falls back to preceding source lines.
  */
 export function hasDocumentation(
   node: Parser.SyntaxNode,

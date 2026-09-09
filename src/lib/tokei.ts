@@ -90,7 +90,7 @@ const EXTENSION_TO_LANGUAGE: Record<string, string> = {
 
 /**
  * Converts file extensions to tokei language names.
- * Unknown extensions are passed through unchanged (tokei will ignore them).
+ * Unmapped extensions pass through unchanged as language names.
  */
 function extensionsToLanguages(extensions: string[]): string[] {
   const languages = new Set<string>();

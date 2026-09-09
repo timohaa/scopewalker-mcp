@@ -10,7 +10,7 @@ Entries fall into two categories:
 - **Limitations**: the tool is knowingly incomplete, and the behaviour is documented in
   `docs/tools-*.md`. This list collects those gaps in one place.
 
-The entries were verified against version 1.1.0.
+The entries were verified against version 1.1.1.
 
 ---
 
@@ -79,29 +79,31 @@ anything in it at all.
 
 ## Limitations
 
-### AST traversal stops at 500 nested levels
+### Symbol discovery stops at 500 nested AST levels
 
 **Tools:** `get_code_inventory`, `get_complexity_metrics`, `get_documentation_coverage`,
 `get_functions`, `get_prop_drilling`
 
-Each of these tools walks the tree-sitter AST recursively, and the walk stops descending
-once it reaches 500 nested levels. Nodes beyond that depth are silently omitted from the
-result rather than reported or flagged as truncated.
+These tools' symbol-discovery walks stop descending beyond 500 nested AST levels.
+Functions beyond that depth are silently omitted rather than flagged as truncated.
+Complexity helpers can still inspect deeper subtrees: a function inside 510 nested
+blocks reports `function_count: 0`, but an `if` inside it still adds 1 to whole-file
+cognitive complexity.
 
 The limit exists to prevent a stack overflow on adversarial or generated input, such as a
 deeply chained expression or a file with hundreds of nested callbacks. Ordinary source code
 does not come close to 500 levels of nesting, so the cap is not expected to affect normal
 codebases.
 
-### Rust `include_private: false` does not filter anything
+### Rust `include_private: false` ignores `pub` visibility
 
 **Tools:** `get_code_inventory`
 
-`isPrivateSymbol` has branches for leading underscores, TypeScript's `private` modifier,
-and Go's lowercase-initial rule, but none for Rust. A crate with `pub fn draw`, `fn secret`,
+`isPrivateSymbol` filters leading underscores and recognizes TypeScript, Java, and Go
+access conventions, but has no Rust visibility branch. A crate with `pub fn draw`, `fn secret`,
 and `fn private_fn` returns all three whether `include_private` is `true` or `false`.
 Visibility is still *reported* correctly (non-`pub` items are marked `exported: false`);
-the filter ignores it.
+the filter ignores it. Leading-underscore names such as `_hidden` are still filtered.
 
 See `docs/tools-health.md`.
 
@@ -137,8 +139,9 @@ See `docs/tools-quality.md`.
 call with a block — structurally identical to `map`, `tap`, `Array.new`, or `File.open`.
 Nothing in the tree distinguishes an iteration from any other block-taking call.
 
-This creates a cross-grammar gap in branch counts. Two nested `for..in` loops score 3
-in Ruby, while the same logic written with `.each do` scores 1. The
+This creates a cross-grammar gap in branch counts. Two nested `for..in` loops have
+cyclomatic complexity 3 and cognitive complexity 3. With `.each do`, those scores
+are 1 and 0 respectively. The
 cross-grammar parity fixtures deliberately use `for..in` for this reason.
 
 Both block forms *do* count toward `max_nesting_depth`, and that asymmetry is deliberate.

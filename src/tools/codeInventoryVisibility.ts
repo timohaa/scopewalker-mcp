@@ -74,8 +74,7 @@ export function isExported(
   // so only a bare `pub` puts it on the public API surface.
   if (language === "rust") return getRustVisibility(node) === "pub";
 
-  // Java has no module-export keyword; `public` is the closest declaration-site
-  // statement that a type is meant to be used from outside its own package.
+  // Java's `public` modifier serves as the declaration-site export marker.
   if (language === "java") return getJavaAccessModifier(node) === "public";
 
   if (

@@ -49,8 +49,8 @@ walkNode(tree.rootNode, (node) => {
 });
 ```
 
-- `detectLanguage` and `parseCode` live in `src/lib/treeSitter.ts`. Both return `null` instead of throwing. This lets the handler skip bad files without branching for each failure mode.
-- `walkNode` (`src/lib/astWalker.ts`) provides the shared pre-order traversal. It calls the callback on every node. `codeInventoryHelpers.ts` and `complexityMetricsHelpers.ts` re-export it for their own tool modules. New tools should import it from `../lib/astWalker.js` directly.
+- `detectLanguage` and `parseCode` live in `src/lib/treeSitter.ts`. `detectLanguage` returns `null` for unsupported extensions. `parseCode` returns `null` when a grammar cannot load; other parser failures can throw. File-scanning callers catch those failures and skip the file.
+- `walkNode` (`src/lib/astWalker.ts`) provides the shared pre-order traversal. It calls the callback on nodes through depth 500; deeper nodes are skipped. `codeInventoryHelpers.ts` and `complexityMetricsHelpers.ts` re-export it for their own tool modules. New tools should import it from `../lib/astWalker.js` directly.
 - Grammars are lazily imported and cached per language in `src/lib/treeSitterGrammars.ts`. Adding a language means a loader there, an entry in `EXTENSION_MAP` (`treeSitter.ts`), and a member on `SupportedLanguage` (`src/types/languages.ts`).
 - Node type names differ per grammar, so `node.type` matches need per-language lists. Copy the shape of `getFunctionNodeTypes` in `treeSitter.ts`. Grammar-name mismatches are the single most common source of entries in [known-bugs.md](./known-bugs.md). Check the node names against each grammar rather than assuming they carry over.
 - `getFunctions` (function locations), `getComments`, and `countImports` already wrap the walk for the three cross-cutting queries. Prefer them over a fresh traversal.

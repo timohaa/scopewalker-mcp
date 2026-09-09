@@ -142,11 +142,11 @@ Returns code complexity metrics to identify code that may need refactoring.
 
 **Metrics Returned:** every run computes all of them; there is no metric selector.
 
-- `max_nesting_depth` / `avg_nesting_depth`: nesting level (loops, conditionals, callbacks). `else if` chains count as sibling branches, not extra nesting, in every supported language
-- `max_parameters` / `avg_parameters`: function parameter counts; also counts props passed to React/JSX components (PascalCase elements) so heavily-propped components surface alongside high-arity functions
+- `max_nesting_depth` / `avg_nesting_depth`: nesting level (loops, conditionals, callbacks). The average includes positive subtree-depth measurements from visited AST nodes. `else if` chains count as sibling branches, not extra nesting, in every supported language
+- `max_parameters` / `avg_parameters`: function parameter counts; also counts props passed to React/JSX components (PascalCase elements). The average includes both supported function parameter counts and component prop counts
 - `dependency_count`: import/require count per file
 - `cognitive_complexity`: simplified cognitive complexity, summed over the whole file
-- `function_count`: function nodes measured, the denominator for the averages
+- `function_count`: function nodes measured, the denominator for `avg_cyclomatic_complexity`
 - `max_cyclomatic_complexity` / `avg_cyclomatic_complexity`: classic McCabe, per function
 - `max_cognitive_complexity`: the worst single function's cognitive score
 

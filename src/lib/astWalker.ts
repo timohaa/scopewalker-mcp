@@ -1,7 +1,6 @@
 import type Parser from "tree-sitter";
 
-// Real code rarely nests past ~50 levels, so anything deeper is treated as
-// adversarial and truncated rather than risking a stack overflow.
+// Maximum recursion depth before AST traversal stops to avoid a stack overflow.
 export const MAX_WALK_DEPTH = 500;
 
 /** Recursively traverses AST nodes, invoking callback on each. */

@@ -194,7 +194,7 @@ function isNameNode(node: Parser.SyntaxNode): boolean {
 }
 
 /**
- * Parses code and returns the AST root node for custom queries.
+ * Parses code and returns the syntax tree for custom queries, or null if the grammar cannot load.
  */
 export async function parseCode(
   code: string,

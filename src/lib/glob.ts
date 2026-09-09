@@ -42,12 +42,12 @@ export interface GlobOptions {
   maxDepth?: number;
 }
 
-/** Extension entries must be plain alphanumeric tokens; anything else could inject extra glob alternatives (e.g. "../x"). */
+/** Allows letters, digits, underscores, pluses, and hyphens in extension tokens used to build glob patterns. */
 const EXTENSION_PATTERN = /^[A-Za-z0-9_+-]+$/;
 
 /**
  * Finds files matching criteria using fast-glob.
- * Automatically respects .gitignore if present using the `ignore` library.
+ * Applies the .gitignore in the scan's cwd if readable, using the `ignore` library.
  */
 export async function findFiles(options: GlobOptions): Promise<string[]> {
   const { cwd, includeHidden = false, ignorePatterns = [], extensions, maxDepth } = options;
@@ -93,7 +93,7 @@ async function createIgnoreFilter(
     const content = await readFile(join(cwd, ".gitignore"), "utf-8");
     ig.add(content);
   } catch {
-    // No .gitignore present — proceed without it
+    // An absent or unreadable .gitignore leaves only the user-supplied ignore patterns.
   }
 
   if (userPatterns.length > 0) {

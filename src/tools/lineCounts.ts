@@ -36,7 +36,7 @@ export function registerLineCountsTool(server: McpServer): void {
 
       const { resolvedPath, isDirectory } = pathValidation;
 
-      // tokei's -t flag expects bare names (e.g. "ts"), not dot-prefixed extensions
+      // The tokei adapter maps bare extensions (e.g. "ts") to CLI language names.
       const extensions = args.extensions?.map((e) => (e.startsWith(".") ? e.slice(1) : e));
 
       const tokeiResult = await analyze(resolvedPath, {

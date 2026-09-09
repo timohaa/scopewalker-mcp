@@ -41,8 +41,8 @@ export function findParameterList(node: Parser.SyntaxNode): Parser.SyntaxNode | 
   return null;
 }
 
-// `*` marks keyword-only params, `*args`/`**kwargs` are variadic; none is a
-// positional parameter that a caller could pass or thread onward.
+// Python nodes excluded from parameter counting and name extraction:
+// the keyword-only separator (`*`) and variadic parameters (`*args`, `**kwargs`).
 export const PYTHON_NON_PARAMETER_TYPES = [
   "keyword_separator",
   "list_splat_pattern",

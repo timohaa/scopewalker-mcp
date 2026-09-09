@@ -1,8 +1,9 @@
 # Usage Examples
 
 This page shows how to hook Scopewalker up to agentic coding tools like
-Claude Code. Nothing here is language-specific; the same setup works for
-TypeScript/React, Python, C, Rust, GDScript, or a mix. There are four
+Claude Code. The integration patterns work for TypeScript/React, Python, C,
+Rust, or mixed projects. GDScript supports tokei-backed line counts and file-size
+checks; AST-based analysis skips it. There are four
 places to plug it in:
 
 1. `AGENTS.md` / `CLAUDE.md`: make every session aware of the tools and thresholds
@@ -52,7 +53,7 @@ Use scopewalker-mcp tools to understand and validate the code
 
 For other languages, only the extensions and the inventory description
 change. A C project would use `[".c", ".h"]` and describe
-`get_code_inventory` as "find functions, structs, and typedefs".
+`get_code_inventory` as "find functions, structs, and enums".
 
 ### Threshold section that delegates detail
 
@@ -205,9 +206,9 @@ of those steps:
 
 - The `standards-enforcer` step is the one that uses the full tool set
   (see the agent below).
-- After the code-changing steps, a verification step reruns
-  `npm run check` and the tests, but only if the standards enforcer or
-  comment fixer changed files. A clean run stays cheap.
+- The standards enforcer runs checks and tests when it edits code.
+  The comment fixer runs `npm run check` when it edits comments.
+  Verification runs within each agent; the pipeline has no separate verification step.
 
 ## Subagents
 
