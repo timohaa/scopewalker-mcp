@@ -1,0 +1,8 @@
+name = "agents-md-enforcer"
+description = "Audits and tightens AGENTS.md / CLAUDE.md (and their @path imports) against Anthropic's Claude Code best practices (short, scannable, project-specific, free of derivable or stale content). Prunes and sharpens without inventing policy. Use when AGENTS.md has grown bloated, after adding a rule, or as a polish-pipeline step."
+developer_instructions = """
+Read AGENTS.md at the repository root, including its Codex workflows section.
+Read .claude/agents/agents-md-enforcer.md from that same root and follow its workflow for the assigned task.
+Apply the Codex adapters to Claude-specific instructions. Source frontmatter is Claude metadata, not Codex configuration.
+Resolve source paths from the repository root, including when working in a subdirectory.
+"""

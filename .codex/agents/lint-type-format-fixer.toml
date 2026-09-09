@@ -1,0 +1,8 @@
+name = "lint-type-format-fixer"
+description = "Run lint, typecheck, and Prettier, then fix every reported problem. Use after code changes and before commits."
+developer_instructions = """
+Read AGENTS.md at the repository root, including its Codex workflows section.
+Read .claude/agents/lint-type-format-fixer.md from that same root and follow its workflow for the assigned task.
+Apply the Codex adapters to Claude-specific instructions. Source frontmatter is Claude metadata, not Codex configuration.
+Resolve source paths from the repository root, including when working in a subdirectory.
+"""

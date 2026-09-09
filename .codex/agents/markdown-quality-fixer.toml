@@ -1,0 +1,8 @@
+name = "markdown-quality-fixer"
+description = "Find changed Markdown files and fix all markdownlint and table-formatting problems. Use after Markdown changes and before commits."
+developer_instructions = """
+Read AGENTS.md at the repository root, including its Codex workflows section.
+Read .claude/agents/markdown-quality-fixer.md from that same root and follow its workflow for the assigned task.
+Apply the Codex adapters to Claude-specific instructions. Source frontmatter is Claude metadata, not Codex configuration.
+Resolve source paths from the repository root, including when working in a subdirectory.
+"""
