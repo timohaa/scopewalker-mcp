@@ -26,7 +26,7 @@ export function isTraitScope(node: Parser.SyntaxNode): boolean {
  * is needed.
  */
 function isRustTraitMember(node: Parser.SyntaxNode): boolean {
-  if (node.type !== "function_item") return false;
+  if (node.type !== "function_item" && node.type !== "function_signature_item") return false;
   const list = node.parent;
   if (list?.type !== "declaration_list" || list.parent === null) return false;
   return isTraitScope(list.parent);
@@ -110,7 +110,19 @@ export function isExported(
 
   if (node.children.some((child) => child.text === "export")) return true;
 
-  if (language === "python") return parent.type === "module";
+  if (language === "python") return isPythonModuleLevel(parent);
 
   return false;
+}
+
+/**
+ * Checks that a Python definition sits at module scope.
+ *
+ * A decorator wraps the definition in a `decorated_definition`, so the module is
+ * the definition's grandparent rather than its parent whenever one is applied.
+ */
+function isPythonModuleLevel(parent: Parser.SyntaxNode): boolean {
+  if (parent.type === "module") return true;
+
+  return parent.type === "decorated_definition" && parent.parent?.type === "module";
 }

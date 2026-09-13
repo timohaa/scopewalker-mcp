@@ -20,17 +20,25 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 
 **Documentation Detection:**
 
-| Language              | Recognized Formats          |
-|-----------------------|-----------------------------|
-| JavaScript/TypeScript | JSDoc (`/** */`), TSDoc     |
-| Python                | Docstrings (`"""`, `'''`)   |
-| Go                    | Godoc comments (`//`)       |
-| Rust                  | Doc comments (`///`, `//!`) |
-| Java                  | Javadoc (`/** */`)          |
-| C/C++                 | JSDoc-style (`/** */`)      |
-| Ruby                  | Line comments (`#`)         |
+| Language              | Recognized Formats                               |
+|-----------------------|--------------------------------------------------|
+| JavaScript/TypeScript | JSDoc (`/** */`), TSDoc                          |
+| Python                | Docstrings (`"""`, `'''`)                        |
+| Go                    | Godoc comments (`//`)                            |
+| Rust                  | Doc comments (`///`, `/** */`, `#[doc = "..."]`) |
+| Java                  | Javadoc (`/** */`)                               |
+| C/C++                 | JSDoc-style (`/** */`)                           |
+| Ruby                  | Line comments (`#`)                              |
 
-**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods. Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes. A Ruby top-level `def` is typed as a function, and a `def` inside a class or module body as a method. `get_code_inventory` labels the same code the same way for class bodies, but drops module-body defs entirely: `module` is not one of its symbol types, so there is nothing to nest them under.
+`//!` is an inner doc comment: it documents the module or crate it sits in, never the item that follows it.
+
+A comment documents a declaration only when its last line is the line directly above the declaration's first line. Decorators, attributes, annotations and modifiers count as part of the declaration, so a comment above them still applies. A blank line, a comment that trails code on its line, or another declaration in between breaks the association. Consecutive comment lines directly above each other form one block.
+
+**What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods. Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes.
+
+C/C++ `struct`, `class`, `union`, and `enum` count as classes only where they declare a member list; a bare type reference such as `struct CPU_pins *pins` is not a symbol. TypeScript `abstract class` counts as a class; abstract method signatures and a class field bound to a function (`handleClick = () => {}`) count as methods. Rust trait method signatures and Go interface method specs count as methods.
+
+A Ruby top-level `def` is typed as a function, and a `def` inside a class or module body as a method, including one nested in an `if`/`else` within that body. A `def` inside another `def` is a function. A Python `def` in a class body is a method, including one guarded by an `if`; a `def` inside a method body is a function. `get_code_inventory` labels class-body methods the same way, but drops module-body defs entirely: `module` is not one of its symbol types, so there is nothing to nest them under.
 
 **Response:**
 
@@ -52,6 +60,8 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
   ],
   "summary": {
     "files_analyzed": 45,
+    "files_skipped": 0,
+    "scan_complete": true,
     "total_symbols": 177,
     "fully_documented_files": 38,
     "zero_documentation_files": 2
@@ -61,6 +71,12 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 ```
 
 `truncated` appears when undocumented items are limited (default limit: 20) and more items exist than returned.
+
+`files_skipped` counts supported files the scan never parsed, almost always because they
+exceeded the 1 MB AST guard. `scan_complete` is `false` whenever any files were skipped.
+`coverage.percentage` covers only the symbols the scan did analyze: it ignores skipped
+files rather than crediting or penalizing them, and a scan that analyzed nothing reports
+`0`, not `100`.
 
 **Example:**
 
@@ -78,6 +94,8 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 Detects code smells like TODO, FIXME, HACK, XXX, BUG, UNUSED, and DEPRECATED comments, plus unsafe casts in TypeScript.
 
 **Note:** Comment-based smells use tree-sitter to avoid matches in string literals and code. The `unsafe_cast` smell detects TypeScript double casts through `unknown` or `any`. Examples include `x as unknown as T` and `x as any as T`. JavaScript has no corresponding `as` expression.
+
+**Marker rule:** a comment-based smell fires only on its marker's *form*, not the word anywhere in prose. It matches an uppercase, whole-word marker (`TODO`, `FIXME`, `HACK`, `XXX`, `BUG`, `UNUSED`, `DEPRECATED`) optionally followed by `:`, `(`, or `-` (`TODO: x`, `TODO(name): x`, `FIXME - x`), or the lowercase form accepted only at the very start of a comment and only when immediately followed by `:` (`// todo: x`). Prose that merely contains the word (`a rounding bug`, `--no-xxx`) does not match either form. Inside a multi-line comment, the reported `line` is the marker's own line, not the comment's start line.
 
 **Parameters:**
 
@@ -151,6 +169,8 @@ Detects code smells like TODO, FIXME, HACK, XXX, BUG, UNUSED, and DEPRECATED com
 
 Detects parameter threading (prop drilling) by finding parameter names passed through chains of functions. High occurrence counts across many files indicate parameters that may be better managed via context, dependency injection, or module-level state.
 
+**Note:** a C/C++ type qualifier or macro qualifier written before a parameter's name, such as `__restrict` or a project's own `GGML_RESTRICT`-style macro, is not taken as the parameter name.
+
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                                   |
@@ -223,7 +243,11 @@ Finds declared symbols and private methods that nothing in the scanned files ref
 | `limit`           | integer  | No       | Max items to return per list (default: 20, max 5000) |
 
 **How detection works:** the tool extracts top-level classes, functions, interfaces, enums,
-and constants, plus private class methods, as candidates. It then counts every name-token
+and constants, plus private class methods, as candidates. Constants include Rust `const`/
+`static` items and Go `const` declarations (one candidate per spec in a grouped `const (...)`
+block). A C/C++ `struct`, `union`, `enum`, or `class` is a candidate only where it declares a
+member list; a bare type reference adds nothing. A TypeScript `abstract class` is a candidate
+like any other class. It then counts every name-token
 occurrence across all scanned files and subtracts each candidate's own declaration. A candidate
 with zero remaining occurrences is unreferenced. String literals and symbols count as
 references, so reflection patterns like `getattr(o, "foo")`, `send(:foo)`, and `obj["foo"]` keep
@@ -280,8 +304,11 @@ finding moves to `unreferenced_exports`, because a skipped file could hold the m
 - Rust functions inside a `trait` or an `impl Trait for Type` block. They are dispatched through
   the trait, so `Display::fmt` runs on every `{}` without its name at any call site. Inherent
   `impl Type` methods remain candidates.
-- TypeScript ambient code: `.d.ts` files are skipped entirely, and any node under an
-  `ambient_declaration` (`declare ...`) is skipped.
+- TypeScript ambient code: a `.d.ts` file yields no candidates, but it is still scanned for
+  references, so a symbol used only from a declaration file is not reported. Any node under
+  an `ambient_declaration` (`declare ...`) is also skipped. `files_scanned` counts `.d.ts`
+  files like any other supported file, and an oversized or unparsable `.d.ts` sets
+  `scan_complete` to `false` the same as any other skipped file.
 - A C/C++ file whose preprocessor text contains `##` (token pasting can synthesize names not
   visible in the source) yields no candidates.
 - A C++ name qualified with `::` (an out-of-line definition such as `Widget::resize`) is dropped;

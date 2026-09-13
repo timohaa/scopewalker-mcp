@@ -52,6 +52,22 @@ describe("ignorePatternsSchema", () => {
     const patterns = Array.from({ length: MAX_ARRAY_LENGTH + 1 }, (_, i) => `pattern-${String(i)}`);
     expect(ignorePatternsSchema.safeParse(patterns).success).toBe(false);
   });
+
+  it("rejects an absolute path instead of silently matching nothing (L5)", () => {
+    const result = ignorePatternsSchema.safeParse(["/Users/you/project/vendor"]);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toContain("relative");
+    }
+  });
+
+  it("rejects an unexpanded ~ home-directory pattern", () => {
+    expect(ignorePatternsSchema.safeParse(["~/project/vendor"]).success).toBe(false);
+  });
+
+  it("accepts a relative glob pattern that merely mentions vendor", () => {
+    expect(ignorePatternsSchema.safeParse(["**/vendor/**", "vendor"]).success).toBe(true);
+  });
 });
 
 describe("extensionsSchema", () => {

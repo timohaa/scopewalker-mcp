@@ -228,3 +228,27 @@ describe("extractParameterNames - no parameter list", () => {
     expect(extractParameterNames(fn, "typescript")).toEqual([]);
   });
 });
+
+describe("extractParameterNames - macro qualifiers in C parameters", () => {
+  it("takes the declared name, not an unexpanded macro", async () => {
+    // `#define GGML_RESTRICT __restrict` leaves the macro unexpanded, so the
+    // parser ends the declaration at it and recovers the real name in an ERROR
+    // sibling. Taking the declarator's identifier made GGML_RESTRICT the second
+    // most threaded "parameter" across llama.cpp.
+    const fn = await nodeOfType(
+      `void alpha(float * MYRESTRICT s, const float * MYRESTRICT x) { beta(s, x); }`,
+      "c",
+      "function_definition"
+    );
+    expect(extractParameterNames(fn, "c")).toEqual(["s", "x"]);
+  });
+
+  it("still reads parameters qualified by real restrict keywords", async () => {
+    const fn = await nodeOfType(
+      `void alpha(float * restrict s, const float * __restrict x) {}`,
+      "c",
+      "function_definition"
+    );
+    expect(extractParameterNames(fn, "c")).toEqual(["s", "x"]);
+  });
+});

@@ -50,8 +50,8 @@ describe("findOversizedFunctions", () => {
     await rm(testDir, { recursive: true, force: true });
   });
 
-  it("skips files exceeding the size guard", async () => {
-    const { oversizedFunctions, totalFunctions } = await findOversizedFunctions(
+  it("skips files exceeding the size guard, and reports the skip (M10)", async () => {
+    const { oversizedFunctions, totalFunctions, filesSkipped } = await findOversizedFunctions(
       ["huge.ts"],
       testDir,
       true,
@@ -60,16 +60,27 @@ describe("findOversizedFunctions", () => {
 
     expect(totalFunctions).toBe(0);
     expect(oversizedFunctions).toHaveLength(0);
+    // huge.ts is a real, analyzable TS file that the size guard silently drops.
+    expect(filesSkipped).toBe(1);
   });
 
-  it("counts functions within the size guard", async () => {
-    const { totalFunctions } = await findOversizedFunctions(["small.ts"], testDir, true, 100);
+  it("counts functions within the size guard and reports no skips", async () => {
+    const { totalFunctions, filesSkipped } = await findOversizedFunctions(
+      ["small.ts"],
+      testDir,
+      true,
+      100
+    );
 
     expect(totalFunctions).toBeGreaterThanOrEqual(1);
+    expect(filesSkipped).toBe(0);
   });
 
-  it("silently skips files that can't be read", async () => {
-    const { oversizedFunctions, totalFunctions } = await findOversizedFunctions(
+  it("silently skips files that can't be read, and counts them as skipped too", async () => {
+    // detectLanguage works from the path alone, so a missing file still counts
+    // as analyzable; walkSourceFiles then drops it when the read fails, and
+    // the same filesSkipped accounting (countAnalyzable - filesScanned) catches it.
+    const { oversizedFunctions, totalFunctions, filesSkipped } = await findOversizedFunctions(
       ["missing.ts"],
       testDir,
       true,
@@ -78,6 +89,18 @@ describe("findOversizedFunctions", () => {
 
     expect(totalFunctions).toBe(0);
     expect(oversizedFunctions).toHaveLength(0);
+    expect(filesSkipped).toBe(1);
+  });
+
+  it("reports zero files skipped for a single-file (non-directory) scan", async () => {
+    const { filesSkipped } = await findOversizedFunctions(
+      [join(testDir, "small.ts")],
+      testDir,
+      false,
+      100
+    );
+
+    expect(filesSkipped).toBe(0);
   });
 });
 
@@ -110,7 +133,7 @@ describe("buildCheckThresholdsResult", () => {
         totalFileViolations: 1,
         totalFunctionViolations: 0,
       },
-      { filesChecked: 5, totalFunctions: 12 }
+      { filesChecked: 5, totalFunctions: 12, filesSkipped: 0, scanComplete: true }
     );
 
     expect(result).toEqual({
@@ -125,7 +148,25 @@ describe("buildCheckThresholdsResult", () => {
         functions_checked: 12,
         file_violations: 1,
         function_violations: 0,
+        files_skipped: 0,
+        scan_complete: true,
       },
     });
+  });
+
+  it("marks the scan incomplete when the function pass skipped files (M10)", () => {
+    const result = buildCheckThresholdsResult(
+      { resolvedPath: "/repo", maxFileLines: 300, maxFunctionLines: 100 },
+      {
+        oversizedFiles: [],
+        oversizedFunctions: [],
+        totalFileViolations: 0,
+        totalFunctionViolations: 0,
+      },
+      { filesChecked: 5, totalFunctions: 12, filesSkipped: 2, scanComplete: false }
+    );
+
+    expect(result.summary.files_skipped).toBe(2);
+    expect(result.summary.scan_complete).toBe(false);
   });
 });

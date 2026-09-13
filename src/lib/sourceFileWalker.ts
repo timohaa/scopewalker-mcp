@@ -45,9 +45,9 @@ export async function* walkSourceFiles(
 
     const fullPath = isDirectory ? join(basePath, filePath) : filePath;
     const relativePath = isDirectory ? filePath : fullPath;
-    const language = detectLanguage(fullPath);
+    const byExtension = detectLanguage(fullPath);
 
-    if (!language) continue;
+    if (!byExtension) continue;
 
     let code: string;
     try {
@@ -58,6 +58,8 @@ export async function* walkSourceFiles(
       continue;
     }
 
+    // A `.h` header can be C++; only the content can tell.
+    const language = detectLanguage(fullPath, code) ?? byExtension;
     yielded++;
     yield { fullPath, relativePath, language, code };
   }

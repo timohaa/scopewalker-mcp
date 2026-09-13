@@ -1,4 +1,5 @@
 import type Parser from "tree-sitter";
+import { isInsideRecordBody } from "./documentationCoverageClassification.js";
 
 export interface DocumentableNode {
   name: string;
@@ -13,43 +14,71 @@ const FUNC_TYPES = [
   "function_expression",
 ];
 
-// C/C++ record bodies are documentable classes; the grammar names them by keyword.
 const CLASS_TYPES = [
   "class_declaration",
+  "abstract_class_declaration",
   "class_definition",
   "class",
-  "class_specifier",
-  "struct_specifier",
 ];
 
-const METHOD_TYPES = ["method_definition", "method_declaration"];
+// C/C++ name a record by its keyword, and use the same node for a bare type
+// reference (`struct CPU_pins *pins;`), so only a member list makes one a class.
+const C_RECORD_TYPES = ["class_specifier", "struct_specifier", "union_specifier", "enum_specifier"];
+const C_RECORD_BODIES = ["field_declaration_list", "enumerator_list"];
+
+const METHOD_TYPES = ["method_definition", "method_declaration", "abstract_method_signature"];
 
 // Ruby has no distinct top-level function node type: these cover both
 // module-level defs and class members, distinguished only by parent.
 const RUBY_DEF_TYPES = ["method", "singleton_method"];
 
+// Go declares an interface's methods, and Rust a trait's, without a body.
+const GO_INTERFACE_METHOD_TYPES = ["method_elem", "method_spec"];
+
 type DocumentableType = "function" | "class" | "method";
+
+/** True for a C/C++ record that declares members, not one that only names a type. */
+function isDefinedRecord(node: Parser.SyntaxNode): boolean {
+  return node.children.some((child) => C_RECORD_BODIES.includes(child.type));
+}
+
+/** True for a TS class field whose value is a function (`handleClick = () => {}`). */
+function isFunctionValuedField(node: Parser.SyntaxNode): boolean {
+  return node.children.some(
+    (child) => child.type === "arrow_function" || child.type === "function_expression"
+  );
+}
 
 /**
  * Classifies the node types whose meaning depends on what encloses them.
  * Ruby has no distinct method node, and C/C++ members share their node types
- * with free functions and data fields, so in both cases only the parent
- * separates a method from a plain function.
+ * with free functions and data fields, so in both cases only the enclosing
+ * declaration separates a method from a plain function.
  */
 function classifyByParent(node: Parser.SyntaxNode): DocumentableType | null {
   // Mirrors the parent check in getItemType so both tools label a Ruby def the same way.
-  if (RUBY_DEF_TYPES.includes(node.type)) {
-    return node.parent?.type === "body_statement" ? "method" : "function";
+  if (RUBY_DEF_TYPES.includes(node.type) || FUNC_TYPES.includes(node.type)) {
+    return isInsideRecordBody(node) ? "method" : "function";
   }
-
-  const inRecordBody = node.parent?.type === "field_declaration_list";
 
   if (node.type === "field_declaration") {
-    return inRecordBody && hasFunctionDeclarator(node) ? "method" : null;
+    return node.parent?.type === "field_declaration_list" && hasFunctionDeclarator(node)
+      ? "method"
+      : null;
   }
 
-  if (FUNC_TYPES.includes(node.type)) {
-    return inRecordBody ? "method" : "function";
+  if (node.type === "public_field_definition") {
+    return isFunctionValuedField(node) ? "method" : null;
+  }
+
+  // Rust trait method signatures; the same node in an `extern` block is a
+  // foreign function, which this tool does not report.
+  if (node.type === "function_signature_item") {
+    return isInsideRecordBody(node) ? "method" : null;
+  }
+
+  if (GO_INTERFACE_METHOD_TYPES.includes(node.type)) {
+    return node.parent?.type === "interface_type" ? "method" : null;
   }
 
   // C/C++ function declarations in headers (prototypes)
@@ -61,6 +90,7 @@ function classifyByParent(node: Parser.SyntaxNode): DocumentableType | null {
 /** Classifies a node as function, class, or method, or null if not documentable. */
 function getDocumentableType(node: Parser.SyntaxNode): DocumentableType | null {
   if (CLASS_TYPES.includes(node.type)) return "class";
+  if (C_RECORD_TYPES.includes(node.type)) return isDefinedRecord(node) ? "class" : null;
   if (METHOD_TYPES.includes(node.type)) return "method";
 
   return classifyByParent(node);
@@ -106,12 +136,8 @@ function hasFunctionDeclarator(node: Parser.SyntaxNode): boolean {
       return true;
     }
     // Handle pointer return types: void *func() has pointer_declarator containing function_declarator
-    if (child.type === "pointer_declarator") {
-      for (const grandchild of child.children) {
-        if (grandchild.type === "function_declarator") {
-          return true;
-        }
-      }
+    if (child.type === "pointer_declarator" && hasFunctionDeclarator(child)) {
+      return true;
     }
   }
   return false;
@@ -163,10 +189,21 @@ function getIdentifierFromFunctionDeclarator(node: Parser.SyntaxNode): string | 
   return identifier?.text ?? null;
 }
 
-/** Finds a function_declarator within a pointer_declarator and extracts its name. */
+/**
+ * Finds a function_declarator within a pointer_declarator and extracts its name.
+ * Each `*` of a `struct Foo **make(void)` adds another pointer_declarator level.
+ */
 function getNameFromPointerDeclarator(pointerDecl: Parser.SyntaxNode): string | null {
-  const funcDecl = pointerDecl.children.find((c) => c.type === "function_declarator");
-  return funcDecl ? getIdentifierFromFunctionDeclarator(funcDecl) : null;
+  for (const child of pointerDecl.children) {
+    if (child.type === "function_declarator") {
+      return getIdentifierFromFunctionDeclarator(child);
+    }
+    if (child.type === "pointer_declarator") {
+      const name = getNameFromPointerDeclarator(child);
+      if (name !== null) return name;
+    }
+  }
+  return null;
 }
 
 /**

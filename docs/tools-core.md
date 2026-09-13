@@ -87,6 +87,8 @@ Returns function/method information. Use `detail` parameter to control output le
 
 **Note:** Each file returns at most 100 functions to prevent oversized responses.
 
+**What counts as a function:** a definition with a body. C/C++ prototypes and Rust trait method signatures are declarations, not definitions, and are not counted. A TS/JS arrow function or function expression is reported under the name it is bound to — `const f = () => {}`, `export const F = ...`, a class field, an object property, `exports.foo = ...` — whatever binds it. Only an unbound one, an inline callback (`items.map(x => x.id)`) or an IIFE, is reported as `<anonymous>`.
+
 **Response (detail: counts):**
 
 ```json

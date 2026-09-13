@@ -39,6 +39,15 @@ export function hasPythonDocstring(node: Parser.SyntaxNode): boolean {
   return true;
 }
 
+/**
+ * Checks if Rust comment text documents the item that follows it.
+ * `//!` and `/*!` are inner doc comments: they document the module or crate
+ * they sit inside, never the next item.
+ */
+function isRustDocComment(text: string): boolean {
+  return text.startsWith("///") || text.startsWith("/**");
+}
+
 /** Checks if a line starts a doc comment based on language conventions. */
 export function isDocComment(line: string, language: SupportedLanguage): boolean {
   if (JSDOC_LANGUAGES.includes(language)) {
@@ -48,7 +57,7 @@ export function isDocComment(line: string, language: SupportedLanguage): boolean
     return line.startsWith("/**");
   }
   if (language === "python") return line.startsWith('"""') || line.startsWith("'''");
-  if (language === "rust") return line.startsWith("///") || line.startsWith("//!");
+  if (language === "rust") return isRustDocComment(line);
   if (language === "go") return line.startsWith("//");
   if (language === "ruby") return line.startsWith("#");
   return line.startsWith("/**") || line.startsWith("///");
@@ -58,7 +67,7 @@ export function isDocComment(line: string, language: SupportedLanguage): boolean
 export function isDocCommentText(text: string, language: SupportedLanguage): boolean {
   if (JSDOC_LANGUAGES.includes(language)) return text.startsWith("/**");
   if (language === "python") return text.startsWith('"""') || text.startsWith("'''");
-  if (language === "rust") return text.startsWith("///") || text.startsWith("//!");
+  if (language === "rust") return isRustDocComment(text);
   return text.startsWith("/**");
 }
 

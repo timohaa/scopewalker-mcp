@@ -48,10 +48,11 @@ const nested = ${"(".repeat(600)}target()${")".repeat(600)};
     await rm(dir, { recursive: true, force: true });
   });
 
-  it("does not count a skipped .d.ts file against files_skipped", async () => {
+  it("scans a .d.ts file for references without taking candidates from it", async () => {
     const response = await handler({ path: join(dir, "dts"), limit: 100 });
     const result = parseContent<DeadCodeResult>(response);
 
+    expect(result.summary.files_scanned).toBe(2);
     expect(result.summary.files_skipped).toBe(0);
     expect(result.summary.scan_complete).toBe(true);
     expect(result.dead_code.some((item) => item.name === "normalUnused")).toBe(true);

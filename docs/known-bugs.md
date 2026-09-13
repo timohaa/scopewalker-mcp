@@ -16,23 +16,6 @@ The entries were verified against version 1.2.0.
 
 ## Bugs
 
-### Go and Rust constants never appear in the inventory
-
-**Tools:** `get_code_inventory`
-
-A file containing only `const MaxRetries = 3` (Go) or `pub const MAX: i32 = 3;` /
-`pub static NAME: &str = "x";` (Rust) yields an empty inventory.
-
-Two defects cause this behavior:
-
-- Go's `const_declaration` is mapped to `constant`, but the name lives on a nested
-  `const_spec`, so `extractName` finds nothing and the item is dropped.
-- Rust's `const_item` and `static_item` are not in `NODE_TYPE_MAP` at all.
-
-The Constant column in the language table in `docs/tools-health.md` shows `-` for both
-languages, so the table is accurate. It reads as "this language has no constants" rather
-than "the tool cannot see them".
-
 ### Grouped Go `type (...)` declarations report only their first type
 
 **Tools:** `get_code_inventory`
@@ -75,6 +58,12 @@ with `total_files: 0`. Files without matched items are omitted, as in the Go cas
 sees `helper` as type `method`, so the two tools disagree about whether the file has
 anything in it at all.
 
+A `def` nested in an `if`/`else` inside a *class* body now attaches to the class, the same
+as an unwrapped `def`. Inside a *module* body it still does not attach to anything, but the
+conditional wrapper changes the node's immediate parent, which sidesteps the
+`body_statement` check above. That `def` surfaces as a top-level function instead of
+vanishing. It is visible, but its type is wrong.
+
 ---
 
 ## Limitations
@@ -104,7 +93,10 @@ Methods inside an `impl Widget` block are not nested under `Widget`. The invento
 `Widget` as a class and `draw`/`secret` as separate top-level functions;
 `get_documentation_coverage` likewise types them `function` rather than `method`.
 
-Go, C/C++, Python, and Ruby all attach members to their type. Rust is the outlier.
+Go, C/C++, Python, and Ruby all attach members to their type. Rust `impl` blocks are the
+outlier. A Rust `trait`'s own members are not: both required method signatures and
+provided default methods are listed under the trait in `get_code_inventory`, and
+`get_documentation_coverage` types them `method`.
 
 See `docs/tools-health.md`.
 
@@ -213,6 +205,9 @@ tokei language. `.zig` works because the language is called Zig; `.tf` does not,
 tokei calls that language HCL. The mismatch returns an empty result rather than an error,
 which is indistinguishable from "no such files".
 
+This is unrelated to case: `extensions` matching is now case-insensitive on every tool,
+tokei-backed or not, so `[".TS"]` and `[".ts"]` find the same files.
+
 See `docs/tools-overview.md`.
 
 ### `max_files` does not bound `check_thresholds`' file-size scan
@@ -228,6 +223,11 @@ This is deliberate. Tokei does its own traversal and is language-independent, so
 would mean discarding part of its output — suppressing real oversized-file violations to make
 a counter agree. The two numbers describe different scans, and the file-size half is cheap
 enough that capping it buys nothing.
+
+The function pass now reports what it left out: `summary.files_skipped` and
+`summary.scan_complete` cover only that pass, counting files the 1 MB AST guard or the
+`max_files` cap kept out of `oversized_functions`. They say nothing about the file-size
+pass, which has no such guard to report.
 
 ---
 

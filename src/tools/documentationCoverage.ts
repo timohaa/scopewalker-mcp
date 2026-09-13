@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles } from "../lib/sourceFileWalker.js";
-import { parseCode } from "../lib/treeSitter.js";
+import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type { FileDocumentation, UndocumentedItem } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
@@ -60,14 +60,13 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
           })
         : [resolvedPath];
 
-      const { byFile, undocumentedItems, totalDocumented, totalUndocumented } =
-        await analyzeCoverage(
-          filePaths,
-          resolvedPath,
-          isDirectory,
-          args.max_files,
-          args.min_lines ?? 1
-        );
+      const analysis = await analyzeCoverage(
+        filePaths,
+        resolvedPath,
+        isDirectory,
+        args.max_files,
+        args.min_lines ?? 1
+      );
 
       const result = buildDocumentationCoverageResult(
         {
@@ -75,7 +74,7 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
           summaryOnly: args.summary_only ?? false,
           limit: args.limit ?? DEFAULT_LIMIT,
         },
-        { byFile, undocumentedItems, totalDocumented, totalUndocumented }
+        { ...analysis, filesSkipped: countSkipped(filePaths, analysis.filesScanned) }
       );
 
       return createSuccessResponse(result, { itemCount: result.undocumented_items.length });
@@ -88,6 +87,16 @@ interface CoverageAnalysis {
   undocumentedItems: UndocumentedItem[];
   totalDocumented: number;
   totalUndocumented: number;
+  filesScanned: number;
+}
+
+/**
+ * Counts the supported files a complete scan would have parsed but this one did not.
+ * A file drops out when it exceeds the size guard, cannot be read, or fails to parse.
+ */
+function countSkipped(filePaths: string[], filesScanned: number): number {
+  const analyzable = filePaths.filter((path) => detectLanguage(path) !== null).length;
+  return Math.max(analyzable - filesScanned, 0);
 }
 
 /** Parses files and analyzes documentation coverage for each. */
@@ -102,6 +111,7 @@ async function analyzeCoverage(
   const undocumentedItems: UndocumentedItem[] = [];
   let totalDocumented = 0;
   let totalUndocumented = 0;
+  let filesScanned = 0;
 
   for await (const { relativePath, language, code } of walkSourceFiles(
     filePaths,
@@ -112,6 +122,7 @@ async function analyzeCoverage(
     try {
       const tree = await parseCode(code, language);
       if (!tree) continue;
+      filesScanned++;
 
       const { documented, undocumented, items } = analyzeFileDocumentation({
         rootNode: tree.rootNode,
@@ -136,5 +147,5 @@ async function analyzeCoverage(
     }
   }
 
-  return { byFile, undocumentedItems, totalDocumented, totalUndocumented };
+  return { byFile, undocumentedItems, totalDocumented, totalUndocumented, filesScanned };
 }

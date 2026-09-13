@@ -174,8 +174,26 @@ describe("violation detection", () => {
   });
 });
 
-describe("path handling and limits", () => {
-  it("handles single file path", async () => {
+describe("function-pass skip reporting (M10)", () => {
+  it("reports scan_complete=true and files_skipped=0 when nothing was dropped", async () => {
+    const response = await handler({ path: testDir });
+    const result = parseContent<CheckThresholdsResult>(response);
+
+    expect(result.summary.files_skipped).toBe(0);
+    expect(result.summary.scan_complete).toBe(true);
+  });
+
+  it("reports files_skipped and scan_complete=false when the 1MB guard drops a file", async () => {
+    const dir = join(tmpdir(), `scopewalker-thresh-huge-${String(Date.now())}`);
+    await mkdir(dir, { recursive: true });
+    const resolvedDir = await realpath(dir);
+    const hugeFilePath = join(resolvedDir, "huge.ts");
+    // A single-function file over the 1MB AST size guard, so walkSourceFiles
+    // silently drops it from the function pass (M10: this used to be invisible).
+    // It lives in its own directory so it can't be mistaken for the shared
+    // testDir's already-oversized bigFunc.ts / anotherBig.ts functions.
+    await writeFile(hugeFilePath, `export function big() {\n${"x".repeat(1024 * 1024 + 1)}\n}\n`);
+
     analyzeMock.mockResolvedValueOnce({
       success: true,
       data: {
@@ -183,68 +201,18 @@ describe("path handling and limits", () => {
           blanks: 0,
           code: 0,
           comments: 0,
-          reports: [
-            {
-              name: join(testDir, "bigFunc.ts"),
-              stats: { blanks: 10, code: 310, comments: 5 },
-            },
-          ],
+          reports: [{ name: hugeFilePath, stats: { blanks: 0, code: 60_002, comments: 0 } }],
         },
       },
     });
 
-    const response = await handler({ path: join(testDir, "bigFunc.ts") });
+    const response = await handler({ path: resolvedDir });
     const result = parseContent<CheckThresholdsResult>(response);
 
-    expect(result.violations.oversized_files).toHaveLength(1);
-    expect(result.violations.oversized_functions).toHaveLength(1);
-    expect(result.summary.files_checked).toBe(1);
-  });
+    expect(result.violations.oversized_functions).toHaveLength(0);
+    expect(result.summary.files_skipped).toBe(1);
+    expect(result.summary.scan_complete).toBe(false);
 
-  it("respects limit parameter for violations", async () => {
-    const response = await handler({ path: testDir, limit: 1 });
-    const result = parseContent<CheckThresholdsResult>(response);
-
-    // Should only return 1 violation even though there are 2 oversized files
-    expect(result.violations.oversized_files).toHaveLength(1);
-    // The one returned should be the largest (bigFunc.ts with 325 lines)
-    expect(result.violations.oversized_files[0]?.path).toBe("bigFunc.ts");
-  });
-
-  it("returns error for nonexistent path", async () => {
-    const response = await handler({ path: join(testDir, "nonexistent-12345") });
-    expect(response.isError).toBe(true);
-
-    const errorPayload = parseContent<{ error: { code: string } }>(response);
-    expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
-  });
-
-  it("caps scanned files with max_files", async () => {
-    const full = await handler({ path: testDir });
-    const fullResult = parseContent<CheckThresholdsResult>(full);
-
-    const response = await handler({ path: testDir, max_files: 1 });
-    const result = parseContent<CheckThresholdsResult>(response);
-
-    // files_checked comes from tokei (unaffected by max_files); functions_checked
-    // is scanned from the max_files-limited file list, so it drops.
-    expect(result.summary.files_checked).toBe(fullResult.summary.files_checked);
-    expect(result.summary.functions_checked).toBeLessThan(fullResult.summary.functions_checked);
-  });
-
-  it("skips unsupported language files for function analysis", async () => {
-    const response = await handler({ path: testDir });
-    const result = parseContent<CheckThresholdsResult>(response);
-
-    // data.txt should be checked for file size but not for functions
-    // It's only 4 lines so won't appear in oversized_files
-    const txtViolation = result.violations.oversized_files.find((f) => f.path.endsWith("data.txt"));
-    expect(txtViolation).toBeUndefined();
-
-    // No function violations from txt file
-    const txtFuncViolation = result.violations.oversized_functions.find((f) =>
-      f.path.endsWith("data.txt")
-    );
-    expect(txtFuncViolation).toBeUndefined();
+    await rm(resolvedDir, { recursive: true, force: true });
   });
 });

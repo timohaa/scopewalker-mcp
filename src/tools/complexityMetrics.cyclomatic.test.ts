@@ -182,7 +182,7 @@ ${inner}
     expect(file.functions).toHaveLength(2);
     const [parent, callback] = file.functions;
     expect(parent.name).toBe("outer");
-    expect(callback.name).toBe("<anonymous>");
+    expect(callback.name).toBe("cb");
     expect(parent.cyclomatic_complexity).toBeGreaterThanOrEqual(callback.cyclomatic_complexity);
   });
 });

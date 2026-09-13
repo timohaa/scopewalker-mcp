@@ -35,13 +35,9 @@ interface ScanResult {
   filesSkipped: number;
 }
 
-/**
- * Counts the files a complete scan would have to parse.
- * Declaration files describe code that lives elsewhere, so they are neither
- * parsed nor missed.
- */
+/** Counts the files a complete scan would have to parse. */
 function countAnalyzable(filePaths: string[]): number {
-  return filePaths.filter((p) => detectLanguage(p) !== null && !p.endsWith(".d.ts")).length;
+  return filePaths.filter((p) => detectLanguage(p) !== null).length;
 }
 
 /**
@@ -66,14 +62,16 @@ async function scanFiles(
     isDirectory,
     maxFiles
   )) {
-    if (fullPath.endsWith(".d.ts")) continue;
-
     try {
       const tree = await parseCode(code, language);
       if (!tree) continue;
 
       filesScanned++;
       countOccurrences(tree.rootNode, occurrences, language);
+
+      // A declaration file describes code that lives elsewhere, so it declares
+      // no candidate. Its names still reference the implementations they type.
+      if (fullPath.endsWith(".d.ts")) continue;
       candidates.push(...collectCandidates(tree.rootNode, language, relativePath, code));
     } catch {
       // One unparsable file must not abort the scan; it counts as skipped.

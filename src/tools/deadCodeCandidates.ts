@@ -25,9 +25,6 @@ import {
   symbolScope,
 } from "./deadCodeScope.js";
 
-// Node types that put a declaration inside a body rather than at file level.
-// Only file-level symbols and private class members are in scope; a binding
-// inside a function is the linter's job, not this tool's.
 // Node types that hold a class's direct member list, mirroring extractMethods.
 const CLASS_BODY_TYPES = new Set([
   "class_body",
@@ -36,6 +33,9 @@ const CLASS_BODY_TYPES = new Set([
   "field_declaration_list",
 ]);
 
+// Node types that put a declaration inside a body rather than at file level.
+// Only file-level symbols and private class members are in scope; a binding
+// inside a function is the linter's job, not this tool's.
 const NESTING_TYPES = new Set([
   "function_declaration",
   "function_definition",

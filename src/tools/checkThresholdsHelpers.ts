@@ -1,8 +1,13 @@
 import { relative } from "node:path";
 import { walkSourceFiles } from "../lib/sourceFileWalker.js";
 import type { TokeiOutput } from "../lib/tokei.js";
-import { getFunctions } from "../lib/treeSitter.js";
+import { detectLanguage, getFunctions } from "../lib/treeSitter.js";
 import type { CheckThresholdsResult, OversizedFile, OversizedFunction } from "../types/index.js";
+
+/** Counts the files a complete function-pass scan would have to parse. */
+function countAnalyzable(filePaths: string[]): number {
+  return filePaths.filter((p) => detectLanguage(p) !== null).length;
+}
 
 /** Configuration for threshold checking. */
 export interface ThresholdConfig {
@@ -23,6 +28,10 @@ export interface ViolationData {
 export interface SummaryStats {
   filesChecked: number;
   totalFunctions: number;
+  /** Files the function pass could not analyze (e.g. over the 1MB AST size guard). */
+  filesSkipped: number;
+  /** False when filesSkipped is nonzero, so oversized_functions may be incomplete. */
+  scanComplete: boolean;
 }
 
 /** Extracts oversized files from tokei analysis results. */
@@ -53,6 +62,13 @@ export function findOversizedFiles(
   return { oversizedFiles, fileLineCounts };
 }
 
+/** Result of the function-line-count pass over a set of files. */
+export interface OversizedFunctionsScan {
+  oversizedFunctions: OversizedFunction[];
+  totalFunctions: number;
+  filesSkipped: number;
+}
+
 /** Scans files for functions exceeding the line limit. */
 export async function findOversizedFunctions(
   filePaths: string[],
@@ -60,9 +76,10 @@ export async function findOversizedFunctions(
   isDirectory: boolean,
   maxLines: number,
   maxFiles?: number
-): Promise<{ oversizedFunctions: OversizedFunction[]; totalFunctions: number }> {
+): Promise<OversizedFunctionsScan> {
   const oversizedFunctions: OversizedFunction[] = [];
   let totalFunctions = 0;
+  let filesScanned = 0;
 
   for await (const { relativePath, language, code } of walkSourceFiles(
     filePaths,
@@ -70,6 +87,7 @@ export async function findOversizedFunctions(
     isDirectory,
     maxFiles
   )) {
+    filesScanned++;
     const functions = await getFunctions(code, language);
     totalFunctions += functions.length;
 
@@ -87,7 +105,13 @@ export async function findOversizedFunctions(
     }
   }
 
-  return { oversizedFunctions, totalFunctions };
+  // walkSourceFiles silently drops files over its size guard (or unreadable/
+  // unsupported ones); the gap between what a complete scan would parse and
+  // what actually got yielded is what the function pass missed. That applies
+  // to a single-file scan too: an oversized file yields nothing.
+  const filesSkipped = Math.max(countAnalyzable(filePaths) - filesScanned, 0);
+
+  return { oversizedFunctions, totalFunctions, filesSkipped };
 }
 
 /** Sorts violations by severity and applies optional limit. */
@@ -120,6 +144,8 @@ export function buildCheckThresholdsResult(
       functions_checked: stats.totalFunctions,
       file_violations: violations.totalFileViolations,
       function_violations: violations.totalFunctionViolations,
+      files_skipped: stats.filesSkipped,
+      scan_complete: stats.scanComplete,
     },
   };
 }

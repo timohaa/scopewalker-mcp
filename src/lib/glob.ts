@@ -73,6 +73,9 @@ export async function findFiles(options: GlobOptions): Promise<string[]> {
     // Don't follow symlinks: validatePath only confines the top-level path, so a symlink
     // inside the scanned tree could otherwise point outside the allowed root.
     followSymbolicLinks: false,
+    // Match the tokei-backed tools' behavior: an extensions filter like [".TS"]
+    // must find the same files as [".ts"].
+    caseSensitiveMatch: false,
   });
 
   return files.filter((file) => !ig.ignores(file)).sort();

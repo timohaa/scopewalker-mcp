@@ -24,6 +24,10 @@ export interface DocumentationCoverageResult {
   by_file: FileDocumentation[];
   summary: {
     files_analyzed: number;
+    /** Supported files the scan could not read or parse, mostly ones over the size guard. */
+    files_skipped: number;
+    /** False when a skipped file leaves the coverage percentage covering only part of the target. */
+    scan_complete: boolean;
     total_symbols: number;
     fully_documented_files: number;
     zero_documentation_files: number;

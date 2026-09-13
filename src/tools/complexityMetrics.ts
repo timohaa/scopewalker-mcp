@@ -3,7 +3,7 @@ import type Parser from "tree-sitter";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles } from "../lib/sourceFileWalker.js";
-import { parseCode } from "../lib/treeSitter.js";
+import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type { ComplexityMetricsResult, FileComplexity, SupportedLanguage } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
@@ -23,7 +23,6 @@ import {
 } from "./complexityMetricsFunctions.js";
 import {
   walkNode,
-  calculateNestingDepth,
   countParameters,
   countJsxProps,
   countDependencies,
@@ -32,6 +31,7 @@ import {
   calculateSummary,
 } from "./complexityMetricsHelpers.js";
 import type { FunctionStats } from "./complexityMetricsHotspots.js";
+import { collectSubtreeNestingDepths } from "./complexityMetricsNesting.js";
 
 const DEFAULT_LIMIT = 20;
 
@@ -122,13 +122,16 @@ async function analyzeComplexity(
     mostComplexFunction: null,
   };
 
-  for await (const { relativePath, language, code } of walkSourceFiles(
+  for await (const { fullPath, relativePath, language: byExtension, code } of walkSourceFiles(
     filePaths,
     basePath,
     isDirectory,
     maxFiles
   )) {
     try {
+      // walkSourceFiles goes by extension alone, which sends every C++ header to
+      // the C grammar; re-detecting with the source in hand fixes `.h`.
+      const language = detectLanguage(fullPath, code) ?? byExtension;
       const tree = await parseCode(code, language);
       if (!tree) continue;
 
@@ -184,15 +187,12 @@ async function calculateMetrics(
   language: SupportedLanguage,
   functions: FunctionAnalysis[]
 ): Promise<FileComplexity["metrics"]> {
-  const nestingDepths: number[] = [];
+  // One pass for every node's subtree depth; calling calculateNestingDepth per
+  // node instead re-walked each subtree and dominated the tool's runtime.
+  const nestingDepths = collectSubtreeNestingDepths(rootNode, language);
   const paramCounts: number[] = [];
 
   walkNode(rootNode, (node) => {
-    const depth = calculateNestingDepth(node, 0, language);
-    if (depth > 0) {
-      nestingDepths.push(depth);
-    }
-
     const params = countParameters(node, language);
     if (params !== null) {
       paramCounts.push(params);

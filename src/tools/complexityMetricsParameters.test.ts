@@ -134,12 +134,14 @@ describe("countParameters - remaining grammars", () => {
   });
 
   it("counts Rust parameters excluding the self receiver node", async () => {
+    // The docs exclude the receiver in Python and Go; Rust used to count it, so
+    // the same method reported one parameter more than its Go or Python twin.
     const fn = await nodeOfType(
       `impl S { fn m(&self, a: u32, b: u32) -> u32 { a } }`,
       "rust",
       "function_item"
     );
-    expect(countParameters(fn, "rust")).toBe(3);
+    expect(countParameters(fn, "rust")).toBe(2);
   });
 
   it("counts Java method parameters", async () => {

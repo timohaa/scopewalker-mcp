@@ -40,7 +40,7 @@ Derive per-file counters from what the walker yields, not from `filePaths.length
 Every AST-based tool reaches the syntax tree the same way:
 
 ```typescript
-const language = detectLanguage(fullPath); // extension → SupportedLanguage | null
+const language = detectLanguage(fullPath, code); // extension (and content for .h) → SupportedLanguage | null
 if (language === null) continue; // unsupported file: skip silently
 const tree = await parseCode(code, language); // null if the grammar fails to load
 if (tree === null) continue;
@@ -54,6 +54,7 @@ walkNode(tree.rootNode, (node) => {
 - Grammars are lazily imported and cached per language in `src/lib/treeSitterGrammars.ts`. Adding a language means a loader there, an entry in `EXTENSION_MAP` (`treeSitter.ts`), and a member on `SupportedLanguage` (`src/types/languages.ts`).
 - Node type names differ per grammar, so `node.type` matches need per-language lists. Copy the shape of `getFunctionNodeTypes` in `treeSitter.ts`. Grammar-name mismatches are the single most common source of entries in [known-bugs.md](./known-bugs.md). Check the node names against each grammar rather than assuming they carry over.
 - `getFunctions` (function locations), `getComments`, and `countImports` already wrap the walk for the three cross-cutting queries. Prefer them over a fresh traversal.
+- Function names come from `extractFunctionName` in `src/lib/functionNames.ts`. It unwraps C/C++ declarator chains and names TS/JS arrow functions from their binding. `get_functions`, `get_complexity_metrics`, and `get_prop_drilling` share it; do not add a per-tool copy.
 
 ## Server Registration
 

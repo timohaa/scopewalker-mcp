@@ -2,6 +2,7 @@ import { extname } from "node:path";
 import Parser from "tree-sitter";
 import type { SupportedLanguage } from "../types/index.js";
 import { MAX_WALK_DEPTH } from "./astWalker.js";
+import { extractFunctionName } from "./functionNames.js";
 import { loadGrammar } from "./treeSitterGrammars.js";
 
 // Re-export from split modules for backwards compatibility
@@ -38,12 +39,41 @@ export interface FunctionLocation {
   endColumn: number;
 }
 
+// Syntax that only compiles as C++. `.h` serves both languages, so the extension
+// alone sends every C++ header to the C grammar, which then reports the class
+// keyword as a function and drops every member.
+const CPP_HEADER_MARKERS = [
+  /\bclass\s+\w+\s*[:{;]/, // class Foo {, class Foo;, class Foo : Base
+  /\bnamespace\s+\w+\s*\{/,
+  /\bnamespace\s*\{/,
+  /\btemplate\s*</,
+  /^[ \t]*(?:public|private|protected)\s*:/m,
+  /::/,
+  /\bextern\s+"C\+\+"/,
+  /\bvirtual\s+\w/,
+  /\busing\s+namespace\b/,
+];
+
 /**
- * Detects language from file extension.
+ * Detects language from file extension, refining `.h` when the source is supplied.
+ *
+ * `code` is optional so existing extension-only callers keep working; pass it
+ * wherever the file has already been read, or every C++ header is parsed as C.
  */
-export function detectLanguage(filePath: string): SupportedLanguage | null {
+export function detectLanguage(filePath: string, code?: string): SupportedLanguage | null {
   const ext = extname(filePath).toLowerCase();
-  return EXTENSION_MAP[ext] ?? null;
+  const language = EXTENSION_MAP[ext] ?? null;
+
+  if (language === "c" && ext === ".h" && code !== undefined && isCppHeader(code)) {
+    return "cpp";
+  }
+
+  return language;
+}
+
+/** Returns true when a `.h` file contains syntax no C compiler accepts. */
+function isCppHeader(code: string): boolean {
+  return CPP_HEADER_MARKERS.some((marker) => marker.test(code));
 }
 
 /**
@@ -159,38 +189,6 @@ export function getFunctionNodeTypes(language: SupportedLanguage): string[] {
     default:
       return [];
   }
-}
-
-/** Extracts function name from AST node, handling language-specific structures. */
-function extractFunctionName(node: Parser.SyntaxNode): string | null {
-  // Arrow functions are anonymous: an identifier child is an unparenthesized
-  // parameter (`x => ...`) or expression body, never the function's name.
-  if (node.type === "arrow_function") {
-    return null;
-  }
-  for (const child of node.children) {
-    if (isNameNode(child)) {
-      return child.text;
-    }
-    if (child.type === "function_declarator") {
-      for (const grandchild of child.children) {
-        if (
-          grandchild.type === "identifier" ||
-          grandchild.type === "field_identifier" ||
-          grandchild.type === "qualified_identifier"
-        ) {
-          return grandchild.text;
-        }
-      }
-    }
-  }
-  return null;
-}
-
-/** Checks if node is an identifier type that typically holds a function name. */
-function isNameNode(node: Parser.SyntaxNode): boolean {
-  const nameTypes: string[] = ["identifier", "property_identifier", "field_identifier"];
-  return nameTypes.includes(node.type);
 }
 
 /**

@@ -1,6 +1,7 @@
 import type Parser from "tree-sitter";
 import { walkNode } from "../lib/astWalker.js";
 export { walkNode };
+export { extractFunctionName } from "../lib/functionNames.js";
 import { countImports } from "../lib/treeSitter.js";
 import type { SupportedLanguage } from "../types/index.js";
 import { isElseIfBranch } from "./complexityMetricsElseIf.js";
@@ -44,6 +45,7 @@ export const CONTROL_FLOW_TYPES = [
   "switch_expression", // Java switch statements
   "expression_switch_statement", // Go switch statements
   "type_switch_statement", // Go type switches
+  "select_statement", // Go select; the container, like the two switches above
   "catch_clause", // TypeScript, JavaScript, Java, C++
   "except_clause", // Python
   "conditional_expression", // ternary in Python, C, C++
@@ -165,28 +167,6 @@ export function countJsxProps(node: Parser.SyntaxNode): number | null {
 export function extractJsxComponentName(node: Parser.SyntaxNode): string | null {
   for (const child of node.children) {
     if (child.type === "identifier" || child.type === "member_expression") {
-      return child.text;
-    }
-  }
-  return null;
-}
-
-/** Extracts function name from identifier children. */
-export function extractFunctionName(node: Parser.SyntaxNode): string | null {
-  // Arrow functions are anonymous: an identifier child is an unparenthesized
-  // parameter (`x => ...`) or expression body, never the function's name.
-  if (node.type === "arrow_function") {
-    return null;
-  }
-
-  // A grammar's own `name` field is authoritative where it exists. Go names
-  // methods with a field_identifier the scan below rejects, so every method in a
-  // Go file used to be reported as <anonymous>.
-  const nameField = node.childForFieldName("name");
-  if (nameField) return nameField.text;
-
-  for (const child of node.children) {
-    if (child.type === "identifier" || child.type === "property_identifier") {
       return child.text;
     }
   }

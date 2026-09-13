@@ -1,9 +1,5 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type { ErrorResponse } from "../types/index.js";
-import { createError } from "../utils/errors.js";
-
-const execFileAsync = promisify(execFile);
+import { collectTokeiOutput, toAnalysisResult } from "./tokeiCollect.js";
 
 // Tokei JSON output structure
 export interface TokeiLanguageStats {
@@ -117,40 +113,18 @@ export type TokeiAnalysisResult = TokeiResult | TokeiError;
 /**
  * Analyzes line counts using tokei CLI.
  * Tokei must be installed on the system.
+ *
+ * Streams stdout via spawn instead of execFile so an oversized tree fails
+ * with a clear, structured error (output size or timeout) instead of a
+ * generic maxBuffer crash.
  */
 export async function analyze(
   path: string,
   options: TokeiOptions = {}
 ): Promise<TokeiAnalysisResult> {
   const args = buildArgs(path, options);
-
-  try {
-    const { stdout } = await execFileAsync("tokei", args, {
-      maxBuffer: 50 * 1024 * 1024, // 50MB buffer for large codebases
-      timeout: 30_000, // don't let a hung tokei process block the MCP request forever
-      killSignal: "SIGKILL",
-    });
-
-    const data = JSON.parse(stdout) as TokeiOutput;
-    return { success: true, data };
-  } catch (err) {
-    if (isExecError(err) && err.code === "ENOENT") {
-      return {
-        success: false,
-        error: createError(
-          "TOOL_NOT_AVAILABLE",
-          "tokei is not installed. Install with: brew install tokei"
-        ),
-      };
-    }
-    console.error("tokei error:", err);
-    return {
-      success: false,
-      error: createError("PARSE_ERROR", "Failed to analyze line counts", {
-        path,
-      }),
-    };
-  }
+  const result = await collectTokeiOutput(args);
+  return toAnalysisResult(result, path);
 }
 
 /** Builds CLI arguments for tokei invocation. */
@@ -175,13 +149,4 @@ function buildArgs(path: string, options: TokeiOptions): string[] {
   }
 
   return args;
-}
-
-interface ExecError extends Error {
-  code?: string | number;
-}
-
-/** Type guard for exec errors with optional code property. */
-function isExecError(err: unknown): err is ExecError {
-  return err instanceof Error;
 }

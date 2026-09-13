@@ -133,9 +133,10 @@ counts, and documentation gaps. End with a one-line verdict: **CLEAN**
 
 Add these rules next to the tool table:
 
-- An arrow-function component (`const Card = () => {...}`) has no AST name.
-  Its body appears as one `<anonymous>` function. A `function Card() {}`
-  declaration keeps its name. Either way, most non-trivial components show
+- An arrow-function component (`const Card = () => {...}`) is reported under
+  the name it is bound to, the same as a `function Card() {}` declaration.
+  Only an unbound function, an inline callback or an IIFE, is `<anonymous>`.
+  Either way, most non-trivial components show
   up as >100-line "functions" in `check_thresholds` and
   `get_functions detail=lines`. Have the agent list oversized component
   bodies separately from oversized plain functions, because extracting a

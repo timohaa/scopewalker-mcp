@@ -175,6 +175,23 @@ function parseReport(input: string) {
     expect(result.summary.by_type.deprecated).toBe(0); // "DEPRECATED" in string should not match
   });
 
+  it("does not flag marker words used in ordinary prose (H4 regression)", async () => {
+    // scratchpad/repro-go-java/prose.go
+    await writeFile(
+      join(testDir, "prose.go"),
+      `package main
+
+// This fixes a rounding bug in the unused path.
+func x() {}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "prose.go") });
+    const result = parseContent<CodeSmellsResult>(response);
+
+    expect(result.summary.total_smells).toBe(0);
+  });
+
   it("returns empty results for clean files", async () => {
     const response = await handler({ path: join(testDir, "clean.ts") });
     const result = parseContent<CodeSmellsResult>(response);

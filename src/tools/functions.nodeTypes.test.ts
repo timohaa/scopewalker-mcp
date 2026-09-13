@@ -46,14 +46,16 @@ const generatorExpression = function* (): Generator<number> { yield 6; };
     );
 
     expect(functions).toHaveLength(6);
-    // Named forms keep their names; anonymous forms remain unnamed.
+    // Every form here is bound to a name, either its own or the binding's.
+    // Only an unbound function (a callback, an IIFE) is <anonymous>; see
+    // functions.arrowNames.test.ts.
     expect(functions.map((f) => f.name)).toEqual([
       "declared",
-      "<anonymous>",
-      "<anonymous>",
+      "expression",
+      "arrow",
       "method",
       "generator",
-      "<anonymous>",
+      "generatorExpression",
     ]);
   });
 

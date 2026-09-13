@@ -135,9 +135,9 @@ describe("hasDocumentation - sibling and lookback scanning", () => {
     expect(await isDocumented(code, "typescript", "function_declaration")).toBe(false);
   });
 
-  it("finds a doc comment separated by a blank line", async () => {
+  it("rejects a doc comment separated by a blank line", async () => {
     const code = `/** Builds it. */\n\nfunction build() {}`;
-    expect(await isDocumented(code, "typescript", "function_declaration")).toBe(true);
+    expect(await isDocumented(code, "typescript", "function_declaration")).toBe(false);
   });
 
   it("looks past a decorator between the doc comment and the declaration", async () => {

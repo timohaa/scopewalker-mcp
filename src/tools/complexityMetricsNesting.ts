@@ -1,4 +1,5 @@
 import type Parser from "tree-sitter";
+import { MAX_WALK_DEPTH } from "../lib/astWalker.js";
 import type { SupportedLanguage } from "../types/index.js";
 import { isElseIf } from "./complexityMetricsElseIf.js";
 
@@ -23,6 +24,7 @@ export const NESTING_TYPES = [
   "switch_expression", // Java switch statements
   "expression_switch_statement", // Go switch statements
   "type_switch_statement", // Go type switches
+  "select_statement", // Go select; one level, like the two switches above
   "match_expression",
   "lambda_expression", // Java and C++ lambdas
   "arrow_function", // TypeScript and JavaScript arrows
@@ -88,20 +90,62 @@ function isRubyBlock(node: Parser.SyntaxNode, language: SupportedLanguage): bool
   return node.parent?.type !== "lambda";
 }
 
+/**
+ * Returns true when a node adds a level of nesting.
+ *
+ * The named check keeps Ruby's `if`/`while`/`case` nodes from colliding with the
+ * same-named keyword tokens every other grammar emits inside its statements.
+ * An `else if` is a sibling branch, not a level.
+ */
+function isNestingNode(node: Parser.SyntaxNode, language: SupportedLanguage): boolean {
+  return (
+    node.isNamed &&
+    (NESTING_TYPES.includes(node.type) || isRubyBlock(node, language)) &&
+    !isElseIf(node)
+  );
+}
+
+/**
+ * Collects the subtree nesting depth of every node in one pass.
+ *
+ * Equivalent to calling calculateNestingDepth on each node, which is what the
+ * complexity tool did: each of those calls re-walked the node's whole subtree, so
+ * the total work grew with file size times tree depth. On llama.cpp's 19k-line
+ * ggml-vulkan.cpp that cost about 30 seconds for one file. A node's depth is its
+ * deepest child's depth plus its own level, so a single post-order pass produces
+ * the identical list.
+ */
+export function collectSubtreeNestingDepths(
+  rootNode: Parser.SyntaxNode,
+  language: SupportedLanguage
+): number[] {
+  const depths: number[] = [];
+
+  /** Returns the node's own nesting depth and records its children's. */
+  function visit(node: Parser.SyntaxNode, depth: number): number {
+    let childMax = 0;
+    for (const child of node.children) {
+      childMax = Math.max(childMax, visit(child, depth + 1));
+    }
+
+    // Matches calculateNestingDepth, which never counts the starting node itself,
+    // and the MAX_WALK_DEPTH cut-off of the walk this replaced.
+    if (childMax > 0 && depth <= MAX_WALK_DEPTH) depths.push(childMax);
+
+    return isNestingNode(node, language) ? childMax + 1 : childMax;
+  }
+
+  visit(rootNode, 0);
+  return depths;
+}
+
 /** Recursive helper that counts nesting for the given node and its descendants. */
 function walkNestingDepth(
   node: Parser.SyntaxNode,
   currentDepth: number,
   language: SupportedLanguage
 ): number {
-  // The named check keeps Ruby's `if`/`while`/`case` nodes from colliding with
-  // the same-named keyword tokens every other grammar emits inside its statements.
-  // Don't count "else if" as additional nesting - it's a sibling branch, not nested
-  const isNesting =
-    node.isNamed &&
-    (NESTING_TYPES.includes(node.type) || isRubyBlock(node, language)) &&
-    !isElseIf(node);
-  const newDepth = isNesting ? currentDepth + 1 : currentDepth;
+  const newDepth = isNestingNode(node, language) ? currentDepth + 1 : currentDepth;
 
   let maxDepth = newDepth;
 

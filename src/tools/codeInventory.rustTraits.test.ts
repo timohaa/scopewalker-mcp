@@ -53,11 +53,16 @@ afterAll(async () => {
   await rm(testDir, { recursive: true, force: true });
 });
 
-/** Names of the items the default inventory reports for the fixture. */
-async function defaultNames(): Promise<string[]> {
+/** Items the default inventory reports for the fixture. */
+async function defaultItems(): Promise<CodeInventoryResult["inventory"][number]["items"]> {
   const response = await handler({ path: join(testDir, "widget.rs") });
   const result = parseContent<CodeInventoryResult>(response);
-  return (result.inventory[0]?.items ?? []).map((item) => item.name);
+  return result.inventory[0]?.items ?? [];
+}
+
+/** Names of the items the default inventory reports for the fixture. */
+async function defaultNames(): Promise<string[]> {
+  return (await defaultItems()).map((item) => item.name);
 }
 
 describe("codeInventory - Rust trait members", () => {
@@ -65,8 +70,12 @@ describe("codeInventory - Rust trait members", () => {
     expect(await defaultNames()).toContain("fmt");
   });
 
-  it("keeps a trait default method in the default view", async () => {
-    expect(await defaultNames()).toContain("describe");
+  it("lists a trait's members under the trait, not as standalone functions", async () => {
+    const items = await defaultItems();
+    const shape = items.find((item) => item.name === "Shape");
+
+    expect(shape?.methods?.map((m) => m.name)).toEqual(["area", "describe"]);
+    expect(items.some((item) => item.name === "describe")).toBe(false);
   });
 
   it("still filters a non-pub inherent method by default", async () => {

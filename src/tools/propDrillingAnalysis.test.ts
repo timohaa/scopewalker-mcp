@@ -224,9 +224,11 @@ describe("analyzeFilesForParameters", () => {
   });
 
   it("falls back to <anonymous> when a function has no discoverable name", async () => {
+    // An arrow passed straight to a call binds no name anywhere, unlike
+    // `const run = (item) => ...`, which takes the name of its declarator.
     await writeFile(
       join(dir, "anon.ts"),
-      `export const run = (item: string) => {\n  return process(item);\n};\n`
+      `register((item: string) => {\n  return process(item);\n});\n`
     );
 
     const { fileAnalyses } = await analyzeFilesForParameters(["anon.ts"], dir, true);

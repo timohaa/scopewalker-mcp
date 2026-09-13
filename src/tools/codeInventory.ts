@@ -13,6 +13,8 @@ import {
   maxFilesSchema,
   limitSchema,
 } from "../utils/schemaLimits.js";
+import { dropOutOfLineMembers } from "./codeInventoryCpp.js";
+import { collectExportedNames, markExported } from "./codeInventoryExports.js";
 import {
   attachGoMethods,
   collectGoMethods,
@@ -170,5 +172,19 @@ function extractInventoryItems(
     }
   });
 
-  return items;
+  return finalizeItems(items, rootNode, language);
+}
+
+/** Applies the passes that can only run once every item of a file is known. */
+function finalizeItems(
+  items: InventoryItem[],
+  rootNode: Parameters<typeof walkNode>[0],
+  language: Parameters<typeof extractItem>[1]
+): InventoryItem[] {
+  if (language === "c" || language === "cpp") {
+    return dropOutOfLineMembers(items);
+  }
+
+  const exported = collectExportedNames(rootNode, language);
+  return exported.size === 0 ? items : markExported(items, exported);
 }

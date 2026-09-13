@@ -9,8 +9,11 @@ import type {
   MethodVisibility,
   SupportedLanguage,
 } from "../types/index.js";
+import { extractDeclaratorName, findFunctionDeclarator } from "./codeInventoryCpp.js";
 import { getItemType } from "./codeInventoryItemTypes.js";
 export { getItemType };
+import { bodyMembers, extractMethodName, isMethodNode } from "./codeInventoryMembers.js";
+export { extractMethodName, isMethodNode };
 import {
   defaultSectionVisibility,
   readInlineVisibilityCall,
@@ -45,7 +48,8 @@ export function extractItem(
     exported,
   };
 
-  if (type === "class") {
+  // A Rust trait is the one interface whose members the grammar nests in a body.
+  if (type === "class" || type === "interface") {
     const methods = extractMethods(node, language, includePrivate);
     if (methods.length > 0) {
       item.methods = methods;
@@ -55,8 +59,18 @@ export function extractItem(
   return item;
 }
 
-// "constant" covers Ruby class/module names, which use a distinct node type from other languages.
-const IDENTIFIER_TYPES = ["identifier", "type_identifier", "property_identifier", "constant"];
+// "constant" covers Ruby class/module names, which use a distinct node type from
+// other languages; "scope_resolution" covers its compact form, `class A::B::E`.
+// "operator" and "setter" name a Ruby `def ==` and a `def name=`.
+const IDENTIFIER_TYPES = [
+  "identifier",
+  "type_identifier",
+  "property_identifier",
+  "constant",
+  "scope_resolution",
+  "operator",
+  "setter",
+];
 
 /** Checks if a node is one of the identifier types that can hold a symbol name. */
 function isIdentifierNode(node: Parser.SyntaxNode): boolean {
@@ -67,17 +81,6 @@ function isIdentifierNode(node: Parser.SyntaxNode): boolean {
 function extractIdentifierFromDeclarator(declarator: Parser.SyntaxNode): string | null {
   const identifier = declarator.children.find((child) => child.type === "identifier");
   return identifier?.text ?? null;
-}
-
-// A declarator names its function differently by context: free functions use
-// `identifier`, out-of-line definitions `qualified_identifier` (`Widget::resize`),
-// and in-class members `field_identifier`.
-const DECLARATOR_NAME_TYPES = ["identifier", "qualified_identifier", "field_identifier"];
-
-/** Extracts the function name from a C/C++ function_declarator node. */
-function extractIdentifierFromFunctionDeclarator(declarator: Parser.SyntaxNode): string | null {
-  const name = declarator.children.find((child) => DECLARATOR_NAME_TYPES.includes(child.type));
-  return name?.text ?? null;
 }
 
 /** Extracts the name identifier from a declaration node. */
@@ -91,9 +94,9 @@ export function extractName(node: Parser.SyntaxNode): string | null {
 
   // Checked ahead of the identifier scan because a class-typed return value
   // (`Point make()`) puts a type_identifier before the declarator.
-  const declarator = node.children.find((child) => child.type === "function_declarator");
+  const declarator = findFunctionDeclarator(node);
   if (declarator) {
-    return extractIdentifierFromFunctionDeclarator(declarator);
+    return extractDeclaratorName(declarator);
   }
 
   for (const child of node.children) {
@@ -113,8 +116,14 @@ export function extractName(node: Parser.SyntaxNode): string | null {
 
 // Node types that hold a class's direct member list, per language grammar
 // (TS/JS/Java: class_body, Python: block, Ruby: body_statement,
-// C/C++/Rust: field_declaration_list).
-const CLASS_BODY_TYPES = ["class_body", "block", "body_statement", "field_declaration_list"];
+// C/C++/Rust: field_declaration_list, Rust trait: declaration_list).
+const CLASS_BODY_TYPES = [
+  "class_body",
+  "block",
+  "body_statement",
+  "field_declaration_list",
+  "declaration_list",
+];
 
 /** Adds a named method to the inventory with its effective visibility. */
 function recordMethod(
@@ -151,7 +160,7 @@ export function extractMethods(
   const retroactive = new Map<string, MethodVisibility>();
   let section = defaultSectionVisibility(classNode, language);
 
-  for (const node of body.children) {
+  for (const node of bodyMembers(body, language)) {
     const marker = readSectionMarker(node, language);
     if (marker) {
       section = marker;
@@ -196,49 +205,16 @@ function memberVisibility(
   if (language === "java") return getJavaAccessModifier(node) ?? "private";
 
   if (language === "typescript" || language === "javascript") {
+    // A `#name` field is private to the language itself, whatever else is declared.
+    if (node.children.some((child) => child.type === "private_property_identifier")) {
+      return "private";
+    }
+
     const modifier = node.children.find((child) => child.type === "accessibility_modifier");
     return (modifier?.text as MethodVisibility | undefined) ?? section;
   }
 
   return section;
-}
-
-/** Checks if an AST node represents a method definition. */
-export function isMethodNode(node: Parser.SyntaxNode): boolean {
-  const methodTypes = [
-    "method_definition",
-    "method_declaration",
-    "function_definition",
-    "public_method_definition",
-    "method",
-    "singleton_method",
-  ];
-  if (methodTypes.includes(node.type)) return true;
-
-  // C/C++ members declared without a body share a node type with data fields,
-  // so only those carrying a function_declarator are methods.
-  return (
-    node.type === "field_declaration" &&
-    node.children.some((child) => child.type === "function_declarator")
-  );
-}
-
-/** Extracts the method name from a method definition node. */
-export function extractMethodName(node: Parser.SyntaxNode): string | null {
-  for (const child of node.children) {
-    if (
-      child.type === "identifier" ||
-      child.type === "property_identifier" ||
-      child.type === "field_identifier"
-    ) {
-      return child.text;
-    }
-    // C/C++ nest the member name inside its declarator.
-    if (child.type === "function_declarator") {
-      return extractIdentifierFromFunctionDeclarator(child);
-    }
-  }
-  return null;
 }
 
 interface InventoryCounts {

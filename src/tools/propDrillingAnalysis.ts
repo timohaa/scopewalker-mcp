@@ -1,7 +1,7 @@
-import type Parser from "tree-sitter";
 import { walkNode } from "../lib/astWalker.js";
+import { extractFunctionName } from "../lib/functionNames.js";
 import { walkSourceFiles, type SourceFile } from "../lib/sourceFileWalker.js";
-import { parseCode } from "../lib/treeSitter.js";
+import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type {
   FileParameterAnalysis,
   ParameterInfo,
@@ -54,36 +54,19 @@ const FUNCTION_TYPES = [
   "constructor_declaration",
 ];
 
-/** Extracts the name of a function node. */
-function getFunctionName(node: Parser.SyntaxNode): string {
-  for (const child of node.children) {
-    if (
-      child.type === "identifier" ||
-      child.type === "property_identifier" ||
-      child.type === "field_identifier"
-    ) {
-      return child.text;
-    }
-    if (child.type === "function_declarator") {
-      for (const grandchild of child.children) {
-        if (grandchild.type === "identifier" || grandchild.type === "qualified_identifier") {
-          return grandchild.text;
-        }
-      }
-    }
-  }
-  return "<anonymous>";
-}
-
 /**
  * Analyzes a single file for parameter info: extracts params from every function
  * and detects forwarding.
  */
 async function analyzeFile({
+  fullPath,
   relativePath,
-  language,
+  language: detectedLanguage,
   code,
 }: SourceFile): Promise<FileParameterAnalysis | null> {
+  // The walker detects the language from the extension alone, which sends every
+  // C++ header to the C grammar. Re-detecting with the source in hand fixes `.h`.
+  const language = detectLanguage(fullPath, code) ?? detectedLanguage;
   const tree = await parseCode(code, language);
   if (tree === null) return null;
 
@@ -92,7 +75,7 @@ async function analyzeFile({
   walkNode(tree.rootNode, (node) => {
     if (!FUNCTION_TYPES.includes(node.type)) return;
 
-    const funcName = getFunctionName(node);
+    const funcName = extractFunctionName(node) ?? "<anonymous>";
     const paramNames = extractParameterNames(node, language);
     const forwardedNames = detectForwardedParameters(node, paramNames, language);
     const forwardedSet = new Set(forwardedNames);

@@ -3,6 +3,9 @@ import type { SourceFile } from "../lib/sourceFileWalker.js";
 import { parseCode } from "../lib/treeSitter.js";
 import { getComments } from "../lib/treeSitterComments.js";
 import type { CodeSmell, CodeSmellsResult, CodeSmellType, FileSmells } from "../types/index.js";
+import { detectSmellsInComments, truncateText } from "./codeSmellMarkers.js";
+
+export { SMELL_PATTERNS, detectSmellsInComments } from "./codeSmellMarkers.js";
 
 /** Maximum number of smells per file to include in response. */
 const MAX_SMELLS_PER_FILE = 50;
@@ -31,17 +34,6 @@ export const COMMENT_SMELL_TYPES: CodeSmellType[] = [
 /** Code-based smell types (detected via AST patterns). */
 export const CODE_SMELL_TYPES: CodeSmellType[] = ["unsafe_cast"];
 
-/** Patterns for detecting code smells in comments. */
-export const SMELL_PATTERNS: Record<string, RegExp> = {
-  todo: /\bTODO\b/i,
-  fixme: /\bFIXME\b/i,
-  hack: /\bHACK\b/i,
-  xxx: /\bXXX\b/i,
-  bug: /\bBUG\b/i,
-  unused: /\bUNUSED\b/i,
-  deprecated: /\bDEPRECATED\b/i,
-};
-
 /** All supported smell types, combining comment-based and code-based detections. */
 export const ALL_SMELL_TYPES: CodeSmellType[] = [
   "todo",
@@ -53,18 +45,6 @@ export const ALL_SMELL_TYPES: CodeSmellType[] = [
   "deprecated",
   "unsafe_cast",
 ];
-
-/** Maximum length for smell text to prevent huge responses. */
-const MAX_TEXT_LENGTH = 200;
-
-/** Truncates text to max length with ellipsis. */
-function truncateText(text: string): string {
-  const trimmed = text.trim();
-  if (trimmed.length <= MAX_TEXT_LENGTH) {
-    return trimmed;
-  }
-  return trimmed.slice(0, MAX_TEXT_LENGTH) + "...";
-}
 
 /** Creates an empty smell counter for all smell types. */
 export function createEmptySmellCounts(): Record<CodeSmellType, number> {
@@ -120,32 +100,6 @@ export async function processFileForSmells(
   } catch {
     return null;
   }
-}
-
-/** Scans comments for code smell patterns using tree-sitter extracted comments. */
-export function detectSmellsInComments(
-  comments: { startLine: number; endLine: number; text: string }[],
-  filePath: string,
-  typesToDetect: CodeSmellType[],
-  includeText: boolean
-): CodeSmell[] {
-  const smells: CodeSmell[] = [];
-
-  for (const comment of comments) {
-    for (const type of typesToDetect) {
-      const pattern = SMELL_PATTERNS[type];
-      if (pattern.test(comment.text)) {
-        smells.push({
-          path: filePath,
-          line: comment.startLine,
-          type,
-          text: includeText ? truncateText(comment.text) : "<redacted>",
-        });
-      }
-    }
-  }
-
-  return smells;
 }
 
 /** Options for detecting code-based smells. */

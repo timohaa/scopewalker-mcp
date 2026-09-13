@@ -80,7 +80,7 @@ export function registerCheckThresholdsTool(server: McpServer): void {
           })
         : [resolvedPath];
 
-      const { oversizedFunctions, totalFunctions } = await findOversizedFunctions(
+      const { oversizedFunctions, totalFunctions, filesSkipped } = await findOversizedFunctions(
         filePaths,
         resolvedPath,
         isDirectory,
@@ -100,7 +100,12 @@ export function registerCheckThresholdsTool(server: McpServer): void {
           totalFileViolations: oversizedFiles.length,
           totalFunctionViolations: oversizedFunctions.length,
         },
-        { filesChecked: fileLineCounts.size, totalFunctions }
+        {
+          filesChecked: fileLineCounts.size,
+          totalFunctions,
+          filesSkipped,
+          scanComplete: filesSkipped === 0,
+        }
       );
 
       const itemCount = limitedFiles.length + limitedFunctions.length;

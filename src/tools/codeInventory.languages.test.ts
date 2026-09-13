@@ -6,12 +6,12 @@ import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { CodeInventoryResult } from "../types/index.js";
 import { registerCodeInventoryTool } from "./codeInventory.js";
 
-describe("codeInventory tool - Python", () => {
+describe("codeInventory tool - Python (module and widget)", () => {
   let pyTestDir: string;
   const pyHandler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
 
   beforeAll(async () => {
-    pyTestDir = join(tmpdir(), `scopewalker-inv-py-test-${String(Date.now())}`);
+    pyTestDir = join(tmpdir(), `scopewalker-inv-py-test-basic-${String(Date.now())}`);
     await mkdir(pyTestDir, { recursive: true });
 
     await writeFile(
@@ -88,6 +88,73 @@ class Widget:
     const pyFile = result.inventory.find((f) => f.file.endsWith("widget.py"));
     const widgetClass = pyFile?.items.find((i) => i.name === "Widget");
     expect(widgetClass?.methods?.map((m) => m.name)).toEqual(["bar"]);
+  });
+
+  it("still treats an underscore-prefixed module-level def as private", async () => {
+    const response = await pyHandler({ path: pyTestDir });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const pyFile = result.inventory.find((f) => f.file.endsWith("module.py"));
+    expect(pyFile?.items.some((i) => i.name === "_private_function")).toBe(false);
+  });
+});
+
+describe("codeInventory tool - Python (decorators)", () => {
+  let pyTestDir: string;
+  const pyHandler = getToolHandler(registerCodeInventoryTool, "get_code_inventory");
+
+  beforeAll(async () => {
+    pyTestDir = join(tmpdir(), `scopewalker-inv-py-test-decorated-${String(Date.now())}`);
+    await mkdir(pyTestDir, { recursive: true });
+
+    await writeFile(
+      join(pyTestDir, "decorated.py"),
+      `from dataclasses import dataclass
+import functools
+
+@dataclass
+class Scope:
+    x: int
+
+@functools.cache
+def cached():
+    pass
+
+class Holder:
+    @property
+    def size(self):
+        return 1
+`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(pyTestDir, { recursive: true, force: true });
+  });
+
+  // A decorator wraps the definition, which used to hide module scope from the
+  // export check and the class from its own methods.
+  it("marks a decorated module-level class and def as exported", async () => {
+    const response = await pyHandler({ path: pyTestDir });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const pyFile = result.inventory.find((f) => f.file.endsWith("decorated.py"));
+    const byName = new Map((pyFile?.items ?? []).map((i) => [i.name, i]));
+
+    expect(byName.get("Scope")?.exported).toBe(true);
+    expect(byName.get("Scope")?.type).toBe("class");
+    expect(byName.get("cached")?.exported).toBe(true);
+  });
+
+  it("nests a decorated method under its class instead of listing it top level", async () => {
+    const response = await pyHandler({ path: pyTestDir });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    const pyFile = result.inventory.find((f) => f.file.endsWith("decorated.py"));
+    const holder = pyFile?.items.find((i) => i.name === "Holder");
+
+    expect(holder?.methods?.map((m) => m.name)).toEqual(["size"]);
+    expect(pyFile?.items.some((i) => i.name === "size")).toBe(false);
   });
 });
 

@@ -23,11 +23,26 @@ export function extractParameterNames(
     extractPythonParamNames(paramListNode, names);
   } else {
     for (const child of paramListNode.namedChildren) {
+      if (isTruncatedByParseError(child)) continue;
       extractNamesFromParamNode(child, names, language);
     }
   }
 
   return names;
+}
+
+/**
+ * Returns true for a parameter the parser could not finish reading.
+ *
+ * An unexpanded macro between the type and the name (`float * GGML_RESTRICT s`)
+ * ends the declaration at the macro and pushes the real name into an ERROR
+ * sibling. The declaration's own declarator then holds the macro, so taking a
+ * name from it invents one: GGML_RESTRICT was the second most threaded
+ * "parameter" in llama.cpp. The ERROR node still carries the real name, so
+ * skipping only the truncated declaration keeps `s` and drops the macro.
+ */
+function isTruncatedByParseError(node: Parser.SyntaxNode): boolean {
+  return node.type !== "ERROR" && node.nextNamedSibling?.type === "ERROR";
 }
 
 // Python wrappers that hold the bound name in an identifier child rather than

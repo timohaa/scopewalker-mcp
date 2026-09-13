@@ -43,10 +43,17 @@ Identifies files and functions that exceed configurable size thresholds.
     "files_checked": 150,
     "functions_checked": 420,
     "file_violations": 3,
-    "function_violations": 12
+    "function_violations": 12,
+    "files_skipped": 0,
+    "scan_complete": true
   }
 }
 ```
+
+`files_skipped` and `scan_complete` describe only the function pass: files the 1 MB AST
+guard or the `max_files` cap kept out of `oversized_functions`. The file-size pass runs
+separately, over tokei's own traversal, and has no comparable guard to report; `files_checked`
+already reflects everything that pass measured. See [known-bugs.md](./known-bugs.md).
 
 ---
 
@@ -72,24 +79,25 @@ Generates a comprehensive inventory of classes, methods, functions, and exports.
 
 Each language's declarations map onto those five types:
 
-| Language              | Class             | Interface                       | Enum   | Function                                      | Constant                  |
-|-----------------------|-------------------|---------------------------------|--------|-----------------------------------------------|---------------------------|
-| TypeScript/JavaScript | `class`           | `interface`, `type`             | `enum` | `function`, `const`/`let` bound to a function | other `const`/`let`/`var` |
-| Python                | `class`           | -                               | -      | module-level `def`                            | -                         |
-| Go                    | `struct` types    | `interface` types, type aliases | -      | `func`                                        | -                         |
-| Rust                  | `struct`          | `trait`                         | `enum` | `fn`                                          | -                         |
-| Java                  | `class`           | `interface`                     | `enum` | -                                             | -                         |
-| C/C++                 | `class`, `struct` | -                               | `enum` | function definitions                          | -                         |
-| Ruby                  | `class`           | -                               | -      | top-level `def`                               | -                         |
+| Language              | Class                      | Interface                       | Enum   | Function                                      | Constant                  |
+|-----------------------|----------------------------|---------------------------------|--------|-----------------------------------------------|---------------------------|
+| TypeScript/JavaScript | `class`                    | `interface`, `type`             | `enum` | `function`, `const`/`let` bound to a function | other `const`/`let`/`var` |
+| Python                | `class`                    | -                               | -      | module-level `def`                            | -                         |
+| Go                    | `struct` types             | `interface` types, type aliases | -      | `func`                                        | `const`                   |
+| Rust                  | `struct`                   | `trait`                         | `enum` | `fn`                                          | `const`, `static`         |
+| Java                  | `class`, `record`          | `interface`                     | `enum` | -                                             | -                         |
+| C/C++                 | `class`, `struct`, `union` | -                               | `enum` | function definitions                          | -                         |
+| Ruby                  | `class`                    | -                               | -      | top-level `def`                               | -                         |
 
 Notes:
 
 - Results are grouped by file.
 - Each file returns at most 100 items. The `limit` parameter trims the number of files. Files with no matching items are omitted from `inventory`.
-- Methods are nested under their class and omitted from the top-level function list. Go methods match their type by receiver across every file in the package. A type in `types.go` can therefore collect methods from `methods.go`. Matching stays within each directory, which separates same-named types in different packages. C/C++ member functions are picked up from the record body, including declaration-only members. Rust `impl` methods are currently reported as standalone functions.
-- `exported` follows each language's convention. It recognizes TS/JS `export`, Python module scope, Go capitalization, bare Rust `pub`, and Java `public`. Rust `pub(crate)` and `pub(super)` count as unexported. C/C++ and Ruby always report `exported: false` because they lack an equivalent declaration marker.
+- Methods are nested under their class and omitted from the top-level function list. Go methods match their type by receiver across every file in the package. A type in `types.go` can therefore collect methods from `methods.go`. Matching stays within each directory, which separates same-named types in different packages. C/C++ member functions are picked up from the record body, including declaration-only members. Constructors, destructors, and operator overloads count as members. A member defined outside its class body is not listed again at the top level when the class is declared in the same file; when it is not, the definition keeps its qualified name (`Widget::size`). A Rust trait's members, both required signatures and default methods, are listed under the trait. Rust `impl` methods are currently reported as standalone functions.
+- A `struct`, `union`, `enum`, or `class` is inventoried only where it declares its member list. A parameter, return type, field, or local variable that merely names the type adds nothing.
+- `exported` follows each language's convention. It recognizes TS/JS `export`, including `export { X }`, `export { X as Y }`, `export default X`, `module.exports = { X }`, and `exports.X = X`, Python module scope, Go capitalization, bare Rust `pub`, and Java `public`. A decorated top-level Python def or class is exported the same as an undecorated one. Rust `pub(crate)` and `pub(super)` count as unexported. C/C++ and Ruby always report `exported: false` because they lack an equivalent declaration marker.
 - `include_private` recognizes leading underscores, lowercase Go names, and explicit access modifiers. Because unexported is Go's only form of private, the default view of a Go package is its exported API. Rust items are private unless declared with bare `pub`; restricted forms such as `pub(crate)` and `pub(super)` are filtered too. Functions inside a `trait` or an `impl Trait for Type` block take the trait's visibility and are never filtered. Pass `include_private: true` to include these symbols while preserving their `exported` status.
-- Nested method visibility comes from language-specific syntax. TypeScript and Java use declaration modifiers. C++ and Ruby use sections that govern members until the next marker. Ruby's `private :sym` and `private def x` forms are also recognized. A C++ `class` defaults to private, while a `struct` defaults to public. A Java method with no modifier is package-private, which the tool reports as `private` because it is not part of the type's outside-facing API. `protected` is reported as itself and survives `include_private: false`, being part of the inheritable API. Underscore-prefixed names remain private regardless of their section.
+- Nested method visibility comes from language-specific syntax. TypeScript and Java use declaration modifiers. C++ and Ruby use sections that govern members until the next marker. Ruby's `private :sym` and `private def x` forms are also recognized. A C++ `class` defaults to private, while a `struct` defaults to public. A Java method with no modifier is package-private, which the tool reports as `private` because it is not part of the type's outside-facing API. `protected` is reported as itself and survives `include_private: false`, being part of the inheritable API. Underscore-prefixed names remain private regardless of their section. A TS/JS class field bound to a function (`handleClick = (e) => {}`) is reported as a method with the field's declared visibility; a `#name` field is private. Java constructors are listed as methods. Ruby operator methods (`==`, `<=>`, `+`, `[]`, `[]=`) and setters (`name=`) keep their names; `class A::B::E` is inventoried under its full scoped name.
 
 **Response:**
 
@@ -158,13 +166,13 @@ Cyclomatic complexity is 1 plus the decision points in a function. Decision poin
 
 The rules are uniform across all nine grammars rather than matching radon exactly. Radon additionally charges for Python's `with`, `assert`, and comprehensions, which have no detectable counterpart in the other eight languages. Counting them would make the same algorithm score higher in Python than in TypeScript. Expect scopewalker's Python numbers to sit slightly below radon's for code using those constructs.
 
-Parameter counting follows each grammar. Python skips `self`/`cls`, `*args`, `**kwargs`, and the bare `*` keyword-only marker. Go excludes the method receiver and expands grouped declarations, so `func f(a, b, c int)` counts as 3. C/C++ parameter lists are read out of the function declarator.
+Parameter counting follows each grammar. Python skips `self`/`cls`, `*args`, `**kwargs`, and the bare `*` keyword-only marker. Go excludes the method receiver and expands grouped declarations, so `func f(a, b, c int)` counts as 3. Rust excludes the receiver in all four of its spellings (`self`, `mut self`, `&self`, `&mut self`). C/C++ parameter lists are read out of the function declarator.
 
 Nesting and cognitive complexity use separate node lists for each grammar. A construct can count toward either metric, both, or neither:
 
-- **Both metrics:** `if`, `for`, and `while` in every grammar, including the less common loop spellings (`do`-`while` in TypeScript, JavaScript, Java, C, and C++, Java's for-each, C++ range-for). Switches everywhere: `switch_statement` in C, C++, TypeScript, and JavaScript, `expression_switch_statement` and `type_switch_statement` in Go, `switch_expression` in Java. Rust's expression forms (`if`/`for`/`while`/`loop`/`match` and closures). Ruby's keyword-named `if`, `unless`, `while`, `until`, `for`, `case`, and `case ... in`.
+- **Both metrics:** `if`, `for`, and `while` in every grammar, including the less common loop spellings (`do`-`while` in TypeScript, JavaScript, Java, C, and C++, Java's for-each, C++ range-for). Switches everywhere: `switch_statement` in C, C++, TypeScript, and JavaScript, `expression_switch_statement` and `type_switch_statement` in Go, `switch_expression` in Java, and `select_statement`, Go's switch over channels, which counts once for the container like any other switch. Rust's expression forms (`if`/`for`/`while`/`loop`/`match` and closures). Ruby's keyword-named `if`, `unless`, `while`, `until`, `for`, `case`, and `case ... in`.
 - **Nesting only:** `try` blocks, anonymous functions in every grammar (`arrow_function` in TypeScript and JavaScript, `lambda` in Python and Ruby's stabby `->(x){}`, `func_literal` in Go, `lambda_expression` in Java and C++), and Ruby's `begin` plus both of its block forms. A lambda's own body is not an extra level: `->(x) { ... }` nests one deep, the same as the arrow function it corresponds to.
-- **Cognitive complexity only:** `catch` clauses in every grammar that has one (`catch_clause` in TypeScript, JavaScript, Java, and C++, `except_clause` in Python, `rescue` in Ruby). Ternaries in every grammar that has one (`ternary_expression` in TypeScript, JavaScript, and Java, `conditional_expression` in Python, C, and C++, `conditional` in Ruby; Go and Rust have no ternary operator). Logical operators, both the `&&`/`||` form and the `and`/`or` keywords Python and Ruby also accept. The `elif`/`elsif` nodes Python and Ruby give else-if chains. An else-if branch scores a flat 1 whatever its grammar calls it, so a chain of three branches costs 3 in every supported language. Ruby's statement modifiers (`b if a`, `c while x`, `g rescue nil`) also land here: they are branches, but with no block there is nothing to nest.
+- **Cognitive complexity, not nesting (and also cyclomatic, via its own list below):** `catch` clauses in every grammar that has one (`catch_clause` in TypeScript, JavaScript, Java, and C++, `except_clause` in Python, `rescue` in Ruby). Ternaries in every grammar that has one (`ternary_expression` in TypeScript, JavaScript, and Java, `conditional_expression` in Python, C, and C++, `conditional` in Ruby; Go and Rust have no ternary operator). Logical operators, both the `&&`/`||` form and the `and`/`or` keywords Python and Ruby also accept. The `elif`/`elsif` nodes Python and Ruby give else-if chains. An else-if branch scores a flat 1 whatever its grammar calls it, so a chain of three branches costs 3 in every supported language. Ruby's statement modifiers (`b if a`, `c while x`, `g rescue nil`) also land here: they are branches, but with no block there is nothing to nest. None of these add nesting: a `catch` block or a logical operator is a branch, not a level of indentation. All of them, including the statement modifiers, also count toward cyclomatic complexity: `if a and b or c` scores 4, and each `except`/`catch`/`rescue` adds 1.
 
 Cyclomatic complexity runs off a third list and diverges from the other two in three ways. It counts each `switch` arm individually rather than charging once for the container (`switch_case` in TypeScript and JavaScript, `expression_case` and `type_case` in Go, `match_arm` in Rust, `switch_label` in Java, `case_statement` in C and C++, `case_clause` in Python, `when` and `in_clause` in Ruby), so a twelve-case switch scores 13 where cognitive complexity scores 1. It excludes anonymous functions entirely. It counts `else if` rather than flattening it.
 

@@ -27,5 +27,9 @@ export interface CheckThresholdsResult {
     functions_checked: number;
     file_violations: number;
     function_violations: number;
+    /** Files the function pass could not analyze (e.g. over the 1MB AST size guard). */
+    files_skipped: number;
+    /** False when files_skipped is nonzero, so oversized_functions may be incomplete. */
+    scan_complete: boolean;
   };
 }

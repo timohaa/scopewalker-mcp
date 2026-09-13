@@ -1,6 +1,7 @@
-import { walkSourceFiles } from "../lib/sourceFileWalker.js";
-import { getComments, getFunctions } from "../lib/treeSitter.js";
+import { walkSourceFiles, type SourceFile } from "../lib/sourceFileWalker.js";
+import { detectLanguage, getComments, getFunctions } from "../lib/treeSitter.js";
 import type {
+  SupportedLanguage,
   FileFunctionCount,
   FileFunctionLineCount,
   FunctionCountsResult,
@@ -8,6 +9,16 @@ import type {
   FunctionLineInfo,
 } from "../types/index.js";
 import { calculateFunctionLineStats } from "./functionLineCountsHelpers.js";
+
+/**
+ * Re-detects the language now that the source has been read.
+ *
+ * walkSourceFiles goes by extension alone, which maps every `.h` to C and so
+ * reports the `class` keyword as a function in a C++ header.
+ */
+function resolveLanguage({ fullPath, language, code }: SourceFile): SupportedLanguage {
+  return detectLanguage(fullPath, code) ?? language;
+}
 
 /** Parses each file path and extracts function names and counts. */
 export async function analyzeFilesForCounts(
@@ -18,12 +29,9 @@ export async function analyzeFilesForCounts(
 ): Promise<FileFunctionCount[]> {
   const results: FileFunctionCount[] = [];
 
-  for await (const { relativePath, language, code } of walkSourceFiles(
-    filePaths,
-    basePath,
-    isDirectory,
-    maxFiles
-  )) {
+  for await (const file of walkSourceFiles(filePaths, basePath, isDirectory, maxFiles)) {
+    const { relativePath, code } = file;
+    const language = resolveLanguage(file);
     const functionLocations = await getFunctions(code, language);
 
     const functions: FunctionInfo[] = functionLocations.map((fn) => ({
@@ -52,12 +60,9 @@ export async function analyzeFilesForLines(
 ): Promise<FileFunctionLineCount[]> {
   const results: FileFunctionLineCount[] = [];
 
-  for await (const { relativePath, language, code } of walkSourceFiles(
-    filePaths,
-    basePath,
-    isDirectory,
-    maxFiles
-  )) {
+  for await (const file of walkSourceFiles(filePaths, basePath, isDirectory, maxFiles)) {
+    const { relativePath, code } = file;
+    const language = resolveLanguage(file);
     const lines = code.split("\n");
     const [functionLocations, comments] = await Promise.all([
       getFunctions(code, language),

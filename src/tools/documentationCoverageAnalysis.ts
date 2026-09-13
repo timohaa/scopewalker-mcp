@@ -6,9 +6,8 @@ import type {
   SupportedLanguage,
   UndocumentedItem,
 } from "../types/index.js";
+import { findDocAbove } from "./documentationCoverageAdjacency.js";
 import {
-  isCommentNode,
-  isDocCommentText,
   isDocComment,
   isAnyComment,
   hasPythonDocstring,
@@ -28,6 +27,8 @@ export interface CoverageData {
   undocumentedItems: UndocumentedItem[];
   totalDocumented: number;
   totalUndocumented: number;
+  /** Supported files that were never parsed, so their symbols are in no total. */
+  filesSkipped: number;
 }
 
 /** Result of analyzing a single file's documentation coverage. */
@@ -37,62 +38,35 @@ export interface FileAnalysis {
   items: UndocumentedItem[];
 }
 
-/** Returns true when a sibling node is itself a documentation comment. */
-function isDocSibling(sibling: Parser.SyntaxNode, language: SupportedLanguage): boolean {
-  return isCommentNode(sibling) && isDocCommentText(sibling.text, language);
-}
-
-/**
- * Returns true for nodes the backward scan may walk past.
- * Decorators sit between a doc comment and the node it documents, so stopping
- * at one would hide the comment above it.
- */
-function isSkippableSibling(sibling: Parser.SyntaxNode): boolean {
-  const isWhitespace = sibling.type.includes("newline") || sibling.text.trim() === "";
-  return isWhitespace || isCommentNode(sibling) || sibling.type === "decorator";
-}
-
-/** Checks preceding siblings for documentation comments. */
-function hasDocInSiblings(node: Parser.SyntaxNode, language: SupportedLanguage): boolean {
-  const prevNamed = node.previousNamedSibling;
-  if (prevNamed !== null && isDocSibling(prevNamed, language)) return true;
-
-  let sibling = node.previousSibling;
-  while (sibling !== null) {
-    if (isDocSibling(sibling, language)) return true;
-    if (!isSkippableSibling(sibling)) break;
-    sibling = sibling.previousSibling;
-  }
-
-  return false;
-}
-
 /**
  * How many lines above a declaration the fallback scans for a doc comment.
- * Must span multi-line JSDoc blocks plus interposed decorator lines.
+ * Must span a multi-line comment block written as consecutive single-line comments.
  */
 const MAX_LOOKBACK_LINES = 30;
 
-/** Fallback: checks preceding source lines for doc comments. */
+/**
+ * Fallback for grammars whose comment nodes this tool does not classify: reads
+ * the comment block ending on the line directly above the declaration. A blank
+ * line or a line of code ends the block, so a remark about the previous
+ * declaration cannot document this one.
+ */
 function hasDocInPrecedingLines(
-  node: Parser.SyntaxNode,
+  anchorRow: number,
   lines: string[],
   lang: SupportedLanguage
 ): boolean {
-  const startLine = node.startPosition.row;
-  for (let i = startLine - 1; i >= 0 && i >= startLine - MAX_LOOKBACK_LINES; i--) {
-    const line = lines[i]?.trim() || "";
-    if (line === "") continue;
-    // Decorator lines (@dec()) sit between the doc comment and the declaration; skip them
-    if (line.startsWith("@")) continue;
+  for (let i = anchorRow - 1; i >= 0 && i >= anchorRow - MAX_LOOKBACK_LINES; i--) {
+    const line = lines[i]?.trim() ?? "";
+    if (line === "") return false;
     if (isDocComment(line, lang)) return true;
-    if (!isAnyComment(line)) break;
+    if (!isAnyComment(line)) return false;
   }
   return false;
 }
 
 /**
- * Checks AST docstrings and preceding comment nodes, then falls back to preceding source lines.
+ * Checks AST docstrings and the comment block directly above the declaration,
+ * then falls back to the preceding source lines.
  */
 export function hasDocumentation(
   node: Parser.SyntaxNode,
@@ -100,8 +74,11 @@ export function hasDocumentation(
   language: SupportedLanguage
 ): boolean {
   if (language === "python" && hasPythonDocstring(node)) return true;
-  if (hasDocInSiblings(node, language)) return true;
-  return hasDocInPrecedingLines(node, lines, language);
+
+  const { documented, anchorRow } = findDocAbove(node, lines, language);
+  if (documented) return true;
+
+  return hasDocInPrecedingLines(anchorRow, lines, language);
 }
 
 /** Options for analyzing documentation coverage of a single file. */
@@ -154,11 +131,15 @@ export function buildDocumentationCoverageResult(
   data: CoverageData
 ): DocumentationCoverageResult {
   const { resolvedPath, summaryOnly, limit } = config;
-  const { byFile, undocumentedItems, totalDocumented, totalUndocumented } = data;
+  const { byFile, undocumentedItems, totalDocumented, totalUndocumented, filesSkipped } = data;
 
   const totalSymbols = totalDocumented + totalUndocumented;
+  const scanComplete = filesSkipped === 0;
+  // Nothing analyzed is full coverage only when nothing was left out: a file
+  // skipped by the size guard must not read as 100% documented.
+  const emptyPercentage = scanComplete ? 100 : 0;
   const percentage =
-    totalSymbols > 0 ? Math.round((totalDocumented / totalSymbols) * 1000) / 10 : 100;
+    totalSymbols > 0 ? Math.round((totalDocumented / totalSymbols) * 1000) / 10 : emptyPercentage;
 
   let limitedItems = undocumentedItems;
   let itemsTruncated = false;
@@ -178,6 +159,8 @@ export function buildDocumentationCoverageResult(
     by_file: summaryOnly ? [] : byFile,
     summary: {
       files_analyzed: byFile.length,
+      files_skipped: filesSkipped,
+      scan_complete: scanComplete,
       total_symbols: totalSymbols,
       fully_documented_files: byFile.filter((f) => f.undocumented === 0).length,
       zero_documentation_files: byFile.filter((f) => f.documented === 0).length,

@@ -27,6 +27,8 @@ beforeAll(async () => {
   await writeFile(join(testDir, "c.ts"), "export function c(): void {}\n");
   // Comfortably past the 1MB guard so the walker skips it without reading it in.
   await writeFile(join(testDir, "huge.ts"), `// ${"x".repeat(DEFAULT_MAX_FILE_BYTES + 1)}\n`);
+  await writeFile(join(testDir, "plain.h"), "int add(int a, int b);\n");
+  await writeFile(join(testDir, "widget.h"), "class Widget {\npublic:\n  void run();\n};\n");
 });
 
 afterAll(async () => {
@@ -34,6 +36,14 @@ afterAll(async () => {
 });
 
 describe("walkSourceFiles", () => {
+  it("detects the language from content for .h headers", async () => {
+    const languages: Record<string, string> = {};
+    for await (const file of walkSourceFiles(["plain.h", "widget.h"], testDir, true)) {
+      languages[file.relativePath] = file.language;
+    }
+    expect(languages).toEqual({ "plain.h": "c", "widget.h": "cpp" });
+  });
+
   it("yields only files with a detectable language", async () => {
     const seen = await walkedPaths(["README.md", "notes.txt", "a.ts"]);
     expect(seen).toEqual(["a.ts"]);

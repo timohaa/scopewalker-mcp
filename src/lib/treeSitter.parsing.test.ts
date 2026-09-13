@@ -17,12 +17,13 @@ export function baz(x: number): number { return x; }`;
     expect(functions.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("treats unparenthesized single-param arrows as anonymous", async () => {
+  it("names an unparenthesized single-param arrow after its binding", async () => {
     const code = `const dbl = x => x * 2;
 const dbl2 = (x) => x * 2;`;
     const functions = await getFunctions(code, "typescript");
-    // The bare parameter identifier must not be mistaken for a function name
-    expect(functions.map((f) => f.name)).toEqual(["<anonymous>", "<anonymous>"]);
+    // The bare parameter identifier must not be mistaken for a function name;
+    // the name comes from the variable the arrow is bound to.
+    expect(functions.map((f) => f.name)).toEqual(["dbl", "dbl2"]);
   });
 
   it("extracts TypeScript class methods", async () => {

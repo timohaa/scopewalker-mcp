@@ -85,7 +85,13 @@ function countPythonParameters(children: Parser.SyntaxNode[]): number {
   return count;
 }
 
-/** Counts actual parameters, excluding language-specific non-parameter nodes. */
+/**
+ * Counts actual parameters, excluding language-specific non-parameter nodes.
+ *
+ * Rust's receiver is one node type whatever its form (`self`, `mut self`, `&self`,
+ * `&mut self`), so dropping it matches the Python and Go receiver rules and makes
+ * the same five-parameter method report 5 in all three languages.
+ */
 function countActualParameters(
   paramsNode: Parser.SyntaxNode,
   language?: SupportedLanguage
@@ -94,6 +100,7 @@ function countActualParameters(
 
   if (language === "go") return countGoParameters(children);
   if (language === "python") return countPythonParameters(children);
+  if (language === "rust") return children.filter((c) => c.type !== "self_parameter").length;
 
   return children.length;
 }
