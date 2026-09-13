@@ -1,5 +1,7 @@
 import type Parser from "tree-sitter";
 import type { DeadCodeSymbolType, SupportedLanguage } from "../types/index.js";
+import { isTraitScope } from "./codeInventoryVisibility.js";
+export { isTraitScope };
 
 // Rust attributes that describe an item without giving anything else a way to
 // call it. Every other attribute (test, no_mangle, wasm_bindgen, tauri::command,
@@ -165,18 +167,6 @@ function hasAnnotation(node: Parser.SyntaxNode, language: SupportedLanguage): bo
     default:
       return false;
   }
-}
-
-/**
- * Checks for a Rust trait scope, whose functions are never candidates.
- *
- * A trait's methods and an `impl Trait for X` block's methods are dispatched
- * through the trait, so `Display::fmt` runs on every `{}` without its name ever
- * appearing at a call site.
- */
-export function isTraitScope(node: Parser.SyntaxNode): boolean {
-  if (node.type === "trait_item") return true;
-  return node.type === "impl_item" && node.childForFieldName("trait") !== null;
 }
 
 /** Checks whether a declaration must never be reported as dead. */

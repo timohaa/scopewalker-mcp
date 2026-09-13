@@ -96,18 +96,6 @@ deeply chained expression or a file with hundreds of nested callbacks. Ordinary 
 does not come close to 500 levels of nesting, so the cap is not expected to affect normal
 codebases.
 
-### Rust `include_private: false` ignores `pub` visibility
-
-**Tools:** `get_code_inventory`
-
-`isPrivateSymbol` filters leading underscores and recognizes TypeScript, Java, and Go
-access conventions, but has no Rust visibility branch. A crate with `pub fn draw`, `fn secret`,
-and `fn private_fn` returns all three whether `include_private` is `true` or `false`.
-Visibility is still *reported* correctly (non-`pub` items are marked `exported: false`);
-the filter ignores it. Leading-underscore names such as `_hidden` are still filtered.
-
-See `docs/tools-health.md`.
-
 ### Rust `impl` methods are reported as standalone functions
 
 **Tools:** `get_code_inventory`, `get_documentation_coverage`

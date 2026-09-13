@@ -11,6 +11,27 @@ function getRustVisibility(node: Parser.SyntaxNode): string | null {
   return modifier?.text ?? null;
 }
 
+/** Checks for a Rust `trait` block or an `impl Trait for Type` block. */
+export function isTraitScope(node: Parser.SyntaxNode): boolean {
+  if (node.type === "trait_item") return true;
+  return node.type === "impl_item" && node.childForFieldName("trait") !== null;
+}
+
+/**
+ * Checks for a Rust function declared inside a trait scope.
+ *
+ * Such functions carry no `pub` of their own because they take the trait's
+ * visibility, so a missing keyword says nothing about whether they are private.
+ * They sit one `declaration_list` below the trait or impl, so no ancestor walk
+ * is needed.
+ */
+function isRustTraitMember(node: Parser.SyntaxNode): boolean {
+  if (node.type !== "function_item") return false;
+  const list = node.parent;
+  if (list?.type !== "declaration_list" || list.parent === null) return false;
+  return isTraitScope(list.parent);
+}
+
 /**
  * Reads a Java access modifier off a declaration's optional `modifiers` child.
  *
@@ -42,6 +63,8 @@ export function isPrivateSymbol(
   // Unexported is the only private Go has, so capitalization settles both this
   // and isExported — there is no third state to distinguish.
   if (language === "go") return !GO_EXPORTED.test(name);
+
+  if (language === "rust") return !isRustTraitMember(node) && getRustVisibility(node) !== "pub";
 
   if (language === "typescript" || language === "javascript") {
     return node.children.some(

@@ -116,7 +116,10 @@ func Make(a int) int { return a }
   });
 
   it("indexes Rust structs, enums, and traits", async () => {
-    const response = await typeHandler({ path: join(typeTestDir, "shapes.rs") });
+    const response = await typeHandler({
+      path: join(typeTestDir, "shapes.rs"),
+      include_private: true,
+    });
     const result = parseContent<CodeInventoryResult>(response);
 
     const byName = new Map((result.inventory[0]?.items ?? []).map((i) => [i.name, i]));
@@ -125,6 +128,14 @@ func Make(a int) int { return a }
     expect(byName.get("Color")?.type).toBe("enum");
     expect(byName.get("Shape")?.type).toBe("interface");
     expect(byName.get("make")?.type).toBe("function");
+  });
+
+  it("excludes private Rust structs, enums, traits, and functions by default", async () => {
+    const response = await typeHandler({ path: join(typeTestDir, "shapes.rs") });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    expect(result.inventory).toEqual([]);
+    expect(result.summary.total_files).toBe(0);
   });
 
   it("indexes Go struct and interface type declarations", async () => {
