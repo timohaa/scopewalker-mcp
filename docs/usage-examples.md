@@ -49,6 +49,7 @@ Use scopewalker-mcp tools to understand and validate the code
 - `get_code_smells` - TODO/FIXME-style markers and unsafe casts
 - `get_documentation_coverage` - Find undocumented functions/classes
 - `get_prop_drilling` - Parameters threaded through many functions/files
+- `find_dead_code` - Unreferenced symbols and private methods
 ```
 
 For other languages, only the extensions and the inventory description
@@ -224,7 +225,7 @@ description: Find coding-standards violations with Scopewalker and fix
   them while checks and tests stay green. Use after significant changes
   or for a full standards audit.
 model: sonnet
-tools: Bash, Read, Edit, Write, Glob, Grep, mcp__scopewalker__check_thresholds, mcp__scopewalker__get_code_smells, mcp__scopewalker__get_complexity_metrics, mcp__scopewalker__get_functions, mcp__scopewalker__get_line_counts, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_documentation_coverage, mcp__scopewalker__get_prop_drilling
+tools: Bash, Read, Edit, Write, Glob, Grep, mcp__scopewalker__check_thresholds, mcp__scopewalker__get_code_smells, mcp__scopewalker__get_complexity_metrics, mcp__scopewalker__get_functions, mcp__scopewalker__get_line_counts, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_documentation_coverage, mcp__scopewalker__get_prop_drilling, mcp__scopewalker__find_dead_code
 ---
 ```
 
@@ -239,6 +240,7 @@ get_line_counts            → file line metrics (code/blank/comment)
 get_code_inventory         → classes, functions, methods, and exports overview
 get_documentation_coverage → undocumented functions/classes
 get_prop_drilling          → parameter threading (prop drilling) across function chains
+find_dead_code             → unreferenced symbols and private methods
 ```
 
 After refactoring, rerun the Scopewalker tool that flagged the violation
@@ -300,7 +302,8 @@ allowlist them in `.claude/settings.local.json` (or share the list via
       "mcp__scopewalker__get_documentation_coverage",
       "mcp__scopewalker__get_functions",
       "mcp__scopewalker__get_line_counts",
-      "mcp__scopewalker__get_prop_drilling"
+      "mcp__scopewalker__get_prop_drilling",
+      "mcp__scopewalker__find_dead_code"
     ]
   }
 }

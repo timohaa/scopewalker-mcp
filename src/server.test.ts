@@ -7,6 +7,7 @@ import { createServer, SERVER_NAME } from "./server.js";
 /** Every tool the server is expected to advertise, sorted. */
 const EXPECTED_TOOLS = [
   "check_thresholds",
+  "find_dead_code",
   "get_code_inventory",
   "get_code_smells",
   "get_complexity_metrics",

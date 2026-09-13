@@ -82,13 +82,14 @@ anything in it at all.
 ### Symbol discovery stops at 500 nested AST levels
 
 **Tools:** `get_code_inventory`, `get_complexity_metrics`, `get_documentation_coverage`,
-`get_functions`, `get_prop_drilling`
+`get_functions`, `get_prop_drilling`, `find_dead_code`
 
 These tools' symbol-discovery walks stop descending beyond 500 nested AST levels.
 Functions beyond that depth are silently omitted rather than flagged as truncated.
 Complexity helpers can still inspect deeper subtrees: a function inside 510 nested
 blocks reports `function_count: 0`, but an `if` inside it still adds 1 to whole-file
-cognitive complexity.
+cognitive complexity. Only `find_dead_code`'s candidate discovery is capped this way; its
+reference count walks the full tree regardless of depth.
 
 The limit exists to prevent a stack overflow on adversarial or generated input, such as a
 deeply chained expression or a file with hundreds of nested callbacks. Ordinary source code
@@ -190,7 +191,8 @@ See `docs/tools-health.md`.
 ### Only the `.gitignore` at the scanned path is honored
 
 **Tools:** `check_thresholds`, `get_code_inventory`, `get_code_smells`,
-`get_complexity_metrics`, `get_documentation_coverage`, `get_functions`, `get_prop_drilling`
+`get_complexity_metrics`, `get_documentation_coverage`, `get_functions`, `get_prop_drilling`,
+`find_dead_code`
 
 `createIgnoreFilter` in `src/lib/glob.ts` reads exactly one file, `<scanned path>/.gitignore`.
 Git resolves ignore rules from every `.gitignore` between the repository root and the file;

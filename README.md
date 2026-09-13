@@ -4,7 +4,7 @@
 
 AI agents will happily create 1000+ line source files and add a 20th parameter to a function call, even if there's a rule file telling them not to. Scopewalker exists to enforce stricter codebase standards.
 
-It's a local MCP server (open source, runs over stdio, makes no network calls) that exposes 8 read-only tools:
+It's a local MCP server (open source, runs over stdio, makes no network calls) that exposes 9 read-only tools:
 
 - `get_line_counts` - per-file line counts (total, code, blank, comment) with sorting, extension filters, and project-wide totals
 - `get_functions` - function and method detection; per-file counts, or per-function line metrics via `detail=lines` with a `min_lines` filter for hunting oversized functions
@@ -14,6 +14,7 @@ It's a local MCP server (open source, runs over stdio, makes no network calls) t
 - `get_documentation_coverage` - coverage percentage plus every function, class, or method missing a doc comment (JSDoc, Python docstrings, Rust `///`, and other per-language formats)
 - `get_code_smells` - TODO/FIXME/HACK/XXX/BUG/UNUSED/DEPRECATED markers found by scanning actual comments via the AST (no false positives from string literals), plus `as unknown as` / `as any as` double casts in TypeScript
 - `get_prop_drilling` - parameter names threaded through many functions and files, with forwarding evidence and a high/medium/low risk rating
+- `find_dead_code` - unreferenced top-level symbols and private methods, split into certain `dead_code` and human-judgment `unreferenced_exports`
 
 It's tree-sitter (parsing) + tokei (line counting) + fast-glob (file discovery) under the hood; nothing is custom-parsed. Tested on macOS with Claude Code, but should work with Cursor, VS Code, Windsurf, Antigravity CLI, Codex, or anything else that speaks MCP.
 

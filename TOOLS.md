@@ -14,6 +14,7 @@ See [docs/tools-overview.md](./docs/tools-overview.md) for complete documentatio
 | `get_documentation_coverage` | Find undocumented code                                          |
 | `get_code_smells`            | Find TODO/FIXME/HACK/XXX/BUG/UNUSED/DEPRECATED and unsafe casts |
 | `get_prop_drilling`          | Detect parameter threading across function chains               |
+| `find_dead_code`             | Unreferenced symbols and private methods across the scan        |
 
 ## Documentation
 

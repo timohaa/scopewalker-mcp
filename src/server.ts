@@ -7,6 +7,7 @@ import { registerCheckThresholdsTool } from "./tools/checkThresholds.js";
 import { registerCodeInventoryTool } from "./tools/codeInventory.js";
 import { registerCodeSmellsTool } from "./tools/codeSmells.js";
 import { registerComplexityMetricsTool } from "./tools/complexityMetrics.js";
+import { registerDeadCodeTool } from "./tools/deadCode.js";
 import { registerDocumentationCoverageTool } from "./tools/documentationCoverage.js";
 import { registerFunctionsTool } from "./tools/functions.js";
 import { registerLineCountsTool } from "./tools/lineCounts.js";
@@ -80,6 +81,7 @@ export function createServer(): McpServer {
   registerComplexityMetricsTool(server);
   registerDocumentationCoverageTool(server);
   registerPropDrillingTool(server);
+  registerDeadCodeTool(server);
 
   applySchemaStrippingOverride(server);
 

@@ -8,3 +8,4 @@ export * from "./documentation.js";
 export * from "./languages.js";
 export * from "./codeSmells.js";
 export * from "./propDrilling.js";
+export * from "./deadCode.js";

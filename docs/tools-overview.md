@@ -1,6 +1,6 @@
 # Tools Reference
 
-Scopewalker MCP provides 8 tools for codebase analysis.
+Scopewalker MCP provides 9 tools for codebase analysis.
 
 ## Common Parameters
 
@@ -93,4 +93,4 @@ Examples omit `_meta` for brevity.
 
 - [Core Analysis Tools](./tools-core.md) - Line counts, function counts
 - [Codebase Health Tools](./tools-health.md) - Thresholds, inventory, complexity
-- [Code Quality Tools](./tools-quality.md) - Documentation coverage, code smells, prop drilling
+- [Code Quality Tools](./tools-quality.md) - Documentation coverage, code smells, prop drilling, dead code

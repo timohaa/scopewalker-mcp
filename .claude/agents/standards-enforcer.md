@@ -2,7 +2,7 @@
 name: standards-enforcer
 description: Find coding-standards violations with Scopewalker and fix them while checks and tests stay green. Use after significant changes or for a full standards audit.
 model: sonnet
-tools: Bash, Read, Edit, Write, Glob, Grep, mcp__scopewalker__check_thresholds, mcp__scopewalker__get_code_smells, mcp__scopewalker__get_complexity_metrics, mcp__scopewalker__get_functions, mcp__scopewalker__get_line_counts, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_documentation_coverage, mcp__scopewalker__get_prop_drilling
+tools: Bash, Read, Edit, Write, Glob, Grep, mcp__scopewalker__check_thresholds, mcp__scopewalker__get_code_smells, mcp__scopewalker__get_complexity_metrics, mcp__scopewalker__get_functions, mcp__scopewalker__get_line_counts, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_documentation_coverage, mcp__scopewalker__get_prop_drilling, mcp__scopewalker__find_dead_code
 ---
 
 # Standards Enforcer Agent
@@ -23,6 +23,7 @@ get_line_counts            → file line metrics (code/blank/comment)
 get_code_inventory         → classes, functions, methods, and exports overview
 get_documentation_coverage → undocumented functions/classes
 get_prop_drilling          → parameter threading (prop drilling) across function chains
+find_dead_code             → unreferenced symbols and private methods
 ```
 
 ## Pre-Refactoring: Verify Test Coverage (MANDATORY)

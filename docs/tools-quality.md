@@ -203,3 +203,146 @@ Detects parameter threading (prop drilling) by finding parameter names passed th
   "arguments": { "path": "./src", "min_occurrences": 5, "exclude_common": true }
 }
 ```
+
+---
+
+## find_dead_code
+
+Finds declared symbols and private methods that nothing in the scanned files references.
+
+**Parameters:**
+
+| Name              | Type     | Required | Description                                          |
+|-------------------|----------|----------|------------------------------------------------------|
+| `path`            | string   | Yes      | Path to file or directory                            |
+| `include_hidden`  | boolean  | No       | Include hidden files                                 |
+| `ignore_patterns` | string[] | No       | Glob patterns to exclude                             |
+| `extensions`      | string[] | No       | Filter by extensions                                 |
+| `max_depth`       | integer  | No       | Maximum directory depth to traverse (max 64)         |
+| `max_files`       | integer  | No       | Maximum number of files to scan (max 10000)          |
+| `limit`           | integer  | No       | Max items to return per list (default: 20, max 5000) |
+
+**How detection works:** the tool extracts top-level classes, functions, interfaces, enums,
+and constants, plus private class methods, as candidates. It then counts every name-token
+occurrence across all scanned files and subtracts each candidate's own declaration. A candidate
+with zero remaining occurrences is unreferenced. String literals and symbols count as
+references, so reflection patterns like `getattr(o, "foo")`, `send(:foo)`, and `obj["foo"]` keep
+a name alive. Comments do not count, with one exception: Go's `//export name` and
+`//go:linkname name` directives count their named symbol as referenced.
+
+**Visibility scope:**
+
+| Scope     | Meaning                                             | Examples                                                                                                                                                                                                                              |
+|-----------|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `local`   | Reachable only from its own file or class           | A non-exported top-level symbol in a TS/JS module file; a C/C++ private method or `static` function in a `.c`/`.cpp` file                                                                                                             |
+| `package` | Reachable from sibling files under the scanned path | Private methods in every language except C/C++; Go unexported names; Rust items with no visibility modifier; Java `private` and package-private classes; Python `_`-prefixed names                                                    |
+| `public`  | Reachable from outside the scan                     | Exported TS/JS symbols; globals of a TS/JS script file; Go exported names; Rust `pub` (including `pub(crate)` and `pub(super)`); Java `public`/`protected`; Ruby top-level symbols; C/C++ non-static symbols and anything in a header |
+
+Private methods are `package` rather than `local` because no supported language confines them
+to a file: TypeScript allows `obj["name"]()` past `private`, Java reflection reaches any member,
+an underscore prefix is a convention in JS, Python and Ruby, and a Ruby subclass or reopened
+class can call a private method by name. Each of those is a name token the scan counts, so a
+directory scan that covers the whole project proves the miss. C/C++ headers are textually included, so a
+`static` function or a private member declared in a `.h`/`.hpp` file can be reached from any
+source file that includes it.
+
+**Classification:** a candidate with zero references becomes `dead_code` when its scope is
+`local`, or when its scope is `package` and the target path is a directory scanned without
+`max_depth`, and only while `summary.scan_complete` is `true`. A depth-limited scan can omit a
+Rust child module that uses its parent's private items, so it cannot prove a `package` symbol
+dead. Everything else with zero references becomes
+`unreferenced_exports`, the list for findings that need human judgment because the tool cannot
+prove they are unreachable. `scan_complete` is `false` when any supported-language file in the
+scan was not parsed: the `max_files` cap was reached with files remaining, a file exceeded the 1
+MB guard, a file could not be read, or parsing failed. When `scan_complete` is `false`, every
+finding moves to `unreferenced_exports`, because a skipped file could hold the missing reference.
+
+**Exclusions:** a candidate is dropped before reference counting when any of these apply:
+
+- The declaration carries an annotation, decorator, or attribute: TS/JS decorators, Python
+  `@decorator`, Java annotations (`@Test`, `@PostConstruct`, `@Scheduled`, `@Entity`), C/C++
+  attributes, and Rust attributes other than the inert allowlist (comments between an attribute and its item are skipped) (`derive`, `cfg`, `allow`,
+  `warn`, `deny`, `forbid`, `doc`, `inline`, `must_use`, `deprecated`, `repr`, `non_exhaustive`,
+  `cold`, `track_caller`). `cfg_attr` and every other Rust attribute (`test`, `no_mangle`,
+  `wasm_bindgen`, `tauri::command`, `tokio::main`, `proc_macro`, `bench`, `ctor`) excludes the
+  declaration.
+- Language entry points and framework hooks: Go `main`, `init`, and
+  `Test`/`Benchmark`/`Example`/`Fuzz`-prefixed functions; Rust and C/C++ `main`; Python
+  `test_`-prefixed functions, `Test`-prefixed classes, and dunder methods; Java serialization
+  hooks (`readObject`, `writeObject`, `readResolve`, `writeReplace`, `readObjectNoData`,
+  `finalize`).
+- A private method of a class that extends, implements, or mixes in anything (TS/JS
+  `extends`, a Python base list, a Ruby superclass or `include`/`extend`/`prepend`, a C++ base
+  class), and any TypeScript method marked `override`. A base class calls its hooks by name,
+  such as `_transform` on a Node stream, and the base usually lives outside the scan. Java
+  `private` methods and TypeScript methods with an explicit `private` keyword stay candidates,
+  because neither can override a base member.
+- Rust functions inside a `trait` or an `impl Trait for Type` block. They are dispatched through
+  the trait, so `Display::fmt` runs on every `{}` without its name at any call site. Inherent
+  `impl Type` methods remain candidates.
+- TypeScript ambient code: `.d.ts` files are skipped entirely, and any node under an
+  `ambient_declaration` (`declare ...`) is skipped.
+- A C/C++ file whose preprocessor text contains `##` (token pasting can synthesize names not
+  visible in the source) yields no candidates.
+- A C++ name qualified with `::` (an out-of-line definition such as `Widget::resize`) is dropped;
+  it adds a reference to the declaration instead of a new candidate.
+
+**Limitations:**
+
+- Detection is name-based. Two symbols with the same name across different files shadow each
+  other: if either is used, neither is reported, even if one of them truly is dead.
+- A name that appears only inside a comment (other than the Go directives above) still counts as
+  unreferenced, because comments are not scanned for references.
+- Any skipped file — from the `max_files` cap or otherwise — sets `summary.scan_complete` to
+  `false` and moves every finding to `unreferenced_exports`.
+- `unreferenced_exports` can include symbols consumed outside the scan, such as a published
+  package's public API or a plugin entry point loaded by another repository.
+- Python's leading-underscore convention is not an enforced boundary, so `_name` symbols are
+  scoped `package`, not `local`. Scan the whole project rather than a subdirectory to see them
+  reach `dead_code`.
+- Java splits one package across source roots (`src/main/java` and `src/test/java`). A
+  package-private member used only from the test root appears in `dead_code` when only the main
+  root is scanned. That is the same behavior as the test-exclusion recipe below.
+
+**Recipe:** to find symbols used only by tests, exclude the test files from the scan:
+
+```json
+{ "path": "./src", "ignore_patterns": ["**/*.test.ts"] }
+```
+
+Anything that becomes unreferenced once tests are excluded is exercised only by its own tests,
+not by production code.
+
+**Response:**
+
+```json
+{
+  "path": "/path/to/target",
+  "is_directory": true,
+  "dead_code": [
+    { "file": "src/utils/legacy.ts", "name": "formatLegacyDate", "type": "function", "line": 12 }
+  ],
+  "unreferenced_exports": [
+    { "file": "src/api/index.ts", "name": "createClient", "type": "function", "line": 40 }
+  ],
+  "summary": {
+    "files_scanned": 45,
+    "files_skipped": 0,
+    "scan_complete": true,
+    "symbols_checked": 312,
+    "dead_code_found": 1,
+    "unreferenced_exports_found": 1
+  }
+}
+```
+
+`type` is one of `class`, `function`, `interface`, `enum`, `constant`, `method`.
+
+**Example:**
+
+```json
+{
+  "name": "find_dead_code",
+  "arguments": { "path": "./src", "ignore_patterns": ["**/*.test.ts"] }
+}
+```
