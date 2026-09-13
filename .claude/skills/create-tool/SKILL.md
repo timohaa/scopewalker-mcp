@@ -33,7 +33,7 @@ Read `docs/patterns.md` for tool registration, error handling, and testing patte
 
 - Add the tool to the quick reference table in `TOOLS.md`
 - Add detailed docs to the appropriate `docs/tools-*.md` file
-- Add the tool to the list in `README.md`, and bump the tool count there and in `docs/tools-overview.md` (both currently say 8)
+- Add the tool to the list in `README.md`, and bump the tool count there and in `docs/tools-overview.md` (both currently say 9)
 
 ### 5. Verify
 
