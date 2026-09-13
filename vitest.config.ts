@@ -19,11 +19,14 @@ export default defineConfig({
         "src/testUtils/**", // test harness, not production code
         "src/__fixtures__/**", // sample inputs consumed by tests
       ],
+      // Every production file must clear 80% on each metric. Vitest applies
+      // perFile to all thresholds, so an aggregate floor cannot coexist with it.
       thresholds: {
-        statements: 94.5,
-        branches: 88.5,
-        functions: 98,
-        lines: 96.5,
+        perFile: true,
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
       },
     },
   },

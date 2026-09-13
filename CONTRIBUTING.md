@@ -55,7 +55,7 @@ npm run test:coverage  # Run tests with coverage report
 2. Make changes following the code standards
 3. Run `npm run check` and fix any issues
 4. Submit PR with clear description of changes
-5. Ensure CI checks pass. `.github/workflows/ci.yml` runs `npm run check`, `npm run test:coverage`, and `npm run build` on every pull request. CI fails if `npm run check` modifies a tracked file, so commit the fixes it applies. It also fails if coverage drops below the thresholds in `vitest.config.ts`.
+5. Ensure CI checks pass. `.github/workflows/ci.yml` runs `npm run check`, `npm run test:coverage`, and `npm run build` on every pull request. CI fails if `npm run check` modifies a tracked file, so commit the fixes it applies. It also fails if any file drops below the per-file coverage thresholds in `vitest.config.ts`.
 
 ## Releasing (maintainers)
 

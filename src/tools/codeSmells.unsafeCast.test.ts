@@ -61,6 +61,22 @@ const value = someObj as unknown as SomeType;
     expect(result.summary.by_type.unsafe_cast).toBe(1);
   });
 
+  it("does not detect 'as' chains where the inner type isn't unknown or any", async () => {
+    await writeFile(
+      join(testDir, "array_type_cast.ts"),
+      `const x = foo as string[] as Bar;
+`
+    );
+
+    const response = await handler({
+      path: join(testDir, "array_type_cast.ts"),
+      types: ["unsafe_cast"],
+    });
+    const result = parseContent<CodeSmellsResult>(response);
+
+    expect(result.summary.by_type.unsafe_cast).toBe(0);
+  });
+
   it("does not detect simple as expressions", async () => {
     await writeFile(
       join(testDir, "safe_casts.ts"),

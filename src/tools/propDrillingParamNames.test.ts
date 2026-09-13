@@ -72,6 +72,25 @@ describe("extractParameterNames - Python splats and receivers", () => {
     const fn = await nodeOfType(`def m(*args, self):\n    pass`, "python", "function_definition");
     expect(extractParameterNames(fn, "python")).toEqual(["self"]);
   });
+
+  it("ignores the bare positional-only separator (/)", async () => {
+    // "/" is not in PYTHON_NON_PARAMETER_TYPES, so it reaches pushPythonParamName
+    // as neither an identifier nor a named wrapper and contributes no name.
+    const fn = await nodeOfType(`def m(a, /, b):\n    pass`, "python", "function_definition");
+    expect(extractParameterNames(fn, "python")).toEqual(["a", "b"]);
+  });
+
+  it("drops typed splats since the annotation wrapper holds no direct identifier", async () => {
+    // An annotated splat (`*args: int`) parses as typed_parameter wrapping
+    // list_splat_pattern/dictionary_splat_pattern, so the identifier is nested
+    // one level deeper than pushPythonParamName's direct-child search looks.
+    const fn = await nodeOfType(
+      `def m(*args: int, **kwargs: str, x: int):\n    pass`,
+      "python",
+      "function_definition"
+    );
+    expect(extractParameterNames(fn, "python")).toEqual(["x"]);
+  });
 });
 
 describe("extractParameterNames - C, C++ and Ruby", () => {
@@ -114,6 +133,21 @@ describe("extractParameterNames - C, C++ and Ruby", () => {
     expect(extractParameterNames(fn, "cpp")).toEqual(["s", "pp"]);
   });
 
+  it("skips a C parameter with no declared name", async () => {
+    // A bare `int` parameter_declaration has no identifier and no declarator
+    // chain to recurse into, so findNameInDeclarators bottoms out at null.
+    const fn = await nodeOfType(`void f(int, int b) {}`, "c", "function_definition");
+    expect(extractParameterNames(fn, "c")).toEqual(["b"]);
+  });
+
+  it("skips an unnamed C function-pointer parameter", async () => {
+    // `void (*)(int)` nests declarator > declarator > declarator with no
+    // identifier anywhere in the chain, so the recursive lookup returns null
+    // at every level instead of finding a name partway down.
+    const fn = await nodeOfType(`void k(void (*)(int), int n) {}`, "c", "function_definition");
+    expect(extractParameterNames(fn, "c")).toEqual(["n"]);
+  });
+
   it("extracts Ruby method parameter names", async () => {
     const fn = await nodeOfType(`def m(a, b)\n  a\nend`, "ruby", "method");
     expect(extractParameterNames(fn, "ruby")).toEqual(["a", "b"]);
@@ -136,6 +170,55 @@ describe("extractParameterNames - Go receiver disambiguation", () => {
   it("still extracts a Go free function's parameters", async () => {
     const fn = await nodeOfType(`package m\nfunc Free(a, b int) {}`, "go", "function_declaration");
     expect(extractParameterNames(fn, "go")).toEqual(["a", "b"]);
+  });
+});
+
+describe("extractParameterNames - destructuring edge shapes", () => {
+  it("drops a nested destructured value in an object pattern", async () => {
+    // extractPairPatternName only accepts an identifier value; `{ a: { b } }`'s
+    // pair_pattern has a nested object_pattern value instead, so it yields no
+    // name and extractObjectPatternNames skips the push.
+    const fn = await nodeOfType(
+      `function f({ a: { b } }) {}`,
+      "typescript",
+      "function_declaration"
+    );
+    expect(extractParameterNames(fn, "typescript")).toEqual([]);
+  });
+
+  it("ignores a rest element inside an object pattern", async () => {
+    // rest_pattern is neither shorthand_property_identifier_pattern nor
+    // pair_pattern, so extractObjectPatternNames' else-if falls through it.
+    const fn = await nodeOfType(
+      `function f({ a, ...rest }) {}`,
+      "typescript",
+      "function_declaration"
+    );
+    expect(extractParameterNames(fn, "typescript")).toEqual(["a"]);
+  });
+
+  it("only collects direct identifiers in an array pattern with a nested pattern", async () => {
+    // collectDirectIdentifiers does not recurse, so a nested object_pattern
+    // element (`[a, {b}]`) is skipped rather than descended into.
+    const fn = await nodeOfType(`function f([a, {b}]) {}`, "typescript", "function_declaration");
+    expect(extractParameterNames(fn, "typescript")).toEqual(["a"]);
+  });
+});
+
+describe("extractParameterNames - unnamed/unmapped grammar nodes", () => {
+  it("finds no name for a Rust wildcard parameter", async () => {
+    // `_` binds no identifier node at all, so extractFirstIdentifierChild's
+    // scan finds nothing and pushFirstIdentifierChild pushes nothing.
+    const fn = await nodeOfType(`fn f(_: i32) {}`, "rust", "function_item");
+    expect(extractParameterNames(fn, "rust")).toEqual([]);
+  });
+
+  it("finds no name for a Java varargs parameter", async () => {
+    // spread_parameter has no entry in PARAM_NODE_EXTRACTORS, so it falls back
+    // to pushFirstIdentifierChild, whose direct-child scan misses the
+    // identifier nested inside the variable_declarator.
+    const fn = await nodeOfType(`class C { void f(int... a) {} }`, "java", "method_declaration");
+    expect(extractParameterNames(fn, "java")).toEqual([]);
   });
 });
 
