@@ -181,7 +181,7 @@ function walkTreeForUnsafeCasts(
           line: node.startPosition.row + 1,
           text,
         });
-        return; // Don't descend further into this node
+        return;
       }
     }
   }

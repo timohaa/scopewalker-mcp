@@ -17,7 +17,7 @@ export interface SourceFile {
  * Yields every readable, supported, within-size-limit file from a scan list,
  * stopping after `maxFiles` of them.
  *
- * Six tools repeated this preamble verbatim before their own analysis. This
+ * Several tools repeated this preamble verbatim before their own analysis. This
  * uses a generator because the callers accumulate different result shapes.
  * A generic reduction would not suit all of them.
  *

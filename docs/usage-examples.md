@@ -148,12 +148,13 @@ The [polish workflow](../.claude/skills/polish/SKILL.md) preserves this sequence
 If you use several coding tools, you can maintain common instructions once and reuse them.
 This is a convenience tip; Scopewalker does not require a particular instruction-file layout.
 
-| Coding tool | How to reuse a shared `AGENTS.md`                                                                                                                                                 |
-|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Claude Code | Put `@AGENTS.md` in a root `CLAUDE.md`. Relative imports resolve from the importing file. [Claude documentation](https://code.claude.com/docs/en/memory#import-additional-files). |
-| Gemini CLI  | Put `@./AGENTS.md` in a root `GEMINI.md`, or configure `context.fileName` to load `AGENTS.md` directly. [Gemini documentation](https://geminicli.com/docs/cli/gemini-md/).        |
-| Codex       | Reads `AGENTS.md` directly through its instruction hierarchy; no pointer file is needed. [OpenAI documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md).    |
-| Cursor      | Reads root and nested `AGENTS.md` files directly. Project rules can also include files using `@filename` references. [Cursor documentation](https://cursor.com/docs/rules).       |
+| Coding tool     | How to reuse a shared `AGENTS.md`                                                                                                                                                 |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Claude Code     | Put `@AGENTS.md` in a root `CLAUDE.md`. Relative imports resolve from the importing file. [Claude documentation](https://code.claude.com/docs/en/memory#import-additional-files). |
+| Antigravity CLI | Reads a workspace-root `AGENTS.md` directly on startup. [Antigravity documentation](https://antigravity.google/docs/cli/best-practices/#write-a-codebase-rule-file).              |
+| Gemini CLI      | Put `@./AGENTS.md` in a root `GEMINI.md`, or configure `context.fileName` to load `AGENTS.md` directly. [Gemini documentation](https://geminicli.com/docs/cli/gemini-md/).        |
+| Codex           | Reads `AGENTS.md` directly through its instruction hierarchy; no pointer file is needed. [OpenAI documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md).    |
+| Cursor          | Reads root and nested `AGENTS.md` files directly. Project rules can also include files using `@filename` references. [Cursor documentation](https://cursor.com/docs/rules).       |
 
 The loading mechanisms differ; `@path` is not a universal instruction-file convention.
 Use the mechanism documented by your coding tool and check that it loaded the intended instructions.

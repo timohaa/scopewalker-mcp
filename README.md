@@ -127,10 +127,8 @@ See [Windsurf MCP documentation](https://docs.devin.ai/desktop/cascade/mcp) for 
 
 ### Antigravity CLI
 
-Antigravity CLI (`agy`) replaced Gemini CLI in June 2026; MCP servers now
-live in a dedicated config file instead of `~/.gemini/settings.json`. Add
-to `~/.gemini/config/mcp_config.json` (global) or `.agents/mcp_config.json`
-(per project):
+Add to `~/.gemini/config/mcp_config.json` (global) or
+`.agents/mcp_config.json` (per project):
 
 ```json
 {
@@ -146,9 +144,10 @@ to `~/.gemini/config/mcp_config.json` (global) or `.agents/mcp_config.json`
 Use `/mcp` inside the prompt panel to check server status and reload the
 config.
 
-See [Antigravity CLI MCP documentation](https://antigravity.google/docs/cli/mcp)
-for details, and the [migration guide](https://antigravity.google/docs/cli/gcli-migration)
-if you're coming from Gemini CLI.
+See [Antigravity CLI MCP documentation](https://antigravity.google/docs/cli/mcp) for details.
+
+For Gemini CLI, add the same `mcpServers` configuration
+to `~/.gemini/settings.json`. See [Gemini CLI MCP documentation](https://geminicli.com/docs/tools/mcp-server/).
 
 ### OpenAI Codex CLI
 

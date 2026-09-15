@@ -53,7 +53,8 @@ function isWithinAllowedRoots(resolvedPath: string, allowedRoots: string[]): boo
 }
 
 /**
- * Validates that a path exists and returns its resolved form.
+ * Validates that a path exists, is within an allowed root, and returns its
+ * resolved (symlink-following) form.
  */
 export async function validatePath(inputPath: string): Promise<PathValidationResult> {
   const allowedRoots = getAllowedRoots();

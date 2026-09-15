@@ -45,9 +45,10 @@ def bar():
     pass`;
     try {
       const functions = await getFunctions(code, "python");
+      const names = functions.map((f) => f.name);
       if (functions.length > 0) {
-        expect(functions.map((f) => f.name)).toContain("foo");
-        expect(functions.map((f) => f.name)).toContain("bar");
+        expect(names).toContain("foo");
+        expect(names).toContain("bar");
       }
     } catch {
       // Grammar may not be available in all environments
@@ -64,9 +65,10 @@ func helper(x int) int {
 }`;
     try {
       const functions = await getFunctions(code, "go");
+      const names = functions.map((f) => f.name);
       if (functions.length > 0) {
-        expect(functions.map((f) => f.name)).toContain("main");
-        expect(functions.map((f) => f.name)).toContain("helper");
+        expect(names).toContain("main");
+        expect(names).toContain("helper");
       }
     } catch {
       // Grammar may not be available in all environments
@@ -122,10 +124,12 @@ class MyClass
 end`;
     try {
       const functions = await getFunctions(code, "ruby");
+      const names = functions.map((f) => f.name);
+      const hasClassMethod = functions.some((f) => f.name.includes("class_method"));
       if (functions.length > 0) {
-        expect(functions.map((f) => f.name)).toContain("regular_method");
+        expect(names).toContain("regular_method");
         // singleton_method for self.class_method
-        expect(functions.some((f) => f.name.includes("class_method"))).toBe(true);
+        expect(hasClassMethod).toBe(true);
       }
     } catch {
       // Grammar may not be available in all environments
@@ -144,9 +148,10 @@ fn helper(x: i32) -> i32 {
 }`;
     try {
       const functions = await getFunctions(code, "rust");
+      const names = functions.map((f) => f.name);
       if (functions.length > 0) {
-        expect(functions.map((f) => f.name)).toContain("main");
-        expect(functions.map((f) => f.name)).toContain("helper");
+        expect(names).toContain("main");
+        expect(names).toContain("helper");
       }
     } catch {
       // Grammar may not be available in all environments
@@ -167,9 +172,10 @@ describe("getFunctions - Java", () => {
 }`;
     try {
       const functions = await getFunctions(code, "java");
+      const names = functions.map((f) => f.name);
       if (functions.length > 0) {
-        expect(functions.map((f) => f.name)).toContain("doSomething");
-        expect(functions.map((f) => f.name)).toContain("MyClass");
+        expect(names).toContain("doSomething");
+        expect(names).toContain("MyClass");
       }
     } catch {
       // Grammar may not be available in all environments

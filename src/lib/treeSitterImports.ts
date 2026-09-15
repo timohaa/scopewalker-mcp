@@ -16,9 +16,8 @@ const IMPORT_NODE_TYPES: Record<SupportedLanguage, string[]> = {
 };
 
 /**
- * Counts import/dependency statements using AST analysis.
- * More accurate than regex-based counting as it handles comments,
- * string contents, and language-specific import syntax properly.
+ * Counts import/dependency statements using AST analysis, so comments and
+ * string contents are never mistaken for import syntax.
  */
 export async function countImports(code: string, language: SupportedLanguage): Promise<number> {
   const tree = await parseCode(code, language);
@@ -87,7 +86,7 @@ function processImportNode(
     if (isRubyRequireCall(node)) callback(node);
   } else if (node.type === "import_declaration") {
     processGoImportDeclaration(node, callback);
-    return true; // Skip recursion for Go imports
+    return true;
   } else {
     callback(node);
   }
