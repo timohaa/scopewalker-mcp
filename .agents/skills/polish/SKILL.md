@@ -1,6 +1,6 @@
 ---
 name: polish
-description: "Run the quality fixer pipeline with subagents and require verified resolution of actionable findings. Defaults to changed source files; pass `full` for all source files."
+description: "Run the quality fixer pipeline and require verified resolution of actionable findings. Defaults to changed source files; pass `full` for all source files."
 ---
 
 # Polish
