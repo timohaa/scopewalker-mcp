@@ -62,9 +62,17 @@ jobs:
 
       # Auth comes from OIDC via the id-token permission — no NODE_AUTH_TOKEN.
       # Provenance is generated automatically, so --provenance is not passed.
-      # prepublishOnly runs check + tests + build before publishing.
+      # prepublishOnly runs check + tests + build before publishing. A re-run
+      # after a later step failed skips the publish but still builds dist/.
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          VERSION="$(jq -r .version package.json)"
+          if npm view "scopewalker-mcp@$VERSION" version >/dev/null 2>&1; then
+            echo "scopewalker-mcp@$VERSION is already on npm; skipping publish"
+            npm run prepublishOnly
+          else
+            npm publish --access public
+          fi
 
       - name: Sync version into server.json and manifest.json
         run: |
@@ -85,8 +93,16 @@ jobs:
           tar xzf "$ASSET" mcp-publisher
           rm -f "$ASSET" "registry_${MCP_PUBLISHER_VERSION#v}_checksums.txt"
 
+      # The registry validates the npm version exists, and npm can take minutes
+      # to list a freshly published version.
       - name: Publish to MCP Registry
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          for attempt in $(seq 1 60); do
+            curl -fsS "https://registry.npmjs.org/scopewalker-mcp/$VERSION" >/dev/null && break
+            echo "Waiting for scopewalker-mcp@$VERSION on npm (attempt $attempt)..."
+            sleep 10
+          done
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
 
