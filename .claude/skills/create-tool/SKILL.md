@@ -11,7 +11,7 @@ Scaffold all files for a new MCP tool following project conventions.
 
 ### 1. Gather requirements
 
-Ask the user:
+Infer these from the request and repository; ask only for missing requirements:
 
 - Tool name (snake_case, e.g., `get_dependency_graph`)
 - Description (one sentence, used in MCP tool listing)
@@ -33,7 +33,7 @@ Read `docs/patterns.md` for tool registration, error handling, and testing patte
 
 - Add the tool to the quick reference table in `TOOLS.md`
 - Add detailed docs to the appropriate `docs/tools-*.md` file
-- Add the tool to the list in `README.md`, and bump the tool count there and in `docs/tools-overview.md` (both currently say 9)
+- Add the tool to the list in `README.md`, and update the tool count there and in `docs/tools-overview.md`
 
 ### 5. Verify
 
@@ -42,4 +42,7 @@ npm run check       # check:versions + lint:fix + typecheck
 npm run test        # all tests pass
 ```
 
-Use `check_thresholds` to verify the new files are within size limits.
+Run all source-change checks in [docs/code-quality.md](../../../docs/code-quality.md),
+including changed registration, implementation, and test files. Fix actionable findings
+and rerun the detecting tools before declaring the tool complete.
+Exercise the new tool through its MCP handler tests and verify the documented response shape.

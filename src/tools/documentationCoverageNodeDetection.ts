@@ -50,17 +50,26 @@ function isFunctionValuedField(node: Parser.SyntaxNode): boolean {
 }
 
 /**
- * Classifies the node types whose meaning depends on what encloses them.
- * Ruby has no distinct method node, and C/C++ members share their node types
- * with free functions and data fields, so in both cases only the enclosing
- * declaration separates a method from a plain function.
+ * Classifies a plain function/method node by whether it sits inside a record
+ * body, plus C/C++ prototypes, which are functions regardless of enclosure.
+ * Mirrors the parent check in getItemType so both tools label a Ruby def the same way.
  */
-function classifyByParent(node: Parser.SyntaxNode): DocumentableType | null {
-  // Mirrors the parent check in getItemType so both tools label a Ruby def the same way.
+function classifyFunctionOrPrototype(node: Parser.SyntaxNode): DocumentableType | null {
   if (RUBY_DEF_TYPES.includes(node.type) || FUNC_TYPES.includes(node.type)) {
     return isInsideRecordBody(node) ? "method" : "function";
   }
 
+  // C/C++ function declarations in headers (prototypes)
+  if (node.type === "declaration" && hasFunctionDeclarator(node)) return "function";
+
+  return null;
+}
+
+/**
+ * Classifies field and signature nodes whose "member-ness" depends on their
+ * enclosing declaration list rather than the node's own type.
+ */
+function classifyFieldOrSignature(node: Parser.SyntaxNode): DocumentableType | null {
   if (node.type === "field_declaration") {
     return node.parent?.type === "field_declaration_list" && hasFunctionDeclarator(node)
       ? "method"
@@ -81,10 +90,17 @@ function classifyByParent(node: Parser.SyntaxNode): DocumentableType | null {
     return node.parent?.type === "interface_type" ? "method" : null;
   }
 
-  // C/C++ function declarations in headers (prototypes)
-  if (node.type === "declaration" && hasFunctionDeclarator(node)) return "function";
-
   return null;
+}
+
+/**
+ * Classifies the node types whose meaning depends on what encloses them.
+ * Ruby has no distinct method node, and C/C++ members share their node types
+ * with free functions and data fields, so in both cases only the enclosing
+ * declaration separates a method from a plain function.
+ */
+function classifyByParent(node: Parser.SyntaxNode): DocumentableType | null {
+  return classifyFunctionOrPrototype(node) ?? classifyFieldOrSignature(node);
 }
 
 /** Classifies a node as function, class, or method, or null if not documentable. */

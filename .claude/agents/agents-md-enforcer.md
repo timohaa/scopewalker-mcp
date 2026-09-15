@@ -52,6 +52,8 @@ Apply with judgement, not mechanically.
    language defaults, testing instructions, repo etiquette,
    project-specific architectural invariants, environment quirks,
    hard-won gotchas, hard prohibitions.
+   Preserve required Scopewalker scans, limits, evidence rules, and completion
+   criteria, including links to shared enforcement requirements.
 6. **Cut on sight**: anything derivable from reading the codebase,
    standard language/framework conventions, linter-replaceable style
    rules, platitudes ("write clean code"), file-by-file codebase
@@ -65,9 +67,9 @@ Apply with judgement, not mechanically.
    first ~40 lines.
 8. **Consistency**: two contradicting rules are worse than no rule.
    Resolve clear-cut contradictions; flag ambiguous ones.
-9. **Hook-able rules**: a rule that must run every time (formatting,
-   a required pre-commit command) belongs in a hook, not `AGENTS.md`.
-   Flag as a hook candidate; do not move it yourself.
+9. **Automation candidates**: flag mechanically enforceable rules for hooks,
+   but retain the instruction until equivalent automation exists and is verified.
+   Scopewalker findings still need source-based interpretation and a verdict.
 
 ## Workflow
 

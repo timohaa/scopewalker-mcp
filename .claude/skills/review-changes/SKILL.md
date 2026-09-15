@@ -1,73 +1,58 @@
 ---
 name: review-changes
-description: Review uncommitted changes against project standards, or run every repository check with `full`. Use before committing or when asked to review the working tree or verify code quality.
+description: Review uncommitted changes and fail on unresolved Scopewalker findings or repository checks. Pass `full` for a whole-source audit.
 ---
 
 # Review Changes
 
-Review all uncommitted changes against project standards before committing.
+Read [docs/code-quality.md](../../../docs/code-quality.md) for required scans,
+limits, finding dispositions, and verdicts. Review and report; do not refactor as part of a review.
 
-## Scope
-
-Default: uncommitted changes (the workflow below). If invoked with `full`, skip
-steps 1–2 and run the whole-codebase checks instead:
-
-```bash
-npm run check          # check:versions + lint:fix + typecheck
-npx prettier --check src
-npm run test
-```
-
-Then `check_thresholds` and `get_code_smells` on `src/`, and report a pass/fail
-summary per category (lint, types, format, tests, thresholds) with issue counts
-and `file:line` details for each failure. Skip the diff-based manual review.
-
-## Workflow
-
-### 1. Get changed files
+## 1. Establish Scope
 
 ```bash
 git status --porcelain
-```
-
-Covers modified, staged, and untracked files; untracked new files
-must be reviewed too, or the missing-tests/missing-docs checks below
-can't catch them.
-
-### 2. Review the diff
-
-```bash
 git diff
 git diff --cached
 ```
 
-### 3. Run automated checks
+Include staged, unstaged, and untracked files. Read new files, since diffs omit their contents.
+With `full`, audit all of `src/` and run the whole-repository checks below.
+An empty default scope is **N/A**, not a whole-repository pass.
+
+## 2. Run Checks
+
+For source/test changes or `full`:
 
 ```bash
-npm run check
+npm run check:versions
+npm run lint
+npm run typecheck
+npx prettier --check src
 npm run test
 ```
 
-Use `check_thresholds` and `get_code_smells` on changed files.
+Use these non-fixing scripts because `npm run check` runs `lint:fix`.
+Run the shared Scopewalker checks for the selected scope. Inspect all in-scope findings;
+cross-file scans must cover `src/` even when only a few files changed.
 
-### 4. Manual review
+For changed Markdown, run one `npx markdownlint <all changed Markdown files>` command
+and verify affected links, tool arguments, and workflow references. In `full` mode,
+include all tracked Markdown. Documentation-only changes need no source tests or code scans.
 
-Check for issues automation misses. The first three are mechanical markers;
-find them with **one** batched search across the whole changed-file list (e.g. a
-single `grep -nE 'eslint-disable|@ts-ignore|console\.log' <files>`, plus a pass
-over the diff you already have for commented-out code), not one search per file.
-The last two need judgment; read the changed files for those.
+## 3. Review What Automation Misses
 
-- `eslint-disable` or `@ts-ignore` added without justification
-- `console.log` left in (use structured error handling)
-- Commented-out dead code
-- New functionality missing corresponding tests
-- New/changed tools missing documentation updates in `TOOLS.md` and `docs/`
+Search all changed source/test files in one command for unjustified `eslint-disable`,
+`@ts-ignore`, and `console.log`. Inspect the diff for commented-out dead code.
+Verify behavior changes have appropriate tests and tool changes update `TOOLS.md` and `docs/`.
 
-### 5. Report
+Classify every Scopewalker finding using the shared dispositions. Confirmed violations are
+**must fix**, including pre-existing violations inside the selected scope.
+Keep optional design suggestions separate from failures.
 
-List issues grouped by severity:
+## 4. Report
 
-- **Must fix**: Standards violations, bugs, missing tests
-- **Should fix**: Style issues, minor improvements
-- **Consider**: Suggestions, optional improvements
+Give one result per check, the scope covered, and `file:line` details for failures.
+Include observed values versus limits, evidence for non-actionable findings, and explicit exceptions.
+End with **PASS**, **FAIL**, or **BLOCKED** under the shared rules.
+Do not recommend committing while required checks or actionable findings remain unresolved.

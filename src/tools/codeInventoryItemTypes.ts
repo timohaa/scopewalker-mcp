@@ -86,13 +86,12 @@ function isTraitMember(node: Parser.SyntaxNode): boolean {
   return list?.type === "declaration_list" && list.parent?.type === "trait_item";
 }
 
-/** Maps AST node types to inventory item types (class, function, interface, etc.). */
-export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | null {
-  if (isClassMember(node) || isTraitMember(node)) return null;
-
-  // A C/C++ record node names an existing type as often as it declares one.
-  if (!isRecordDefinition(node)) return null;
-
+/**
+ * Classifies node types the shared NODE_TYPE_MAP cannot: those whose kind
+ * depends on inspecting children (TS/JS bindings, Go type specs) or on
+ * enclosing scope (Ruby module-level defs vs. class members).
+ */
+function classifySpecialNodeType(node: Parser.SyntaxNode): InventoryItem["type"] | null {
   // TS/JS const/let: function-valued bindings are functions, plain values are
   // constants (consistent with how variable_declaration is treated).
   if (node.type === "lexical_declaration") {
@@ -103,9 +102,6 @@ export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | nu
   if (node.type === "type_declaration") {
     return getGoTypeDeclarationKind(node);
   }
-
-  const mapped = NODE_TYPE_MAP[node.type];
-  if (mapped) return mapped;
 
   // Ruby has no distinct top-level function node type: "method"/"singleton_method"
   // covers both module-level defs and class members, distinguished only by scope.
@@ -118,4 +114,17 @@ export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | nu
   }
 
   return null;
+}
+
+/** Maps AST node types to inventory item types (class, function, interface, etc.). */
+export function getItemType(node: Parser.SyntaxNode): InventoryItem["type"] | null {
+  if (isClassMember(node) || isTraitMember(node)) return null;
+
+  // A C/C++ record node names an existing type as often as it declares one.
+  if (!isRecordDefinition(node)) return null;
+
+  const mapped = NODE_TYPE_MAP[node.type];
+  if (mapped) return mapped;
+
+  return classifySpecialNodeType(node);
 }

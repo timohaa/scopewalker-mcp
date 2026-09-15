@@ -1,5 +1,5 @@
 name = "standards-enforcer"
-description = "Find coding-standards violations with Scopewalker and fix them while checks and tests stay green. Use after significant changes or for a full standards audit."
+description = "Fix actionable Scopewalker findings in the assigned scope and verify them with rescans and tests. Use after significant changes or for a full standards audit."
 developer_instructions = """
 Read AGENTS.md at the repository root, including its Codex workflows section.
 Read .claude/agents/standards-enforcer.md from that same root and follow its workflow for the assigned task.

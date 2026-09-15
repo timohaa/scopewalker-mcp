@@ -1,361 +1,174 @@
 # Usage Examples
 
-This page shows how to hook Scopewalker up to agentic coding tools like
-Claude Code. The integration patterns work for TypeScript/React, Python, C,
-Rust, or mixed projects. GDScript supports tokei-backed line counts and file-size
-checks; AST-based analysis skips it. There are four
-places to plug it in:
+Make Scopewalker findings part of the completion criteria for coding work.
+The examples below require fixes, rescans, and evidence for retained findings.
+Adapt the source roots, extensions, and project limits before copying them.
 
-1. `AGENTS.md` / `CLAUDE.md`: make every session aware of the tools and thresholds
-2. Skills: packaged quality-check workflows (`/check-quality`, `/code-health-report`)
-3. Subagents: enforcement agents with the tools in their allowlist
-4. Permission settings: pre-approve the tools so agents run them without prompts
+## Add Enforcement to Project Instructions
 
-The same definitions also work with Antigravity CLI (`.agents/agents/`)
-after some small frontmatter changes; see
-[Antigravity CLI agents](#antigravity-cli-agents).
-
-## AGENTS.md / CLAUDE.md
-
-Keep `CLAUDE.md` as a one-line pointer so Claude Code and other agents
-share one instruction file:
+Add the rules to your existing project instructions, such as `AGENTS.md` or `CLAUDE.md`.
+The examples use `AGENTS.md`; adjust that reference to match your setup.
 
 ```markdown
-# CLAUDE.md
+## Code Quality
 
-@AGENTS.md
+After source/test changes and before committing, run Scopewalker on the affected code.
+Default scope includes changed files and files affected by the task. A full audit includes all source files.
+Fix actionable findings in scope and rerun the detecting tool with the same arguments.
+
+- check_thresholds: max_file_lines 300, max_function_lines 100; include tests.
+- get_complexity_metrics: maximum nesting 4, parameters 5, per-function cyclomatic complexity 10.
+- get_code_smells: resolve active markers and unsafe casts; remove only demonstrably stale markers.
+- get_prop_drilling: min_occurrences 3, exclude_common true; trace and fix unnecessary pass-through chains.
+- find_dead_code: scan each complete production source root; remove confirmed unreachable internal code.
+
+Inspect every finding. Cite code or caller evidence for non-actionable results.
+Retain exceptions only when an existing project rule or explicit user decision allows them.
+Do not raise limits, hide files, add suppressions, or erase active markers to get a pass.
+
+PASS requires complete checks and no unresolved actionable findings.
+FAIL means confirmed violations or failing checks remain.
+BLOCKED means required tools, scan coverage, or evidence are unavailable.
+Passing lint and tests does not override unresolved Scopewalker findings.
 ```
 
-For `AGENTS.md` itself there are a few options, depending on how much
-space you want to spend on the tools.
+These complexity limits are an example project policy. Cognitive complexity summed
+over a file helps prioritize inspection; it is not a per-function failure threshold.
 
-### Full tool section
+## Make Scan Coverage Part of the Result
 
-The verbose option: list every tool with a one-line purpose. Useful as a
-standing reminder that quantitative checks exist. Adjust the `extensions`
-note and the threshold pointer for your project:
+Include these rules in the shared policy or a linked enforcement reference:
 
-```markdown
-## Use Scopewalker MCP Tools
+- Pass language extensions explicitly, such as `[".ts", ".tsx"]` or `[".py"]`.
+- Run local checks on affected directories. Run dead-code and parameter-threading analysis on each complete source root.
+- Exclude test files from production dead-code analysis using the project's actual test patterns. Inspect test callers before removing code.
+- Require `summary.scan_complete: true` and no depth/file caps before treating a `dead_code` item as removable.
+- Investigate `unreferenced_exports`; consumers outside the scan can use them. Preserve public APIs and framework entry points without removal authorization.
+- Inspect `forwarding_evidence` and actual callers for prop drilling. Shared parameter names do not prove a connected pass-through chain.
+- Check summary counts against returned details. Increase `limit` or inspect narrower paths until every in-scope finding has a disposition.
+- Complexity details contain at most 10 high-complexity functions per file. Fix and rescan to reveal remaining findings.
+- Inspect skipped files and completeness fields where available. An error, missing tool, or unexpectedly empty scan cannot pass.
+- Never exclude tests from size checks merely because suite callbacks are large. Split suites by behavior without weakening assertions.
 
-Use scopewalker-mcp tools to understand and validate the code
-(extensions `[".ts", ".tsx", ".py", ".rs"]`):
+See [tool limits and supported languages](tools-overview.md) and
+[known limitations](known-bugs.md) before interpreting incomplete output.
+For example, unsupported extension filters can silently return nothing from tokei-backed tools.
 
-- `get_line_counts` - File line metrics (code/blank/comment)
-- `get_functions` - Function counts and per-function line metrics (`detail=lines`)
-- `get_code_inventory` - Find classes, functions, methods, and exports
-- `check_thresholds` - Verify size limits (files <300, functions <100 lines)
-- `get_complexity_metrics` - Nesting depth, params, cognitive and per-function cyclomatic complexity
-- `get_code_smells` - TODO/FIXME-style markers and unsafe casts
-- `get_documentation_coverage` - Find undocumented functions/classes
-- `get_prop_drilling` - Parameters threaded through many functions/files
-- `find_dead_code` - Unreferenced symbols and private methods
-```
+## Review Skill: Fail on Unresolved Findings
 
-For other languages, only the extensions and the inventory description
-change. A C project would use `[".c", ".h"]` and describe
-`get_code_inventory` as "find functions, structs, and enums".
-
-### Threshold section that delegates detail
-
-If `AGENTS.md` is getting long, state the limits and point at the
-skill or agent that carries the full tool reference:
-
-```markdown
-## Code Quality Thresholds
-
-Max 300 lines/file, 100 lines/function. Checked via the scopewalker
-`check_thresholds` MCP tool (see `standards-enforcer` agent,
-`/check-quality` skill).
-```
-
-### One-line pre-commit rule
-
-Or go minimal and drop a single rule right after the build/check
-commands:
-
-```markdown
-Run `check_thresholds` (scopewalker MCP tool) before committing to enforce
-file <300 / function <100 line limits.
-```
-
-### Replacing derivable documentation
-
-Derive file lists and per-module inventories when needed because maintained
-copies in `AGENTS.md` become stale:
-
-```markdown
-`DIRECTORY_STRUCTURE.md` documents the top-level layout; update it only when
-that changes. List source files with `ls` or scopewalker `get_code_inventory`.
-```
-
-## Skills
-
-### Read-only health check (`/check-quality`)
-
-A report-only skill that runs the toolchain checks (lint, typecheck,
-format, tests) plus the Scopewalker tools and ends with a verdict. Say
-explicitly that it must not edit files; fixing belongs in a separate
-skill or agent:
+A review can enforce standards without editing code. Use non-fixing check commands
+and require a verdict. This example assumes the AGENTS.md policy above.
 
 ```markdown
 ---
 name: check-quality
-description: Run a read-only code health check (lint, typecheck, tests,
-  plus scopewalker thresholds, complexity metrics, prop drilling, code
-  smells, and documentation coverage). Reports only; run /polish to fix.
+description: Review code quality and fail on unresolved Scopewalker findings. Reports only; use a fixer workflow to resolve failures.
 ---
 
 # Check Quality
 
-**Report only. Do not edit any file.**
+Read AGENTS.md and its linked enforcement requirements.
+Use the caller's scope; default to staged, unstaged, and untracked source/test changes.
+With full, audit every source root.
 
-## Scopewalker Tools
+1. Read the diff and new files.
+2. Run the project's non-fixing lint, type, format, and test commands.
+3. Run all required Scopewalker checks. Cross-file scans cover complete source roots.
+4. Inspect every in-scope finding, including findings that predate the current changes.
+5. Report file:line, observed value versus limit, and one disposition per finding:
+   fixed and verified, non-actionable with evidence, accepted exception, or unresolved.
 
-Run these MCP tools over `src/` (and `__tests__/` for the size checks;
-the limits apply to test files too) with extensions `[".ts", ".tsx"]`:
-
-| Tool                         | Purpose                                                  |
-|------------------------------|----------------------------------------------------------|
-| `check_thresholds`           | Max 300 lines/file, 100 lines/function                   |
-| `get_complexity_metrics`     | Nesting depth, params, cognitive + cyclomatic complexity |
-| `get_prop_drilling`          | Same prop/param name in 3+ functions                     |
-| `get_code_smells`            | TODO, FIXME, HACK markers                                |
-| `get_documentation_coverage` | Undocumented functions/classes                           |
-| `get_line_counts`            | Per-file code/blank/comment metrics                      |
-
-## Report
-
-Summarize threshold violations, complexity hotspots, prop drilling, smell
-counts, and documentation gaps. End with a one-line verdict: **CLEAN**
-(nothing actionable) or **NEEDS ATTENTION** (list the top items).
+End with PASS, FAIL, or BLOCKED under the shared policy.
+Do not recommend committing while actionable findings remain unresolved.
 ```
 
-Add these rules next to the tool table:
+In this repository, `npm run check` invokes `lint:fix`.
+The [review workflow](../.claude/skills/review-changes/SKILL.md) uses separate
+non-fixing scripts and also validates changed documentation.
 
-- An arrow-function component (`const Card = () => {...}`) is reported under
-  the name it is bound to, the same as a `function Card() {}` declaration.
-  Only an unbound function, an inline callback or an IIFE, is `<anonymous>`.
-  Either way, most non-trivial components show
-  up as >100-line "functions" in `check_thresholds` and
-  `get_functions detail=lines`. Have the agent list oversized component
-  bodies separately from oversized plain functions, because extracting a
-  subcomponent or hook is a riskier refactor than splitting a helper.
-- Run `get_prop_drilling` with `exclude_common: true` to cut noise from
-  `id`/`key`-style names. If your standards prohibit prop drilling
-  outright, tell the agent to treat hits as violations, not suggestions.
+## Fixer Agent: Resolve and Rescan
 
-### Standalone health report (`/code-health-report`)
-
-In a monorepo, a Scopewalker-only skill can carry per-subproject extensions
-and a fixed report template:
-
-```markdown
----
-name: code-health-report
-description: Generate a scopewalker-based code health report
-  (thresholds, complexity, smells, docs).
----
-
-## Tool Defaults
-
-- `check_thresholds`: `max_file_lines=300`, `max_function_lines=100`
-- `get_complexity_metrics`: highlight high nesting, cognitive complexity, and functions over cyclomatic 10
-- `get_code_smells`: `todo`, `fixme`, `hack`, `deprecated`
-- `get_documentation_coverage`: undocumented functions/classes;
-  `min_lines` to skip trivial ones
-
-## Extensions
-
-- Web/mobile: [`.ts`, `.tsx`]
-- Cloud functions: [`.py`]
-
-## Report Format
-
-    # Code Health Report: <scope>
-
-    ## Threshold Violations
-    - Files over 300 lines: X
-    - Functions over 100 lines: X
-
-    ## Complexity Issues
-    ...
-
-    ## Recommended Actions
-    1. ...
-```
-
-### Pre-commit review (`/review-changes`)
-
-In a review skill, run Scopewalker on the modified directories only. It's
-one step next to the diff review and standards checks:
-
-```markdown
-## Workflow
-
-1. List changed files: `git status`, `git diff --name-only`.
-2. Review diffs per file against AGENTS.md and project guidelines.
-3. Run quality checks and scopewalker thresholds on modified directories.
-4. Summarize issues with file:line references and recommend next steps.
-```
-
-### Pipeline orchestrator (`/polish`)
-
-For actual fixing, a pipeline skill can run fixer subagents in a fixed
-order: lint fixer, test fixer, standards enforcer, comment fixer, docs
-sync, `AGENTS.md` enforcement, markdown lint. Scopewalker shows up in two
-of those steps:
-
-- The `standards-enforcer` step is the one that uses the full tool set
-  (see the agent below).
-- The standards enforcer runs checks and tests when it edits code.
-  The comment fixer runs `npm run check` when it edits comments.
-  Verification runs within each agent; the pipeline has no separate verification step.
-
-## Subagents
-
-### standards-enforcer
-
-This agent uses the whole tool set to detect and fix violations. Its
-`.claude/agents/standards-enforcer.md` definition includes:
+Give the fixer the tools needed for its required checks.
+Match the MCP prefix to the server name configured in the client.
 
 ```markdown
 ---
 name: standards-enforcer
-description: Find coding-standards violations with Scopewalker and fix
-  them while checks and tests stay green. Use after significant changes
-  or for a full standards audit.
-model: sonnet
-tools: Bash, Read, Edit, Write, Glob, Grep, mcp__scopewalker__check_thresholds, mcp__scopewalker__get_code_smells, mcp__scopewalker__get_complexity_metrics, mcp__scopewalker__get_functions, mcp__scopewalker__get_line_counts, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_documentation_coverage, mcp__scopewalker__get_prop_drilling, mcp__scopewalker__find_dead_code
+description: Fix actionable Scopewalker findings and verify the final state with rescans and tests.
+tools: Bash, Read, Edit, Write, Glob, Grep, mcp__scopewalker__check_thresholds, mcp__scopewalker__get_complexity_metrics, mcp__scopewalker__get_code_smells, mcp__scopewalker__get_prop_drilling, mcp__scopewalker__find_dead_code
 ---
+
+# Standards Enforcer
+
+Read AGENTS.md and its linked enforcement requirements.
+Run every required check for the assigned scope and resolve actionable findings.
+
+Before structural refactoring, run covering tests and add characterization tests if coverage is insufficient.
+Split oversized files/functions, simplify complex branches, and remove confirmed dead internal symbols.
+Fix unnecessary parameter forwarding using existing dependency patterns.
+Resolve the underlying problem behind active markers and unsafe casts.
+
+Preserve public behavior. Do not defer module extraction merely because it touches several files.
+If a fix requires a behavior or public API change, report that conflict and complete independent fixes.
+
+After each pass, rerun the detecting tools with the same scope and limits and run the covering tests.
+After the final code edit, run the project's required checks, tests, and build.
+Verify scans again if formatting changed the measured files.
+
+Report before/after counts and evidence for every retained finding.
+Return PASS only when required checks pass and no actionable findings remain unresolved.
+Zero edits, a tracking issue, or a suggested future refactor cannot establish a pass.
 ```
 
-The prompt body maps each tool to the question it answers:
+The [repository agent](../.claude/agents/standards-enforcer.md) implements this workflow.
+Documentation coverage belongs to [comment-fixer](../.claude/agents/comment-fixer.md):
+it resolves missing documentation under the project's JSDoc rules and checks size limits after comment edits.
 
-```text
-check_thresholds           → oversized files and functions
-get_complexity_metrics     → deep nesting, many params, high cognitive/cyclomatic complexity
-get_code_smells            → TODO, FIXME, HACK, XXX, BUG, UNUSED, DEPRECATED markers and unsafe casts
-get_functions detail=lines → per-function line counts
-get_line_counts            → file line metrics (code/blank/comment)
-get_code_inventory         → classes, functions, methods, and exports overview
-get_documentation_coverage → undocumented functions/classes
-get_prop_drilling          → parameter threading (prop drilling) across function chains
-find_dead_code             → unreferenced symbols and private methods
-```
+## Polish: Verify After the Last Edit
 
-After refactoring, rerun the Scopewalker tool that flagged the violation
-to confirm the new result. Require existing or newly written characterization
-tests before structural refactors, since fixing threshold violations usually
-means moving code around.
-
-### docs-reality-sync
-
-A documentation-audit agent gets the inventory tools so it can check docs
-against the code instead of trusting the prose:
+A fixer pipeline must carry unresolved findings between agents and verify the final state:
 
 ```markdown
----
-name: docs-reality-sync
-description: Audits all documentation against the actual codebase and
-  fixes discrepancies in paths, tool names, parameters, npm scripts,
-  versions, and code examples. Use after refactoring, feature
-  additions/removals, or renames, or when documentation staleness is
-  suspected.
-model: sonnet
-tools: Bash, Read, Edit, Write, Glob, Grep, WebFetch, WebSearch, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_functions, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
----
+1. Run lint/type/format fixes, then test fixes.
+2. Have standards-enforcer resolve the required Scopewalker findings.
+3. Run comment cleanup and documentation sync on their assigned files.
+4. Prune redundant instructions while preserving enforcement rules, then format Markdown.
+5. Rerun checks affected by later edits. Comment additions can create size violations.
+6. Return new violations to their owner and verify its fixes.
+7. Report PASS only after all required checks and outstanding findings are resolved.
+   Otherwise report FAIL or BLOCKED with the remaining findings.
 ```
 
-With the inventory tools in its allowlist it can confirm documented
-symbols exist. Its checklist should also cover: skill/agent
-frontmatter `tools:` entries reference tools that exist, and documented
-commands, defaults, and thresholds match the code.
+Pass the scope, changed files, unresolved findings, and completed verification to each agent.
+Reuse successful verification only when relevant inputs and requirements are unchanged, including dependencies and configuration.
+The [polish workflow](../.claude/skills/polish/SKILL.md) preserves this sequence.
 
-### agents-md-enforcer
+## Optional: Share Instructions Across Coding Tools
 
-An agent that prunes `AGENTS.md` bloat pairs well with the
-["Replacing derivable documentation"](#replacing-derivable-documentation)
-pattern above. Content is safe to cut when agents can derive it with `ls`
-or the inventory tools. From its rules:
+If you use several coding tools, you can maintain common instructions once and reuse them.
+This is a convenience tip; Scopewalker does not require a particular instruction-file layout.
 
-```markdown
-6. **Cut on sight**: anything derivable from reading the codebase,
-   standard language/framework conventions, linter-replaceable style
-   rules, platitudes ("write clean code"), file-by-file codebase
-   descriptions, ...
-```
+| Coding tool | How to reuse a shared `AGENTS.md`                                                                                                                                                 |
+|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Claude Code | Put `@AGENTS.md` in a root `CLAUDE.md`. Relative imports resolve from the importing file. [Claude documentation](https://code.claude.com/docs/en/memory#import-additional-files). |
+| Gemini CLI  | Put `@./AGENTS.md` in a root `GEMINI.md`, or configure `context.fileName` to load `AGENTS.md` directly. [Gemini documentation](https://geminicli.com/docs/cli/gemini-md/).        |
+| Codex       | Reads `AGENTS.md` directly through its instruction hierarchy; no pointer file is needed. [OpenAI documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md).    |
+| Cursor      | Reads root and nested `AGENTS.md` files directly. Project rules can also include files using `@filename` references. [Cursor documentation](https://cursor.com/docs/rules).       |
 
-## Permission settings
+The loading mechanisms differ; `@path` is not a universal instruction-file convention.
+Use the mechanism documented by your coding tool and check that it loaded the intended instructions.
 
-To let skills and subagents call the tools without permission prompts,
-allowlist them in `.claude/settings.local.json` (or share the list via
-`.claude/settings.json`):
+### This Repository's Workflow Layout
 
-```json
-{
-  "permissions": {
-    "allow": [
-      "mcp__scopewalker__check_thresholds",
-      "mcp__scopewalker__get_code_inventory",
-      "mcp__scopewalker__get_code_smells",
-      "mcp__scopewalker__get_complexity_metrics",
-      "mcp__scopewalker__get_documentation_coverage",
-      "mcp__scopewalker__get_functions",
-      "mcp__scopewalker__get_line_counts",
-      "mcp__scopewalker__get_prop_drilling",
-      "mcp__scopewalker__find_dead_code"
-    ]
-  }
-}
-```
+This repository keeps the workflow bodies in `.claude/`.
+Codex skills in `.agents/skills/` and agents in `.codex/agents/` load those shared files.
+Keep their descriptions and references synchronized. These entrypoint locations follow
+OpenAI's [skills](https://learn.chatgpt.com/docs/build-skills) and
+[subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents) documentation.
 
-The wildcard `"mcp__scopewalker__*"` covers all of the server's tools in one
-entry. Use the explicit list above if you prefer per-tool review.
+The repository's [Codex adapters](../AGENTS.md#codex-workflows) handle client-specific instructions.
+Its polish entrypoints are explicit-only.
 
-## Antigravity CLI agents
-
-Antigravity CLI (which replaced Gemini CLI in June 2026) discovers
-workspace agents at `.agents/agents/<name>.md` (global ones under
-`~/.gemini/config/agents/`). The same agent bodies work; the frontmatter
-differs. MCP access comes from the globally configured servers or a
-per-agent `mcpServers` block, and `subagent: true` lets the primary agent
-delegate to it:
-
-```markdown
----
-name: standards-enforcer
-description: "Analyze the codebase for violations of project coding
-  standards and refactor to fix them while keeping tests green."
-subagent: true
-mainAgent: false
----
-```
-
-Be careful with the optional `tools:` allowlist: an unmapped tool name can
-hang the run, so omit it unless you need the restriction.
-
-If you maintain both `.claude/` and `.agents/`, keep one copy of the
-skill/agent bodies in a shared directory (e.g. `.shared/skills/`) and
-reference or symlink it from each, rather than duplicating them.
-
-## Conventions
-
-Apply these rules to every integration point:
-
-- Always pass `extensions` matched to the project language(s), so runs
-  stay fast and results stay relevant. Caveat: on the tokei-backed tools
-  (`get_line_counts`, `check_thresholds`) an extension tokei doesn't
-  recognize silently returns nothing (see `docs/known-bugs.md`).
-- Every tool caps its result list at 20 entries by default. Fine for spot
-  checks, but a repo-wide report needs a higher `limit` or the agent only
-  ever sees the top 20 hits.
-- Point pre-commit checks at the modified directories; save repo-wide
-  sweeps for explicit, periodic runs.
-- Point agents at `get_code_inventory` instead of hand-maintaining
-  file/function lists that drift out of date.
-
-This repo uses these patterns itself; see `.claude/skills/review-changes`,
-`.claude/skills/polish`, `.claude/agents/standards-enforcer.md`, and
-`.claude/agents/docs-reality-sync.md` for the real versions of the skill
-and agent examples above.
+Maintain one enforcement reference instead of repeating tool catalogs in every skill.
+This repository uses [code-quality.md](code-quality.md).
+Inventory and line-count tools can answer navigation questions when needed; they do not establish compliance.

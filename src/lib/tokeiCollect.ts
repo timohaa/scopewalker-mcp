@@ -59,6 +59,11 @@ export function collectTokeiOutput(args: string[]): Promise<TokeiCollectResult> 
     }, TIMEOUT_MS);
     timer.unref();
 
+    /**
+     * Settles the promise with `result`, once. Node fires both "error" and
+     * "close" on a failed spawn (e.g. ENOENT triggers "error" then "close"),
+     * so only the first call may resolve.
+     */
     const finish = (result: TokeiCollectResult): void => {
       if (settled) return;
       settled = true;

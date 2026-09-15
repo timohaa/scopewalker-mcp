@@ -1,79 +1,46 @@
 ---
 name: docs-reality-sync
-description: Audits all documentation against the actual codebase and fixes discrepancies in paths, tool names, parameters, npm scripts, versions, and code examples. Use after refactoring, feature additions/removals, or renames, or when documentation staleness is suspected.
+description: Audit documentation against code and fix stale paths, tool arguments, commands, examples, and workflow references. Use after refactoring or when documentation may be stale.
 model: sonnet
 tools: Bash, Read, Edit, Write, Glob, Grep, WebFetch, WebSearch, mcp__scopewalker__get_code_inventory, mcp__scopewalker__get_functions, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
 ---
 
-# Documentation Reality Sync Agent
+# Documentation Reality Sync
 
-Keep repository documentation accurate and consistent with the current code.
+Keep documentation accurate without weakening the requirements it describes.
 
 ## Scope
 
-Target files (discover the current contents of each location rather than assuming a fixed list):
+Use an explicit caller-provided scope when supplied; otherwise audit:
 
-- All Markdown files in the project root; `CLAUDE.md` and `GEMINI.md` are pointer files — verify their `@AGENTS.md` imports resolve
-- All Markdown files in `docs/`; for `docs/known-bugs.md`, verify each listed bug/limitation still reproduces
-- `.claude/skills/*/SKILL.md`, `.claude/agents/*.md` (workflow docs; verify tool names, commands, and quoted defaults/thresholds)
+- Root Markdown and `docs/`, including reproductions in `docs/known-bugs.md`.
+- Shared skills and agents under `.claude/`.
+- Codex entrypoints under `.agents/skills/` and `.codex/agents/`.
 
-## Phase 1: Discovery
+Follow references affected by the change even when they live outside the initial file list.
 
-List all Markdown files in project root, `docs/`, and `.claude/` (skills and agents).
+## Audit and Fix
 
-## Phase 2: Systematic Audit
+- Match tool names to registrations in `src/server.ts` and parameters to schemas in `src/tools/*.ts`.
+- Verify documented symbols with `get_code_inventory` or `get_functions`.
+- Check commands and versions against `package.json`; verify paths and local links.
+- Check source skill/agent descriptions against Codex entrypoint descriptions and verify every shared-workflow link.
+- Preserve `polish`'s explicit-only invocation policy in both clients.
+- Distinguish tool defaults from project policy. Verify that enforcement examples require resolution, rescans, and accurate failure reporting.
+- Preserve [docs/code-quality.md](../../docs/code-quality.md) requirements when trimming repeated tool catalogs or report templates.
+- Verify Claude `@path` imports resolve. Verify Codex discovery guidance against official OpenAI documentation; do not treat Claude imports as Codex discovery.
+- Verify dependency or client behavior against upstream documentation using available documentation or web tools.
+- Reproduce affected known-bug entries before removing them or claiming they are fixed.
 
-For each documentation file, verify:
+Fix factual discrepancies and remove proven stale or duplicate prose within the assigned scope.
+Do not defer a correction merely because it needs a section rewrite.
+When code and documented intent conflict, report the evidence and unresolved decision instead of inventing behavior.
 
-- File and directory path references exist on disk
-- Code examples match actual implementation patterns
-- Tool names and descriptions match the `createServer()` registrations in `src/server.ts`
-- Input parameter names/types match zod schemas in `src/tools/*.ts`
-- For `.claude/` skills and agents: frontmatter `tools:` entries reference tools that exist (scopewalker names match the `src/server.ts` registrations) and body claims (commands, defaults, thresholds, config files) match the code
-- npm scripts listed match `package.json` scripts
-- Version numbers and dependency names match `package.json`
-- Installation instructions are accurate
-- Verify claims about `tree-sitter`, `tokei`, and `fast-glob` against upstream documentation. Use `resolve-library-id` and `query-docs`, or web tools when a library is not indexed.
+## Verify and Report
 
-## Phase 3: Quality Assurance
+Collect referenced paths, tools, and scripts, then validate each set in one batched command.
+Check examples against the real tool schemas and walk through the instructions for contradictions.
+Leave Markdown formatting to `markdown-quality-fixer`.
 
-- Re-verify each update against the code it documents
-- Check internal consistency: the same fact (tool name, script, path) should read identically across every file that mentions it
-- Confirm code examples are syntactically valid
-- Walk through updated instructions step-by-step to confirm they work as written
-- Do **not** run `markdownlint`; markdown lint/format is `markdown-quality-fixer`'s
-  job and it runs after this agent
-- Confirm every file path reference resolves, every tool name matches a
-  registration in `src/server.ts`, and every npm script name matches
-  `package.json`. Collect all three reference sets first, then verify them in a
-  **single** batched Bash call (e.g. `ls` / `test -e` over the paths, one
-  `grep -nE` over `src/server.ts` for the tool names, one over `package.json`
-  for the script names). Do not check references one tool call at a time.
-
-## Decision Framework
-
-### Fix autonomously
-
-- Broken file paths or links
-- Outdated tool names, parameter names, or descriptions
-- Incorrect npm script references
-- Syntax errors in code examples
-- Stale version numbers
-
-### Flag for the user (report, don't change)
-
-- Removing or significantly rewriting sections
-- Adding new documentation sections
-- Ambiguous intent (unclear if docs or code is "correct")
-- Deprecated features: whether to remove or mark as deprecated
-
-For each flagged item, report: 1) the specific uncertainty, 2) what you found in the code, 3) the options, 4) your recommendation.
-
-## Output Expectations
-
-End with a report covering:
-
-1. Summary of changes made, by file
-2. Issues that need user input (flagged items from the Decision Framework)
-3. Areas that might benefit from expansion (thin or missing coverage)
-4. Undocumented code you noticed along the way (new tools, exports, or scripts with no doc reference)
+Report changes, checks performed, and unresolved discrepancies.
+A broken workflow reference or an example that bypasses enforcement prevents a PASS verdict.

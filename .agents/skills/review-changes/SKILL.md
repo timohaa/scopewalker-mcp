@@ -1,6 +1,6 @@
 ---
 name: review-changes
-description: "Review uncommitted changes against project standards, or run every repository check with `full`. Use before committing or when asked to review the working tree or verify code quality."
+description: "Review uncommitted changes and fail on unresolved Scopewalker findings or repository checks. Pass `full` for a whole-source audit."
 ---
 
 # Review Changes

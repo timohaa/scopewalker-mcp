@@ -121,6 +121,7 @@ describe("myHelper", () => {
 - Test the **public** behavior of a module, not its internals
 - Cover both success and error paths for every tool
 
-After creating the test, run it once to confirm it passes, then run
-`npm run check` to verify lint/types. If it fails for a non-obvious
-reason, use the `smart-test-fixer` agent rather than guessing at fixes.
+After the targeted test run, run `npm run check` to verify lint/types.
+Apply the test-change checks in [docs/code-quality.md](../../../docs/code-quality.md),
+including size limits on test files and suite callbacks. Fix violations and rescan;
+split tests by behavior when needed, without weakening assertions or hiding files from the scan.
