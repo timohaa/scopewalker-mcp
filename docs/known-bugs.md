@@ -10,63 +10,32 @@ Entries fall into two categories:
 - **Limitations**: the tool is knowingly incomplete, and the behaviour is documented in
   `docs/tools-*.md`. This list collects those gaps in one place.
 
-The entries were verified against version 1.3.0.
+The entries were verified against version 1.3.1.
 
 ---
 
 ## Bugs
 
-### Grouped Go `type (...)` declarations report only their first type
-
-**Tools:** `get_code_inventory`
-
-`getGoTypeDeclarationKind` takes the **first** `type_spec` child of a `type_declaration`, and
-the surrounding walk emits one item per declaration rather than one per spec. Go's grouped
-form declares several types under a single `type_declaration`, so everything after the first
-is silently dropped.
-
-For example, consider a file containing only:
-
-```go
-type (
-    Celsius float64
-    Widget  struct{ X int }
-    Shape   interface{ Area() float64 }
-)
-```
-
-the inventory returns a single item (`Celsius`, typed `interface`) and `summary` reports
-`total_classes: 0`, `exported_symbols: 1`. `Widget` and `Shape` appear nowhere, and nothing
-signals that two declared types were skipped. The struct is what makes this more than a
-mislabel: a Go package using the grouped form for its type block reports no classes at all.
-
-Fixing this needs the walk to emit one item per `type_spec`, which the current
-one-item-per-node mapping does not do.
-
-### Ruby methods inside a `module` body are invisible to the inventory
-
-**Tools:** `get_code_inventory`
-
-`getItemType` treats a `method` node as a function only when its parent is not
-`body_statement`. Class methods are expected to be nested under their class already. A
-`module` has no entry in `NODE_TYPE_MAP` for a method to nest under, so a method whose
-parent is a module's `body_statement` has nowhere to attach and is dropped.
-
-A file containing only `module Helpers; def helper; end; end` returns an empty inventory
-with `total_files: 0`. Files without matched items are omitted, as in the Go case above.
-`get_documentation_coverage` runs a separate walk and still
-sees `helper` as type `method`, so the two tools disagree about whether the file has
-anything in it at all.
-
-A `def` nested in an `if`/`else` inside a *class* body now attaches to the class, the same
-as an unwrapped `def`. Inside a *module* body it still does not attach to anything, but the
-conditional wrapper changes the node's immediate parent, which sidesteps the
-`body_statement` check above. That `def` surfaces as a top-level function instead of
-vanishing. It is visible, but its type is wrong.
+No verified bugs are currently listed. Remaining gaps appear under Limitations.
 
 ---
 
 ## Limitations
+
+### Ruby module methods are listed without their module
+
+**Tools:** `get_code_inventory`
+
+Methods inside a `module` body appear as top-level functions, including direct definitions
+and definitions wrapped in conditionals. For example,
+`module Helpers; def helper; end; end` lists `helper` as a function on line 1.
+The inventory has no module item type, so it cannot nest `helper` under `Helpers`.
+
+Class members remain nested under their class. Methods inside `class << self` bodies
+remain omitted. `get_documentation_coverage` uses a separate walk and labels module
+definitions as methods.
+
+See `docs/tools-health.md`.
 
 ### Symbol discovery stops at 500 nested AST levels
 
@@ -90,8 +59,9 @@ codebases.
 **Tools:** `get_code_inventory`, `get_documentation_coverage`
 
 Methods inside an `impl Widget` block are not nested under `Widget`. The inventory lists
-`Widget` as a class and `draw`/`secret` as separate top-level functions;
-`get_documentation_coverage` likewise types them `function` rather than `method`.
+`Widget` as a class and `pub fn draw` as a separate top-level function. The private
+`fn secret` is listed the same way when `include_private: true` is passed.
+`get_documentation_coverage` types both `function` rather than `method`.
 
 Go, C/C++, Python, and Ruby all attach members to their type. Rust `impl` blocks are the
 outlier. A Rust `trait`'s own members are not: both required method signatures and
@@ -156,10 +126,11 @@ Method visibility follows the section markers inside a class body (`private`, `p
 `public`), the `private :sym` form, and `private def x`. Three further ways to set it are not
 read:
 
-- `module_function`, which has no effect here anyway — a method inside a `module` body never
-  reaches the inventory at all (see the module bug above).
+- `module_function` changes method visibility and creates a singleton copy. The inventory
+  lists the definition as a top-level function without tracking either effect.
 - Visibility applied to a receiver other than the enclosing class, e.g.
-  `Other.send(:private, :m)` or a `class << self` block.
+  `Other.send(:private, :m)`. Methods inside a `class << self` block go further: they are
+  not listed at all, even with `include_private: true`.
 - Visibility changed from outside the class body entirely, such as reopening the class
   elsewhere in the file.
 
@@ -201,9 +172,10 @@ See `docs/tools-overview.md`.
 
 `extensions` is translated to tokei language names through a fixed table. An extension
 outside that table is passed through verbatim and only matches if it happens to name a
-tokei language. `.zig` works because the language is called Zig; `.tf` does not, because
-tokei calls that language HCL. The mismatch returns an empty result rather than an error,
-which is indistinguishable from "no such files".
+tokei language. `.zig` works because the language is called Zig. The table maps `.hcl`,
+`.tf`, and `.tfvars` to HCL. Other unmapped extensions whose names differ from their
+tokei language still return an empty result rather than an error. That response is
+indistinguishable from "no such files".
 
 This is unrelated to case: `extensions` matching is now case-insensitive on every tool,
 tokei-backed or not, so `[".TS"]` and `[".ts"]` find the same files.
@@ -216,8 +188,8 @@ See `docs/tools-overview.md`.
 
 The tool runs two passes. Function-length checks walk the discovered file list and honor
 `max_files`; file-length checks come from a separate tokei run over the whole tree and do
-not. On a directory of `README.md`, `types.ts`, and `utils.ts`, `max_files: 1` returns
-`functions_checked: 1` alongside `files_checked: 3`.
+not. On a directory of `README.md` plus `types.ts` and `utils.ts` with one function each,
+`max_files: 1` returns `functions_checked: 1` alongside `files_checked: 3`.
 
 This is deliberate. Tokei does its own traversal and is language-independent, so bounding it
 would mean discarding part of its output — suppressing real oversized-file violations to make

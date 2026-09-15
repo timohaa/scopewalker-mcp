@@ -106,10 +106,6 @@ export function extractName(node: Parser.SyntaxNode): string | null {
     if (child.type === "variable_declarator") {
       return extractIdentifierFromDeclarator(child);
     }
-    // Go wraps the type name one level down, in a type_spec or type_alias.
-    if (child.type === "type_spec" || child.type === "type_alias") {
-      return extractName(child);
-    }
   }
   return null;
 }
@@ -227,10 +223,10 @@ interface InventoryCounts {
 /** Increments the appropriate counters based on item type. */
 function countItem(item: InventoryItem, counts: InventoryCounts): void {
   if (item.exported) counts.exported++;
+  counts.methods += item.methods?.length ?? 0;
 
   if (item.type === "class") {
     counts.classes++;
-    counts.methods += item.methods?.length ?? 0;
   } else if (item.type === "function") {
     counts.functions++;
   }

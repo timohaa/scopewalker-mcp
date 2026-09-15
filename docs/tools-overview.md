@@ -70,7 +70,7 @@ Files with any other extension are skipped by the AST-based tools. `get_line_cou
 
 **`.h` detection:** a `.h` file is parsed as C++ when its source contains syntax no C compiler accepts — a `class` or `namespace` declaration, a template (`template<`), an access specifier (`public:`/`private:`/`protected:`), `::`, `virtual`, `using namespace`, or `extern "C++"` — and as C otherwise.
 
-**Extension filtering on tokei-backed tools:** `get_line_counts` and `check_thresholds` translate `extensions` into tokei language names through a fixed table covering the languages listed above plus common others. An extension outside that table is passed to tokei verbatim. It matches only when the extension also names a tokei language. For example, `.zig` works while `.tf` does not because tokei calls that language HCL. A non-matching filter returns an empty result without an error.
+**Extension filtering on tokei-backed tools:** `get_line_counts` and `check_thresholds` translate `extensions` into tokei language names through a fixed table covering the languages listed above plus common others. An extension outside that table is passed to tokei verbatim. It matches only when the extension also names a tokei language. For example, `.zig` works because Zig is a tokei language name. The table maps `.hcl`, `.tf`, and `.tfvars` to HCL. A non-matching filter returns an empty result without an error.
 
 ## Error Codes
 

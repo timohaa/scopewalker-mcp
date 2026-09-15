@@ -113,7 +113,7 @@ interface DetectCodeSmellsOptions {
 
 /**
  * Detects code-based smells using AST analysis.
- * Currently detects: unsafe_cast ("as unknown as" pattern in TypeScript)
+ * Currently detects: unsafe_cast ("as unknown as" or "as any as" pattern in TypeScript)
  */
 async function detectCodeBasedSmells(options: DetectCodeSmellsOptions): Promise<CodeSmell[]> {
   const { content, language, filePath, typesToDetect, includeText } = options;
@@ -143,8 +143,9 @@ interface UnsafeCastMatch {
 }
 
 /**
- * Finds "as unknown as" patterns in the AST.
- * Pattern: as_expression containing "unknown" type, whose parent is also an as_expression.
+ * Finds "as unknown as" and "as any as" patterns in the AST.
+ * Pattern: as_expression containing an "unknown" or "any" type, whose parent
+ * is also an as_expression.
  */
 function findUnsafeCasts(node: Parser.SyntaxNode, content: string): UnsafeCastMatch[] {
   const matches: UnsafeCastMatch[] = [];

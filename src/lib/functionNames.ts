@@ -101,9 +101,9 @@ function extractAssignedName(node: Parser.SyntaxNode): string | null {
 /**
  * Extracts a function node's name, or null when it has none.
  *
- * Shared by get_functions and get_complexity_metrics: the two kept separate copies
- * that drifted, so the same C function was named in one tool and `<anonymous>` in
- * the other.
+ * Shared by get_functions, get_complexity_metrics, and get_prop_drilling: kept
+ * separate copies had drifted, so the same C function was named in one tool and
+ * `<anonymous>` in another.
  */
 export function extractFunctionName(node: Parser.SyntaxNode): string | null {
   if (node.type === "function_definition") {

@@ -47,3 +47,13 @@ export function isRubyClassMember(node: Parser.SyntaxNode): boolean {
   const owner = current.parent?.type;
   return owner === "class" || owner === "singleton_class";
 }
+
+/** Checks whether a Ruby `def` belongs to a module body, through conditional wrappers. */
+export function isRubyModuleMember(node: Parser.SyntaxNode): boolean {
+  let current = node.parent;
+  while (current !== null && isWrapper(current)) {
+    current = current.parent;
+  }
+
+  return current?.type === "body_statement" && current.parent?.type === "module";
+}

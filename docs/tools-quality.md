@@ -38,7 +38,7 @@ A comment documents a declaration only when its last line is the line directly a
 
 C/C++ `struct`, `class`, `union`, and `enum` count as classes only where they declare a member list; a bare type reference such as `struct CPU_pins *pins` is not a symbol. TypeScript `abstract class` counts as a class; abstract method signatures and a class field bound to a function (`handleClick = () => {}`) count as methods. Rust trait method signatures and Go interface method specs count as methods.
 
-A Ruby top-level `def` is typed as a function, and a `def` inside a class or module body as a method, including one nested in an `if`/`else` within that body. A `def` inside another `def` is a function. A Python `def` in a class body is a method, including one guarded by an `if`; a `def` inside a method body is a function. `get_code_inventory` labels class-body methods the same way, but drops module-body defs entirely: `module` is not one of its symbol types, so there is nothing to nest them under.
+A Ruby top-level `def` is typed as a function, and a `def` inside a class or module body as a method, including one nested in an `if`/`else` within that body. A `def` inside another `def` is a function. A Python `def` in a class body is a method, including one guarded by an `if`; a `def` inside a method body is a function. `get_code_inventory` labels class-body methods the same way. It lists module-body defs as top-level functions because the inventory has no module item type.
 
 **Response:**
 

@@ -1,7 +1,7 @@
 import type Parser from "tree-sitter";
 import type { InventoryItem } from "../types/index.js";
 import { isRecordDefinition } from "./codeInventoryCpp.js";
-import { isRubyClassMember } from "./codeInventoryRuby.js";
+import { isRubyClassMember, isRubyModuleMember } from "./codeInventoryRuby.js";
 
 // Node types that can appear as the value of a const/let declarator and make it a function.
 const FUNCTION_VALUE_TYPES = [
@@ -21,12 +21,11 @@ function hasFunctionInitializer(node: Parser.SyntaxNode): boolean {
 }
 
 /**
- * Classifies a Go `type X ...` declaration by the shape it names.
- * Struct types inventory as classes; interfaces and aliases as interfaces.
+ * Classifies a Go type spec or alias by the shape it names.
+ * Struct shapes inventory as classes; other shapes as interfaces.
  */
-function getGoTypeDeclarationKind(node: Parser.SyntaxNode): InventoryItem["type"] {
-  const spec = node.children.find((c) => c.type === "type_spec" || c.type === "type_alias");
-  const isStruct = spec?.children.some((c) => c.type === "struct_type") ?? false;
+function getGoTypeSpecKind(node: Parser.SyntaxNode): InventoryItem["type"] {
+  const isStruct = node.children.some((c) => c.type === "struct_type");
   return isStruct ? "class" : "interface";
 }
 
@@ -98,16 +97,16 @@ function classifySpecialNodeType(node: Parser.SyntaxNode): InventoryItem["type"]
     return hasFunctionInitializer(node) ? "function" : "constant";
   }
 
-  // Go names its types indirectly, so the kind depends on the spec's child.
-  if (node.type === "type_declaration") {
-    return getGoTypeDeclarationKind(node);
+  // Like const_spec, each Go type spec yields its own item, including grouped declarations.
+  if (node.type === "type_spec" || node.type === "type_alias") {
+    return getGoTypeSpecKind(node);
   }
 
   // Ruby has no distinct top-level function node type: "method"/"singleton_method"
   // covers both module-level defs and class members, distinguished only by scope.
   if (
     (node.type === "method" || node.type === "singleton_method") &&
-    node.parent?.type !== "body_statement" &&
+    (node.parent?.type !== "body_statement" || isRubyModuleMember(node)) &&
     !isRubyClassMember(node)
   ) {
     return "function";

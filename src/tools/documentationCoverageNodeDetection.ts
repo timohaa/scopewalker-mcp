@@ -52,7 +52,7 @@ function isFunctionValuedField(node: Parser.SyntaxNode): boolean {
 /**
  * Classifies a plain function/method node by whether it sits inside a record
  * body, plus C/C++ prototypes, which are functions regardless of enclosure.
- * Mirrors the parent check in getItemType so both tools label a Ruby def the same way.
+ * Ruby module bodies count as record bodies here, so their defs are methods.
  */
 function classifyFunctionOrPrototype(node: Parser.SyntaxNode): DocumentableType | null {
   if (RUBY_DEF_TYPES.includes(node.type) || FUNC_TYPES.includes(node.type)) {

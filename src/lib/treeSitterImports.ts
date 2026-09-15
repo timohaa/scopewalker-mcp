@@ -2,7 +2,9 @@ import type Parser from "tree-sitter";
 import type { SupportedLanguage } from "../types/index.js";
 import { parseCode } from "./treeSitter.js";
 
-// Only top-level import nodes are counted (not nested clauses like import_spec)
+// Top-level import nodes are counted directly; Go's grouped `import (...)` block
+// is the exception, since processGoImportDeclaration below counts its nested
+// import_spec children individually rather than the declaration as a whole.
 const IMPORT_NODE_TYPES: Record<SupportedLanguage, string[]> = {
   typescript: ["import_statement", "call_expression"],
   javascript: ["import_statement", "call_expression"],

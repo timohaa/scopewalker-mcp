@@ -78,6 +78,14 @@ describe("codeInventory - Rust trait members", () => {
     expect(items.some((item) => item.name === "describe")).toBe(false);
   });
 
+  it("counts interface methods without counting the trait as a class", async () => {
+    const response = await handler({ path: join(testDir, "widget.rs") });
+    const result = parseContent<CodeInventoryResult>(response);
+
+    expect(result.summary.total_methods).toBe(2);
+    expect(result.summary.total_classes).toBe(1);
+  });
+
   it("still filters a non-pub inherent method by default", async () => {
     const names = await defaultNames();
     expect(names).toContain("new");
