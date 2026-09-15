@@ -13,7 +13,9 @@ npm run test           # Run tests
 npm run test:coverage  # Tests with coverage
 ```
 
-Use the project's own MCP tools to understand and validate code. Run `check_thresholds` before committing.
+Use the project's own MCP tools to understand and validate code.
+For source/test changes, enforce [docs/code-quality.md](./docs/code-quality.md) before completion or committing.
+Fix actionable findings in scope and rerun the detecting tools; unresolved findings or incomplete scans cannot pass.
 
 If LSP tools are available in your session, prefer them (`workspaceSymbol`, `findReferences`, `goToDefinition`, `hover`) over Grep/Read for code navigation; otherwise use Grep for text/pattern searches.
 
@@ -28,7 +30,7 @@ If LSP tools are available in your session, prefer them (`workspaceSymbol`, `fin
 ## Reference Docs
 
 - [TOOLS.md](./TOOLS.md): tool reference
-- [docs/](./docs/): detailed tool documentation; [docs/known-bugs.md](./docs/known-bugs.md) lists verified defects and gaps, check it before chasing unexpected tool output
+- [docs/](./docs/): tool documentation and enforcement requirements; check [docs/known-bugs.md](./docs/known-bugs.md) before chasing unexpected output
 - `.claude/skills/create-tool`, `.claude/skills/create-test`: workflows and code examples for adding tools/tests
 - `/polish`, `/review-changes`: quality-pipeline slash commands (see `.claude/skills/` for the rest)
 - `.claude/agents/`: specialized agents for standards, testing, docs, and code-quality enforcement (see directory for the full list)
