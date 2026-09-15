@@ -84,7 +84,7 @@ function processImportNode(
     if (isRequireCall(node)) callback(node);
   } else if (node.type === "call" && language === "ruby") {
     if (isRubyRequireCall(node)) callback(node);
-  } else if (node.type === "import_declaration") {
+  } else if (node.type === "import_declaration" && language === "go") {
     processGoImportDeclaration(node, callback);
     return true;
   } else {

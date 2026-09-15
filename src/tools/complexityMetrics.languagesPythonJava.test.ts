@@ -134,6 +134,27 @@ def g(*, self):
 });
 
 describe("Java", () => {
+  it("counts Java imports correctly", async () => {
+    await writeFile(
+      join(testDir, "Imports.java"),
+      `import java.util.List;
+import java.util.Map;
+import static java.lang.Math.PI;
+
+public class Imports {
+    public void run() {}
+}
+`
+    );
+
+    const response = await handler({ path: join(testDir, "Imports.java") });
+    const result = parseContent<ComplexityMetricsResult>(response);
+
+    // import_declaration is shared with Go's grammar, whose handler used to
+    // swallow every Java import looking for Go-only import_spec children
+    expect(result.files[0]?.metrics.dependency_count).toBe(3);
+  });
+
   it("does not count else-if chains as nested", async () => {
     await writeFile(
       join(testDir, "ElseIfChain.java"),
