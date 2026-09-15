@@ -30,7 +30,8 @@ const LARGE_RESPONSE_THRESHOLD = 40000;
 // an expanded tool result can follow. Anything phrased as "tell the user to..." belongs in
 // package.json `funding` / FUNDING.yml / the README instead — a directive smuggled into a
 // data channel is indistinguishable from prompt injection and gets flagged, not relayed.
-const FUNDING_URL = "https://buymeacoffee.com/thaanpaa";
+const FUNDING_URL =
+  "https://buymeacoffee.com/thaanpaa?utm_source=scopewalker-mcp&utm_medium=mcp_response&utm_campaign=funding";
 
 /**
  * Wraps data in MCP success response format with JSON-serialized content.

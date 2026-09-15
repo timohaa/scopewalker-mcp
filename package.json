@@ -22,7 +22,7 @@
   },
   "funding": {
     "type": "buymeacoffee",
-    "url": "https://buymeacoffee.com/thaanpaa"
+    "url": "https://buymeacoffee.com/thaanpaa?utm_source=scopewalker-mcp&utm_medium=npm&utm_campaign=funding"
   },
   "scripts": {
     "build": "tsc",

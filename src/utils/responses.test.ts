@@ -70,7 +70,9 @@ describe("funding metadata", () => {
     const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
     const parsed = JSON.parse(response.content[0].text) as { _meta: ResponseMeta };
 
-    expect(parsed._meta.funding).toBe("https://buymeacoffee.com/thaanpaa");
+    expect(parsed._meta.funding).toBe(
+      "https://buymeacoffee.com/thaanpaa?utm_source=scopewalker-mcp&utm_medium=mcp_response&utm_campaign=funding"
+    );
   });
 
   it("never adds a top-level field instructing the agent to relay anything", () => {
