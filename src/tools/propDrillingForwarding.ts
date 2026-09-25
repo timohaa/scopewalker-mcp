@@ -2,20 +2,22 @@ import type Parser from "tree-sitter";
 import { walkNode } from "../lib/astWalker.js";
 import type { SupportedLanguage } from "../types/index.js";
 
+/** The parameters being tracked through one function body, and those seen forwarded so far. */
+interface ForwardingState {
+  paramSet: Set<string>;
+  forwarded: Set<string>;
+}
+
 /** Checks if an identifier or member_expression node forwards a tracked parameter. */
-function checkNodeForwarding(
-  node: Parser.SyntaxNode,
-  paramSet: Set<string>,
-  forwarded: Set<string>
-): void {
-  if (node.type === "identifier" && paramSet.has(node.text)) {
-    forwarded.add(node.text);
+function checkNodeForwarding(node: Parser.SyntaxNode, state: ForwardingState): void {
+  if (node.type === "identifier" && state.paramSet.has(node.text)) {
+    state.forwarded.add(node.text);
     return;
   }
   if (node.type === "member_expression" && node.namedChildren.length > 0) {
     const obj = node.namedChildren[0];
-    if (obj.type === "identifier" && paramSet.has(obj.text)) {
-      forwarded.add(obj.text);
+    if (obj.type === "identifier" && state.paramSet.has(obj.text)) {
+      state.forwarded.add(obj.text);
     }
   }
 }
@@ -32,17 +34,16 @@ export function detectForwardedParameters(
 ): string[] {
   if (paramNames.length === 0) return [];
 
-  const paramSet = new Set(paramNames);
-  const forwarded = new Set<string>();
+  const state: ForwardingState = { paramSet: new Set(paramNames), forwarded: new Set<string>() };
 
   const body = findFunctionBody(funcNode);
   if (body === null) return [];
 
   walkNode(body, (node) => {
-    collectForwardingFromNode(node, paramSet, forwarded);
+    collectForwardingFromNode(node, state);
   });
 
-  return [...forwarded];
+  return [...state.forwarded];
 }
 
 // "arguments" in TS/JS/Rust, "argument_list" in Python/Go/Java/C/Ruby — both are
@@ -50,26 +51,24 @@ export function detectForwardedParameters(
 const ARGUMENT_CONTAINER_TYPES = ["arguments", "argument_list"];
 
 /** Records any tracked parameter this node forwards onward. */
-function collectForwardingFromNode(
-  node: Parser.SyntaxNode,
-  paramSet: Set<string>,
-  forwarded: Set<string>
-): void {
+function collectForwardingFromNode(node: Parser.SyntaxNode, state: ForwardingState): void {
   if (ARGUMENT_CONTAINER_TYPES.includes(node.type)) {
-    for (const child of node.namedChildren) checkNodeForwarding(child, paramSet, forwarded);
+    for (const child of node.namedChildren) checkNodeForwarding(child, state);
     return;
   }
 
   // JSX attribute value forwarding: <Child userId={userId} />
   if (node.type === "jsx_attribute") {
-    checkJsxAttributeForwarding(node, paramSet, forwarded);
+    checkJsxAttributeForwarding(node, state);
     return;
   }
 
   // JSX spread: <Child {...props} /> — jsx_expression > spread_element > identifier
   if (node.type === "spread_element") {
     for (const child of node.namedChildren) {
-      if (child.type === "identifier" && paramSet.has(child.text)) forwarded.add(child.text);
+      if (child.type === "identifier" && state.paramSet.has(child.text)) {
+        state.forwarded.add(child.text);
+      }
     }
   }
 }
@@ -78,27 +77,22 @@ function collectForwardingFromNode(
 function checkJsxExpressionForwarding(
   jsxExprNode: Parser.SyntaxNode,
   attrName: string | null,
-  paramSet: Set<string>,
-  forwarded: Set<string>
+  state: ForwardingState
 ): void {
   for (const exprChild of jsxExprNode.namedChildren) {
-    checkNodeForwarding(exprChild, paramSet, forwarded);
+    checkNodeForwarding(exprChild, state);
   }
   // Shorthand: <Child userId={userId} /> where attr name matches expr identifier
-  if (attrName !== null && paramSet.has(attrName) && jsxExprNode.namedChildren.length === 1) {
+  if (attrName !== null && state.paramSet.has(attrName) && jsxExprNode.namedChildren.length === 1) {
     const exprChild = jsxExprNode.namedChildren[0];
     if (exprChild.type === "identifier" && exprChild.text === attrName) {
-      forwarded.add(attrName);
+      state.forwarded.add(attrName);
     }
   }
 }
 
 /** Checks if a JSX attribute forwards a parameter: propName={paramName}. */
-function checkJsxAttributeForwarding(
-  node: Parser.SyntaxNode,
-  paramSet: Set<string>,
-  forwarded: Set<string>
-): void {
+function checkJsxAttributeForwarding(node: Parser.SyntaxNode, state: ForwardingState): void {
   let attrName: string | null = null;
 
   for (const child of node.children) {
@@ -106,7 +100,7 @@ function checkJsxAttributeForwarding(
       attrName = child.text;
     }
     if (child.type === "jsx_expression") {
-      checkJsxExpressionForwarding(child, attrName, paramSet, forwarded);
+      checkJsxExpressionForwarding(child, attrName, state);
     }
   }
 }
