@@ -1,6 +1,6 @@
 ---
 name: create-tool
-description: "Scaffold a new MCP analysis tool — types, implementation, tests, and registration."
+description: "Scaffold a new MCP tool: types, implementation, tests, and registration."
 ---
 
 # Create Tool
