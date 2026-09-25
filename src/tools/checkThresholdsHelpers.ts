@@ -1,5 +1,5 @@
 import { relative } from "node:path";
-import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import type { TokeiOutput } from "../lib/tokei.js";
 import { detectLanguage, getFunctions } from "../lib/treeSitter.js";
 import type { CheckThresholdsResult, OversizedFile, OversizedFunction } from "../types/index.js";
@@ -71,22 +71,14 @@ export interface OversizedFunctionsScan {
 
 /** Scans files for functions exceeding the line limit. */
 export async function findOversizedFunctions(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  maxLines: number,
-  maxFiles?: number
+  scan: SourceScan,
+  maxLines: number
 ): Promise<OversizedFunctionsScan> {
   const oversizedFunctions: OversizedFunction[] = [];
   let totalFunctions = 0;
   let filesScanned = 0;
 
-  for await (const { relativePath, language, code } of walkSourceFiles(
-    filePaths,
-    basePath,
-    isDirectory,
-    maxFiles
-  )) {
+  for await (const { relativePath, language, code } of walkSourceFiles(scan)) {
     filesScanned++;
     const functions = await getFunctions(code, language);
     totalFunctions += functions.length;
@@ -109,7 +101,7 @@ export async function findOversizedFunctions(
   // unsupported ones); the gap between what a complete scan would parse and
   // what actually got yielded is what the function pass missed. That applies
   // to a single-file scan too: an oversized file yields nothing.
-  const filesSkipped = Math.max(countAnalyzable(filePaths) - filesScanned, 0);
+  const filesSkipped = Math.max(countAnalyzable(scan.filePaths) - filesScanned, 0);
 
   return { oversizedFunctions, totalFunctions, filesSkipped };
 }

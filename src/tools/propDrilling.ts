@@ -83,12 +83,12 @@ export function registerPropDrillingTool(server: McpServer): void {
           })
         : [resolvedPath];
 
-      const { fileAnalyses, totalParamsScanned } = await analyzeFilesForParameters(
+      const { fileAnalyses, totalParamsScanned } = await analyzeFilesForParameters({
         filePaths,
-        resolvedPath,
+        basePath: resolvedPath,
         isDirectory,
-        args.max_files
-      );
+        maxFiles: args.max_files,
+      });
 
       const threaded = selectThreadedParameters(fileAnalyses, {
         minOccurrences: args.min_occurrences ?? DEFAULT_MIN_OCCURRENCES,

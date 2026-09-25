@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
-import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type { DeadCodeCandidate, DeadCodeResult } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
@@ -46,22 +46,12 @@ function countAnalyzable(filePaths: string[]): number {
  * Both halves come from the same pass because a reference in any file keeps a
  * declaration in any other file alive; the counts are only meaningful whole.
  */
-async function scanFiles(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  maxFiles?: number
-): Promise<ScanResult> {
+async function scanFiles(scan: SourceScan): Promise<ScanResult> {
   const candidates: DeadCodeCandidate[] = [];
   const occurrences = new Map<string, number>();
   let filesScanned = 0;
 
-  for await (const { fullPath, relativePath, language, code } of walkSourceFiles(
-    filePaths,
-    basePath,
-    isDirectory,
-    maxFiles
-  )) {
+  for await (const { fullPath, relativePath, language, code } of walkSourceFiles(scan)) {
     try {
       const tree = await parseCode(code, language);
       if (!tree) continue;
@@ -83,7 +73,7 @@ async function scanFiles(
     candidates,
     occurrences,
     filesScanned,
-    filesSkipped: Math.max(countAnalyzable(filePaths) - filesScanned, 0),
+    filesSkipped: Math.max(countAnalyzable(scan.filePaths) - filesScanned, 0),
   };
 }
 
@@ -123,7 +113,12 @@ export function registerDeadCodeTool(server: McpServer): void {
           })
         : [resolvedPath];
 
-      const scan = await scanFiles(filePaths, resolvedPath, isDirectory, args.max_files);
+      const scan = await scanFiles({
+        filePaths,
+        basePath: resolvedPath,
+        isDirectory,
+        maxFiles: args.max_files,
+      });
       const scanComplete = scan.filesSkipped === 0;
 
       // A Rust child module in a subdirectory may use its parent's private

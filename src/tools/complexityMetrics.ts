@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type Parser from "tree-sitter";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
-import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type { ComplexityMetricsResult, FileComplexity, SupportedLanguage } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
@@ -76,12 +76,12 @@ export function registerComplexityMetricsTool(server: McpServer): void {
         filePaths = [resolvedPath];
       }
 
-      const { files: allFiles, functionStats } = await analyzeComplexity(
+      const { files: allFiles, functionStats } = await analyzeComplexity({
         filePaths,
-        resolvedPath,
+        basePath: resolvedPath,
         isDirectory,
-        args.max_files
-      );
+        maxFiles: args.max_files,
+      });
       const summary = calculateSummary(allFiles, functionStats);
 
       // Sort by cognitive complexity so the highest-complexity files appear first after slicing
@@ -111,10 +111,7 @@ export function registerComplexityMetricsTool(server: McpServer): void {
  * while the summary has to describe every function that was analysed.
  */
 async function analyzeComplexity(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  maxFiles?: number
+  scan: SourceScan
 ): Promise<{ files: FileComplexity[]; functionStats: FunctionStats }> {
   const results: FileComplexity[] = [];
   const functionStats: FunctionStats = {
@@ -123,10 +120,7 @@ async function analyzeComplexity(
   };
 
   for await (const { fullPath, relativePath, language: byExtension, code } of walkSourceFiles(
-    filePaths,
-    basePath,
-    isDirectory,
-    maxFiles
+    scan
   )) {
     try {
       // walkSourceFiles goes by extension alone, which sends every C++ header to

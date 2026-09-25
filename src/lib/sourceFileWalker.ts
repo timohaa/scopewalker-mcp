@@ -13,6 +13,17 @@ export interface SourceFile {
   code: string;
 }
 
+/** The files one scan covers: discovered paths, where they resolve from, and the yield cap. */
+export interface SourceScan {
+  filePaths: string[];
+  /** Directory the paths are relative to; ignored when `isDirectory` is false. */
+  basePath: string;
+  /** True when `filePaths` are relative to `basePath`; false when they are already full paths. */
+  isDirectory: boolean;
+  /** Stop after this many files are yielded; undefined or non-positive means no cap. */
+  maxFiles?: number;
+}
+
 /**
  * Yields every readable, supported, within-size-limit file from a scan list,
  * stopping after `maxFiles` of them.
@@ -31,12 +42,12 @@ export interface SourceFile {
  * caller's `max_files` budget on a file nothing can analyze. Being lazy, the
  * generator also stops reading once the caller has enough.
  */
-export async function* walkSourceFiles(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  maxFiles?: number
-): AsyncGenerator<SourceFile> {
+export async function* walkSourceFiles({
+  filePaths,
+  basePath,
+  isDirectory,
+  maxFiles,
+}: SourceScan): AsyncGenerator<SourceFile> {
   const capped = maxFiles !== undefined && maxFiles > 0;
   let yielded = 0;
 

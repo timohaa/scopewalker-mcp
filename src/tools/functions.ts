@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
+import type { SourceScan } from "../lib/sourceFileWalker.js";
 import type { FunctionCountsResult, FunctionLineCountsResult } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
@@ -73,27 +74,25 @@ export function registerFunctionsTool(server: McpServer): void {
         filePaths = [resolvedPath];
       }
 
+      const scan = { filePaths, basePath: resolvedPath, isDirectory, maxFiles: args.max_files };
       if (detail === "lines") {
-        return handleLinesMode(filePaths, resolvedPath, isDirectory, args);
+        return handleLinesMode(scan, args);
       }
-      return handleCountsMode(filePaths, resolvedPath, isDirectory, args);
+      return handleCountsMode(scan, args);
     }
   );
 }
 
 /** Handles the counts detail mode: collects function counts per file and returns sorted results. */
 async function handleCountsMode(
-  filePaths: string[],
-  resolvedPath: string,
-  isDirectory: boolean,
+  scan: SourceScan,
   args: {
     grep?: string;
     sort_by?: "count_desc" | "count_asc" | "lines_desc" | "lines_asc" | "name";
     limit?: number;
-    max_files?: number;
   }
 ): Promise<ReturnType<typeof createSuccessResponse>> {
-  let files = await analyzeFilesForCounts(filePaths, resolvedPath, isDirectory, args.max_files);
+  let files = await analyzeFilesForCounts(scan);
 
   if (args.grep !== undefined && args.grep !== "") {
     const pattern = args.grep.toLowerCase();
@@ -126,8 +125,8 @@ async function handleCountsMode(
   }));
 
   const result: FunctionCountsResult = {
-    path: resolvedPath,
-    is_directory: isDirectory,
+    path: scan.basePath,
+    is_directory: scan.isDirectory,
     files: cappedFiles,
     summary: calculateCountsSummary(sortedFiles),
   };
@@ -137,24 +136,15 @@ async function handleCountsMode(
 
 /** Handles the lines detail mode: collects per-function line counts per file and returns sorted results. */
 async function handleLinesMode(
-  filePaths: string[],
-  resolvedPath: string,
-  isDirectory: boolean,
+  scan: SourceScan,
   args: {
     min_lines?: number;
     grep?: string;
     sort_by?: "count_desc" | "count_asc" | "lines_desc" | "lines_asc" | "name";
     limit?: number;
-    max_files?: number;
   }
 ): Promise<ReturnType<typeof createSuccessResponse>> {
-  let files = await analyzeFilesForLines(
-    filePaths,
-    resolvedPath,
-    isDirectory,
-    args.max_files,
-    args.min_lines
-  );
+  let files = await analyzeFilesForLines(scan, args.min_lines);
 
   if (args.grep !== undefined && args.grep !== "") {
     const pattern = args.grep.toLowerCase();
@@ -184,8 +174,8 @@ async function handleLinesMode(
 
   const summary = calculateLinesSummary(sortedFiles);
   const result: FunctionLineCountsResult = {
-    path: resolvedPath,
-    is_directory: isDirectory,
+    path: scan.basePath,
+    is_directory: scan.isDirectory,
     files: cappedFiles,
     summary,
   };

@@ -81,11 +81,8 @@ export function registerCheckThresholdsTool(server: McpServer): void {
         : [resolvedPath];
 
       const { oversizedFunctions, totalFunctions, filesSkipped } = await findOversizedFunctions(
-        filePaths,
-        resolvedPath,
-        isDirectory,
-        maxFunctionLines,
-        args.max_files
+        { filePaths, basePath: resolvedPath, isDirectory, maxFiles: args.max_files },
+        maxFunctionLines
       );
 
       const limit = args.limit ?? DEFAULT_LIMIT;

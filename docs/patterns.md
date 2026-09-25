@@ -27,7 +27,7 @@ server.registerTool(
 AST-based file-scanning tools generally use this handler shape after `validatePath`:
 
 1. Directory input → `findFiles({ cwd, includeHidden, ignorePatterns, extensions, maxDepth })`; file input → single-element list.
-2. Iterate that list with `walkSourceFiles(filePaths, basePath, isDirectory, args.max_files)` from `src/lib/sourceFileWalker.ts`. It yields `{ fullPath, relativePath, language, code }`. It handles language detection, the `isFileWithinSizeLimit` guard (`DEFAULT_MAX_FILE_BYTES`, 1 MB), and the read, skipping silently on each. Files that fail to parse are the caller's to skip.
+2. Iterate that list with `walkSourceFiles({ filePaths, basePath, isDirectory, maxFiles: args.max_files })` from `src/lib/sourceFileWalker.ts` (the argument is a `SourceScan`; pass it down to helpers as one value). It yields `{ fullPath, relativePath, language, code }`. It handles language detection, the `isFileWithinSizeLimit` guard (`DEFAULT_MAX_FILE_BYTES`, 1 MB), and the read, skipping silently on each. Files that fail to parse are the caller's to skip.
 3. Pass `args.max_files` to the walker rather than slicing the path list first. The walker counts files it yields. Unsupported and oversized files therefore do not spend the budget. Slicing first caused `max_files: 1` to analyze nothing when a README led the directory.
 4. Sort results and slice to `args.limit ?? DEFAULT_LIMIT` (20). Tools that accept `summary_only` return an empty details array when it is true.
 

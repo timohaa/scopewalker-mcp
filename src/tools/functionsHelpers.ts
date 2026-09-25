@@ -1,4 +1,4 @@
-import { walkSourceFiles, type SourceFile } from "../lib/sourceFileWalker.js";
+import { walkSourceFiles, type SourceFile, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, getComments, getFunctions } from "../lib/treeSitter.js";
 import type {
   SupportedLanguage,
@@ -21,15 +21,10 @@ function resolveLanguage({ fullPath, language, code }: SourceFile): SupportedLan
 }
 
 /** Parses each file path and extracts function names and counts. */
-export async function analyzeFilesForCounts(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  maxFiles?: number
-): Promise<FileFunctionCount[]> {
+export async function analyzeFilesForCounts(scan: SourceScan): Promise<FileFunctionCount[]> {
   const results: FileFunctionCount[] = [];
 
-  for await (const file of walkSourceFiles(filePaths, basePath, isDirectory, maxFiles)) {
+  for await (const file of walkSourceFiles(scan)) {
     const { relativePath, code } = file;
     const language = resolveLanguage(file);
     const functionLocations = await getFunctions(code, language);
@@ -52,15 +47,12 @@ export async function analyzeFilesForCounts(
 
 /** Parses each file path and extracts per-function line stats, optionally filtered by minLines. */
 export async function analyzeFilesForLines(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  maxFiles?: number,
+  scan: SourceScan,
   minLines?: number
 ): Promise<FileFunctionLineCount[]> {
   const results: FileFunctionLineCount[] = [];
 
-  for await (const file of walkSourceFiles(filePaths, basePath, isDirectory, maxFiles)) {
+  for await (const file of walkSourceFiles(scan)) {
     const { relativePath, code } = file;
     const language = resolveLanguage(file);
     const lines = code.split("\n");

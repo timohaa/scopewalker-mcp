@@ -1,6 +1,6 @@
 import { walkNode } from "../lib/astWalker.js";
 import { extractFunctionName } from "../lib/functionNames.js";
-import { walkSourceFiles, type SourceFile } from "../lib/sourceFileWalker.js";
+import { walkSourceFiles, type SourceFile, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type {
   FileParameterAnalysis,
@@ -95,15 +95,12 @@ async function analyzeFile({
 
 /** Analyzes every scanned file, returning per-file parameters and the scan total. */
 export async function analyzeFilesForParameters(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  maxFiles?: number
+  scan: SourceScan
 ): Promise<{ fileAnalyses: FileParameterAnalysis[]; totalParamsScanned: number }> {
   const fileAnalyses: FileParameterAnalysis[] = [];
   let totalParamsScanned = 0;
 
-  for await (const file of walkSourceFiles(filePaths, basePath, isDirectory, maxFiles)) {
+  for await (const file of walkSourceFiles(scan)) {
     try {
       const analysis = await analyzeFile(file);
       if (analysis === null) continue;

@@ -52,9 +52,7 @@ describe("findOversizedFunctions", () => {
 
   it("skips files exceeding the size guard, and reports the skip (M10)", async () => {
     const { oversizedFunctions, totalFunctions, filesSkipped } = await findOversizedFunctions(
-      ["huge.ts"],
-      testDir,
-      true,
+      { filePaths: ["huge.ts"], basePath: testDir, isDirectory: true },
       100
     );
 
@@ -66,9 +64,7 @@ describe("findOversizedFunctions", () => {
 
   it("counts functions within the size guard and reports no skips", async () => {
     const { totalFunctions, filesSkipped } = await findOversizedFunctions(
-      ["small.ts"],
-      testDir,
-      true,
+      { filePaths: ["small.ts"], basePath: testDir, isDirectory: true },
       100
     );
 
@@ -81,9 +77,7 @@ describe("findOversizedFunctions", () => {
     // as analyzable; walkSourceFiles then drops it when the read fails, and
     // the same filesSkipped accounting (countAnalyzable - filesScanned) catches it.
     const { oversizedFunctions, totalFunctions, filesSkipped } = await findOversizedFunctions(
-      ["missing.ts"],
-      testDir,
-      true,
+      { filePaths: ["missing.ts"], basePath: testDir, isDirectory: true },
       100
     );
 
@@ -94,9 +88,7 @@ describe("findOversizedFunctions", () => {
 
   it("reports zero files skipped for a single-file (non-directory) scan", async () => {
     const { filesSkipped } = await findOversizedFunctions(
-      [join(testDir, "small.ts")],
-      testDir,
-      false,
+      { filePaths: [join(testDir, "small.ts")], basePath: testDir, isDirectory: false },
       100
     );
 

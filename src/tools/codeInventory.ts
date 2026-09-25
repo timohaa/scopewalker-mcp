@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
-import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { parseCode } from "../lib/treeSitter.js";
 import type { CodeInventoryResult, FileInventory, InventoryItem } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
@@ -69,11 +69,8 @@ export function registerCodeInventoryTool(server: McpServer): void {
       }
 
       let inventory = await analyzeInventory(
-        filePaths,
-        resolvedPath,
-        isDirectory,
-        args.include_private ?? false,
-        args.max_files
+        { filePaths, basePath: resolvedPath, isDirectory, maxFiles: args.max_files },
+        args.include_private ?? false
       );
 
       if (args.grep !== undefined && args.grep !== "") {
@@ -114,22 +111,14 @@ export function registerCodeInventoryTool(server: McpServer): void {
 
 /** Parses files and collects inventory items (classes, functions, etc.). */
 async function analyzeInventory(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  includePrivate: boolean,
-  maxFiles?: number
+  scan: SourceScan,
+  includePrivate: boolean
 ): Promise<FileInventory[]> {
   const results: FileInventory[] = [];
   // Go receivers can only be matched once every file in the package has been read.
   const pendingGoMethods: PendingGoMethod[] = [];
 
-  for await (const { relativePath, language, code } of walkSourceFiles(
-    filePaths,
-    basePath,
-    isDirectory,
-    maxFiles
-  )) {
+  for await (const { relativePath, language, code } of walkSourceFiles(scan)) {
     try {
       const tree = await parseCode(code, language);
       if (!tree) continue;

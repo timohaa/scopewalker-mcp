@@ -68,12 +68,12 @@ export function registerCodeSmellsTool(server: McpServer): void {
       const byType = createEmptySmellCounts();
       let totalFilesScanned = 0;
 
-      for await (const file of walkSourceFiles(
+      for await (const file of walkSourceFiles({
         filePaths,
-        resolvedPath,
+        basePath: resolvedPath,
         isDirectory,
-        args.max_files
-      )) {
+        maxFiles: args.max_files,
+      })) {
         totalFilesScanned++;
         const fileSmells = await processFileForSmells(
           file,

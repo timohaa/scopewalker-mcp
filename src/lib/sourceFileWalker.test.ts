@@ -10,7 +10,12 @@ let testDir: string;
 /** Collects the relative paths the walker yields, which is what the callers key off. */
 async function walkedPaths(filePaths: string[], maxFiles?: number): Promise<string[]> {
   const seen: string[] = [];
-  for await (const file of walkSourceFiles(filePaths, testDir, true, maxFiles)) {
+  for await (const file of walkSourceFiles({
+    filePaths,
+    basePath: testDir,
+    isDirectory: true,
+    maxFiles,
+  })) {
     seen.push(file.relativePath);
   }
   return seen;
@@ -38,7 +43,11 @@ afterAll(async () => {
 describe("walkSourceFiles", () => {
   it("detects the language from content for .h headers", async () => {
     const languages: Record<string, string> = {};
-    for await (const file of walkSourceFiles(["plain.h", "widget.h"], testDir, true)) {
+    for await (const file of walkSourceFiles({
+      filePaths: ["plain.h", "widget.h"],
+      basePath: testDir,
+      isDirectory: true,
+    })) {
       languages[file.relativePath] = file.language;
     }
     expect(languages).toEqual({ "plain.h": "c", "widget.h": "cpp" });
@@ -101,7 +110,11 @@ describe("walkSourceFiles", () => {
   it("reports absolute paths as-is when not scanning a directory", async () => {
     const absolute = join(testDir, "a.ts");
     const seen: string[] = [];
-    for await (const file of walkSourceFiles([absolute], testDir, false)) {
+    for await (const file of walkSourceFiles({
+      filePaths: [absolute],
+      basePath: testDir,
+      isDirectory: false,
+    })) {
       seen.push(file.relativePath);
     }
     expect(seen).toEqual([absolute]);

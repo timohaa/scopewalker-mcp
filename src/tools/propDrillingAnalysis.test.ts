@@ -216,7 +216,11 @@ describe("analyzeFilesForParameters", () => {
       `int add(int a, int b) {\n  return helper(a, b);\n}\n\nint helper(int a, int b) {\n  return a + b;\n}\n`
     );
 
-    const { fileAnalyses } = await analyzeFilesForParameters(["math.c"], dir, true);
+    const { fileAnalyses } = await analyzeFilesForParameters({
+      filePaths: ["math.c"],
+      basePath: dir,
+      isDirectory: true,
+    });
 
     expect(fileAnalyses).toHaveLength(1);
     const names = fileAnalyses[0]?.parameters.map((p) => p.functionName);
@@ -231,7 +235,11 @@ describe("analyzeFilesForParameters", () => {
       `register((item: string) => {\n  return process(item);\n});\n`
     );
 
-    const { fileAnalyses } = await analyzeFilesForParameters(["anon.ts"], dir, true);
+    const { fileAnalyses } = await analyzeFilesForParameters({
+      filePaths: ["anon.ts"],
+      basePath: dir,
+      isDirectory: true,
+    });
 
     expect(fileAnalyses).toHaveLength(1);
     expect(fileAnalyses[0]?.parameters).toEqual([
@@ -249,11 +257,11 @@ describe("analyzeFilesForParameters", () => {
       `function processRequest(token: string) { return token; }\n`
     );
 
-    const { fileAnalyses, totalParamsScanned } = await analyzeFilesForParameters(
-      ["unparsable.ts", "ok.ts"],
-      dir,
-      true
-    );
+    const { fileAnalyses, totalParamsScanned } = await analyzeFilesForParameters({
+      filePaths: ["unparsable.ts", "ok.ts"],
+      basePath: dir,
+      isDirectory: true,
+    });
 
     expect(fileAnalyses.map((f) => f.path)).toEqual(["ok.ts"]);
     expect(totalParamsScanned).toBe(1);

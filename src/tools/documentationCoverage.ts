@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
-import { walkSourceFiles } from "../lib/sourceFileWalker.js";
+import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type { FileDocumentation, UndocumentedItem } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
@@ -61,10 +61,7 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
         : [resolvedPath];
 
       const analysis = await analyzeCoverage(
-        filePaths,
-        resolvedPath,
-        isDirectory,
-        args.max_files,
+        { filePaths, basePath: resolvedPath, isDirectory, maxFiles: args.max_files },
         args.min_lines ?? 1
       );
 
@@ -100,25 +97,14 @@ function countSkipped(filePaths: string[], filesScanned: number): number {
 }
 
 /** Parses files and analyzes documentation coverage for each. */
-async function analyzeCoverage(
-  filePaths: string[],
-  basePath: string,
-  isDirectory: boolean,
-  maxFiles: number | undefined,
-  minLines: number
-): Promise<CoverageAnalysis> {
+async function analyzeCoverage(scan: SourceScan, minLines: number): Promise<CoverageAnalysis> {
   const byFile: FileDocumentation[] = [];
   const undocumentedItems: UndocumentedItem[] = [];
   let totalDocumented = 0;
   let totalUndocumented = 0;
   let filesScanned = 0;
 
-  for await (const { relativePath, language, code } of walkSourceFiles(
-    filePaths,
-    basePath,
-    isDirectory,
-    maxFiles
-  )) {
+  for await (const { relativePath, language, code } of walkSourceFiles(scan)) {
     try {
       const tree = await parseCode(code, language);
       if (!tree) continue;
