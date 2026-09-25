@@ -5,7 +5,7 @@ import { MAX_WALK_DEPTH } from "./astWalker.js";
 import { extractFunctionName } from "./functionNames.js";
 import { loadGrammar } from "./treeSitterGrammars.js";
 
-// Re-export from split modules for backwards compatibility
+// Re-exported so tools import imports and comments through this module alongside parsing
 export { countImports } from "./treeSitterImports.js";
 export { getComments, type CommentInfo } from "./treeSitterComments.js";
 
