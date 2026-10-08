@@ -82,6 +82,21 @@ struct and three functions reports `total_symbols: 3`.
 
 See `docs/tools-quality.md`.
 
+### C++ parse recovery can hide or merge symbols
+
+**Tools:** `get_documentation_coverage`
+
+tree-sitter parses C++ without running the preprocessor. An unknown macro inside a class
+body, such as Qt's `Q_OBJECT`, can produce an `ERROR` node that swallows the next member.
+A long class template can also be parsed as a function whose return type is the class. Such
+records are left out rather than reported, so coverage misses them.
+
+`typedef`, `using` aliases, and namespaces are not documentable symbols. Header/source
+matching is by qualified name only, so unrelated functions with the same name in one scan,
+such as two programs' `main`, count once.
+
+See `docs/tools-quality.md`.
+
 ### Ruby iterator blocks do not count toward cognitive or cyclomatic complexity
 
 **Tools:** `get_complexity_metrics`
@@ -95,7 +110,7 @@ cyclomatic complexity 3 and cognitive complexity 3. With `.each do`, those score
 are 1 and 0 respectively. The
 cross-grammar parity fixtures deliberately use `for..in` for this reason.
 
-Both block forms *do* count toward `max_nesting_depth`, and that asymmetry is deliberate.
+Both block forms _do_ count toward `max_nesting_depth`, and that asymmetry is deliberate.
 A block is a level of indentation whether or not it loops, so nesting can count it without
 being wrong, while a branch count would be. A method-name allowlist (`each`, `map`, `times`,
 and so on) was considered and rejected: it would be silently wrong for every iterator not

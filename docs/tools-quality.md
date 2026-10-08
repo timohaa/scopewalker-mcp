@@ -7,7 +7,7 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                              |
-|-------------------|----------|----------|--------------------------------------------------------------------------|
+| ----------------- | -------- | -------- | ------------------------------------------------------------------------ |
 | `path`            | string   | Yes      | Path to file or directory                                                |
 | `include_hidden`  | boolean  | No       | Include hidden files                                                     |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                                 |
@@ -20,23 +20,27 @@ Analyzes documentation coverage - identifies functions, classes, and methods mis
 
 **Documentation Detection:**
 
-| Language              | Recognized Formats                               |
-|-----------------------|--------------------------------------------------|
-| JavaScript/TypeScript | JSDoc (`/** */`), TSDoc                          |
-| Python                | Docstrings (`"""`, `'''`)                        |
-| Go                    | Godoc comments (`//`)                            |
-| Rust                  | Doc comments (`///`, `/** */`, `#[doc = "..."]`) |
-| Java                  | Javadoc (`/** */`)                               |
-| C/C++                 | JSDoc-style (`/** */`)                           |
-| Ruby                  | Line comments (`#`)                              |
+| Language              | Recognized Formats                                 |
+| --------------------- | -------------------------------------------------- |
+| JavaScript/TypeScript | JSDoc (`/** */`), TSDoc                            |
+| Python                | Docstrings (`"""`, `'''`)                          |
+| Go                    | Godoc comments (`//`)                              |
+| Rust                  | Doc comments (`///`, `/** */`, `#[doc = "..."]`)   |
+| Java                  | Javadoc (`/** */`)                                 |
+| C/C++                 | Doxygen (`/** */`, `/*! */`, `///`, `//!`, `///<`) |
+| Ruby                  | Line comments (`#`)                                |
 
-`//!` is an inner doc comment: it documents the module or crate it sits in, never the item that follows it.
+In Rust, `//!` is an inner doc comment: it documents the module or crate it sits in, never the item that follows it. In C/C++, `//!` documents the declaration below it. A C/C++ trailing comment (`int x(); ///< ...` or `/**< ... */`) documents the declaration on its own line, never the next one. A `////` banner line is not documentation.
 
-A comment documents a declaration only when its last line is the line directly above the declaration's first line. Decorators, attributes, annotations and modifiers count as part of the declaration, so a comment above them still applies. A blank line, a comment that trails code on its line, or another declaration in between breaks the association. Consecutive comment lines directly above each other form one block.
+A comment documents a declaration only when its last line is the line directly above the declaration's first line. Decorators, attributes, annotations and modifiers count as part of the declaration, so a comment above them still applies. So do a C++ `template <...>` line and an `extern "C"` prefix. A blank line, a comment that trails code on its line, or another declaration in between breaks the association. Consecutive comment lines directly above each other form one block.
 
 **What counts as documentable:** functions (including `const fn = () => {}` in TS/JS and C/C++ prototypes in headers), classes (TS/JS, Python, Java, Ruby, and C/C++ `class`/`struct` bodies), and methods. Inline callback arrows are not counted. C/C++ member functions are reported as methods, including members declared without a body; plain data members are ignored. Go receiver methods (`func (p *Point) Reset()`) count as methods. Go `struct`/`interface` types and Rust `struct`/`trait`/`enum` are not currently treated as documentable classes.
 
 C/C++ `struct`, `class`, `union`, and `enum` count as classes only where they declare a member list; a bare type reference such as `struct CPU_pins *pins` is not a symbol. TypeScript `abstract class` counts as a class; abstract method signatures and a class field bound to a function (`handleClick = () => {}`) count as methods. Rust trait method signatures and Go interface method specs count as methods.
+
+**C/C++ header and source pairs:** a declaration and its definition count as one symbol, matched by fully qualified name across the scanned files. The symbol is documented when either copy has a doc comment. An undocumented pair is reported at the header declaration. `min_lines` applies to the longer copy. Overloads share a name: they count as many symbols as the most copies in one file, and all are documented when any copy is. This can miss an undocumented overload but never reports a documented one.
+
+**C/C++ visibility:** only public and protected API counts. Private members (including members before any label in a `class`), `static` free functions, and anything in an anonymous namespace are left out, along with their out-of-line definitions. `friend` declarations, `= default`/`= delete` members, and explicit specialisations (`template <>`) need no doc comment of their own and are not counted.
 
 A Ruby top-level `def` is typed as a function, and a `def` inside a class or module body as a method, including one nested in an `if`/`else` within that body. A `def` inside another `def` is a function. A Python `def` in a class body is a method, including one guarded by an `if`; a `def` inside a method body is a function. `get_code_inventory` labels class-body methods the same way. It lists module-body defs as top-level functions because the inventory has no module item type.
 
@@ -95,12 +99,12 @@ Detects code smells like TODO, FIXME, HACK, XXX, BUG, UNUSED, and DEPRECATED com
 
 **Note:** Comment-based smells use tree-sitter to avoid matches in string literals and code. The `unsafe_cast` smell detects TypeScript double casts through `unknown` or `any`. Examples include `x as unknown as T` and `x as any as T`. JavaScript has no corresponding `as` expression.
 
-**Marker rule:** a comment-based smell fires only on its marker's *form*, not the word anywhere in prose. It matches an uppercase, whole-word marker (`TODO`, `FIXME`, `HACK`, `XXX`, `BUG`, `UNUSED`, `DEPRECATED`) optionally followed by `:`, `(`, or `-` (`TODO: x`, `TODO(name): x`, `FIXME - x`), or the lowercase form accepted only at the very start of a comment and only when immediately followed by `:` (`// todo: x`). Prose that merely contains the word (`a rounding bug`, `--no-xxx`) does not match either form. Inside a multi-line comment, the reported `line` is the marker's own line, not the comment's start line.
+**Marker rule:** a comment-based smell fires only on its marker's _form_, not the word anywhere in prose. It matches an uppercase, whole-word marker (`TODO`, `FIXME`, `HACK`, `XXX`, `BUG`, `UNUSED`, `DEPRECATED`) optionally followed by `:`, `(`, or `-` (`TODO: x`, `TODO(name): x`, `FIXME - x`), or the lowercase form accepted only at the very start of a comment and only when immediately followed by `:` (`// todo: x`). Prose that merely contains the word (`a rounding bug`, `--no-xxx`) does not match either form. Inside a multi-line comment, the reported `line` is the marker's own line, not the comment's start line.
 
 **Parameters:**
 
 | Name              | Type     | Required | Description                                             |
-|-------------------|----------|----------|---------------------------------------------------------|
+| ----------------- | -------- | -------- | ------------------------------------------------------- |
 | `path`            | string   | Yes      | Path to file or directory                               |
 | `include_hidden`  | boolean  | No       | Include hidden files                                    |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                |
@@ -174,7 +178,7 @@ Detects parameter threading (prop drilling) by finding parameter names passed th
 **Parameters:**
 
 | Name              | Type     | Required | Description                                                                   |
-|-------------------|----------|----------|-------------------------------------------------------------------------------|
+| ----------------- | -------- | -------- | ----------------------------------------------------------------------------- |
 | `path`            | string   | Yes      | Path to file or directory                                                     |
 | `include_hidden`  | boolean  | No       | Include hidden files                                                          |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                                                      |
@@ -233,7 +237,7 @@ Finds declared symbols and private methods that nothing in the scanned files ref
 **Parameters:**
 
 | Name              | Type     | Required | Description                                          |
-|-------------------|----------|----------|------------------------------------------------------|
+| ----------------- | -------- | -------- | ---------------------------------------------------- |
 | `path`            | string   | Yes      | Path to file or directory                            |
 | `include_hidden`  | boolean  | No       | Include hidden files                                 |
 | `ignore_patterns` | string[] | No       | Glob patterns to exclude                             |
@@ -257,7 +261,7 @@ a name alive. Comments do not count, with one exception: Go's `//export name` an
 **Visibility scope:**
 
 | Scope     | Meaning                                             | Examples                                                                                                                                                                                                                              |
-|-----------|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `local`   | Reachable only from its own file or class           | A non-exported top-level symbol in a TS/JS module file; a C/C++ private method or `static` function in a `.c`/`.cpp` file                                                                                                             |
 | `package` | Reachable from sibling files under the scanned path | Private methods in every language except C/C++; Go unexported names; Rust items with no visibility modifier; Java `private` and package-private classes; Python `_`-prefixed names                                                    |
 | `public`  | Reachable from outside the scan                     | Exported TS/JS symbols; globals of a TS/JS script file; Go exported names; Rust `pub` (including `pub(crate)` and `pub(super)`); Java `public`/`protected`; Ruby top-level symbols; C/C++ non-static symbols and anything in a header |

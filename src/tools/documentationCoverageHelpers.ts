@@ -16,6 +16,7 @@ export {
 export type {
   CoverageConfig,
   CoverageData,
+  DocSymbol,
   FileAnalysis,
   FileAnalysisOptions,
 } from "./documentationCoverageAnalysis.js";

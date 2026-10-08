@@ -1,6 +1,11 @@
 import type Parser from "tree-sitter";
 import type { SupportedLanguage } from "../types/index.js";
-import { isCommentNode, isDocCommentText } from "./documentationCoverageLanguageUtils.js";
+import {
+  C_FAMILY_TRAILING_DOC,
+  isCFamily,
+  isCommentNode,
+  isDocCommentText,
+} from "./documentationCoverageLanguageUtils.js";
 
 /**
  * Parents that wrap a declaration without separating it from a comment above it.
@@ -15,6 +20,13 @@ const DECLARATION_WRAPPERS = new Set([
   "variable_declaration",
   "public_field_definition",
 ]);
+
+/**
+ * C++ parents whose leading line belongs to the declaration they wrap. The
+ * `template <typename T>` line and `extern "C"` sit above the declarator, so
+ * the doc comment sits above them.
+ */
+const C_DECLARATION_PREFIXES = new Set(["template_declaration", "linkage_specification"]);
 
 /** Siblings that sit between a doc comment and the declaration it documents. */
 const PREFIX_SIBLINGS = new Set(["decorator", "attribute_item"]);
@@ -57,17 +69,35 @@ function canWiden(node: Parser.SyntaxNode): boolean {
   return previous.startPosition.row === node.startPosition.row;
 }
 
+/** True when a node's parent belongs to the same declaration as the node. */
+function isWrappedBy(node: Parser.SyntaxNode, parent: Parser.SyntaxNode): boolean {
+  if (C_DECLARATION_PREFIXES.has(parent.type)) return true;
+  return DECLARATION_WRAPPERS.has(parent.type) && canWiden(node);
+}
+
 /** Climbs through wrappers that share the declaration's leading row. */
 function widenThroughWrappers(node: Parser.SyntaxNode): Parser.SyntaxNode {
   let current = node;
-  while (
-    current.parent !== null &&
-    DECLARATION_WRAPPERS.has(current.parent.type) &&
-    canWiden(current)
-  ) {
+  while (current.parent !== null && isWrappedBy(current, current.parent)) {
     current = current.parent;
   }
   return current;
+}
+
+/**
+ * True when a Doxygen trailing comment (`int x(); ///< ...`) follows a C/C++
+ * declaration on its last line. That form documents the declaration before it.
+ */
+export function hasTrailingDoc(node: Parser.SyntaxNode, language: SupportedLanguage): boolean {
+  if (!isCFamily(language)) return false;
+  const declaration = widenThroughWrappers(node);
+  const next = declaration.nextSibling;
+  return (
+    next !== null &&
+    isCommentNode(next) &&
+    next.startPosition.row === declaration.endPosition.row &&
+    C_FAMILY_TRAILING_DOC.test(next.text)
+  );
 }
 
 /** True for a Rust `#[doc = "..."]` attribute, which documents the item it precedes. */

@@ -6,10 +6,12 @@ import type {
   SupportedLanguage,
   UndocumentedItem,
 } from "../types/index.js";
-import { findDocAbove } from "./documentationCoverageAdjacency.js";
+import { findDocAbove, hasTrailingDoc } from "./documentationCoverageAdjacency.js";
+import { cSymbolKey, isHiddenCSymbol } from "./documentationCoverageCppScope.js";
 import {
   isDocComment,
   isAnyComment,
+  isCFamily,
   hasPythonDocstring,
 } from "./documentationCoverageLanguageUtils.js";
 import { getDocumentableNode } from "./documentationCoverageNodeDetection.js";
@@ -31,11 +33,19 @@ export interface CoverageData {
   filesSkipped: number;
 }
 
+/** One documentable symbol found in a file. */
+export interface DocSymbol {
+  item: UndocumentedItem;
+  documented: boolean;
+  /** C/C++ only: joins a header declaration with its definition in another file. */
+  key: string | null;
+  /** C/C++ only: outside any public API, so its whole group is left out. */
+  hidden: boolean;
+}
+
 /** Result of analyzing a single file's documentation coverage. */
 export interface FileAnalysis {
-  documented: number;
-  undocumented: number;
-  items: UndocumentedItem[];
+  symbols: DocSymbol[];
 }
 
 /**
@@ -65,8 +75,8 @@ function hasDocInPrecedingLines(
 }
 
 /**
- * Checks AST docstrings and the comment block directly above the declaration,
- * then falls back to the preceding source lines.
+ * Checks AST docstrings, C/C++ trailing member comments, and the comment block
+ * directly above the declaration, then falls back to the preceding source lines.
  */
 export function hasDocumentation(
   node: Parser.SyntaxNode,
@@ -74,6 +84,7 @@ export function hasDocumentation(
   language: SupportedLanguage
 ): boolean {
   if (language === "python" && hasPythonDocstring(node)) return true;
+  if (hasTrailingDoc(node, language)) return true;
 
   const { documented, anchorRow } = findDocAbove(node, lines, language);
   if (documented) return true;
@@ -87,42 +98,31 @@ export interface FileAnalysisOptions {
   lines: string[];
   language: SupportedLanguage;
   filePath: string;
-  minLines: number;
 }
 
-/** Analyzes a file's AST and returns documentation coverage stats. */
+/**
+ * Analyzes a file's AST and returns every documentable symbol in it.
+ * Counting happens later, once C/C++ declarations are joined across files.
+ */
 export function analyzeFileDocumentation(options: FileAnalysisOptions): FileAnalysis {
-  const { rootNode, lines, language, filePath, minLines } = options;
-  let documented = 0;
-  let undocumented = 0;
-  const items: UndocumentedItem[] = [];
+  const { rootNode, lines, language, filePath } = options;
+  const cFamily = isCFamily(language);
+  const symbols: DocSymbol[] = [];
 
   walkNode(rootNode, (node) => {
     const docTarget = getDocumentableNode(node);
     if (!docTarget) return;
 
     const { name, type, lineCount } = docTarget;
-    const line = node.startPosition.row + 1;
-
-    if (lineCount < minLines) return;
-
-    const hasDoc = hasDocumentation(node, lines, language);
-
-    if (hasDoc) {
-      documented++;
-    } else {
-      undocumented++;
-      items.push({
-        path: filePath,
-        name,
-        type,
-        line,
-        lines: lineCount,
-      });
-    }
+    symbols.push({
+      item: { path: filePath, name, type, line: node.startPosition.row + 1, lines: lineCount },
+      documented: hasDocumentation(node, lines, language),
+      key: cFamily ? cSymbolKey(node, name, type === "class") : null,
+      hidden: cFamily && isHiddenCSymbol(node),
+    });
   });
 
-  return { documented, undocumented, items };
+  return { symbols };
 }
 
 /** Constructs the documentation coverage result object. */

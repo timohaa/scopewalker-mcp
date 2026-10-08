@@ -3,7 +3,6 @@ import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
-import type { FileDocumentation, UndocumentedItem } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
 import {
@@ -17,7 +16,9 @@ import {
 import {
   analyzeFileDocumentation,
   buildDocumentationCoverageResult,
+  type DocSymbol,
 } from "./documentationCoverageHelpers.js";
+import { tallyCoverage, type CoverageTally } from "./documentationCoverageTally.js";
 
 const DEFAULT_LIMIT = 20;
 
@@ -79,11 +80,7 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
   );
 }
 
-interface CoverageAnalysis {
-  byFile: FileDocumentation[];
-  undocumentedItems: UndocumentedItem[];
-  totalDocumented: number;
-  totalUndocumented: number;
+interface CoverageAnalysis extends CoverageTally {
   filesScanned: number;
 }
 
@@ -96,12 +93,13 @@ function countSkipped(filePaths: string[], filesScanned: number): number {
   return Math.max(analyzable - filesScanned, 0);
 }
 
-/** Parses files and analyzes documentation coverage for each. */
+/**
+ * Parses every file, then counts documentation coverage across all of them.
+ * Counting waits until the end because a C/C++ declaration in one file and its
+ * definition in another are one symbol.
+ */
 async function analyzeCoverage(scan: SourceScan, minLines: number): Promise<CoverageAnalysis> {
-  const byFile: FileDocumentation[] = [];
-  const undocumentedItems: UndocumentedItem[] = [];
-  let totalDocumented = 0;
-  let totalUndocumented = 0;
+  const symbols: DocSymbol[] = [];
   let filesScanned = 0;
 
   for await (const { relativePath, language, code } of walkSourceFiles(scan)) {
@@ -110,28 +108,18 @@ async function analyzeCoverage(scan: SourceScan, minLines: number): Promise<Cove
       if (!tree) continue;
       filesScanned++;
 
-      const { documented, undocumented, items } = analyzeFileDocumentation({
+      const analysis = analyzeFileDocumentation({
         rootNode: tree.rootNode,
         lines: code.split("\n"),
         language,
         filePath: relativePath,
-        minLines,
       });
-
-      totalDocumented += documented;
-      totalUndocumented += undocumented;
-
-      if (documented + undocumented > 0) {
-        const percentage = Math.round((documented / (documented + undocumented)) * 1000) / 10;
-        byFile.push({ path: relativePath, documented, undocumented, percentage });
-      }
-
-      undocumentedItems.push(...items);
+      symbols.push(...analysis.symbols);
     } catch {
       // One unparsable file must not abort the scan.
       continue;
     }
   }
 
-  return { byFile, undocumentedItems, totalDocumented, totalUndocumented, filesScanned };
+  return { ...tallyCoverage(symbols, minLines), filesScanned };
 }

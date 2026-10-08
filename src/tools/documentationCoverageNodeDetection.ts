@@ -1,4 +1,5 @@
 import type Parser from "tree-sitter";
+import { DECLARATOR_NAME_TYPES } from "../lib/functionNames.js";
 import { isInsideRecordBody } from "./documentationCoverageClassification.js";
 
 export interface DocumentableNode {
@@ -37,8 +38,26 @@ const GO_INTERFACE_METHOD_TYPES = ["method_elem", "method_spec"];
 
 type DocumentableType = "function" | "class" | "method";
 
+/** Nodes that hold a C/C++ record as a statement or member, ending the climb below. */
+const C_RECORD_CONTAINERS = ["compound_statement", "field_declaration_list", "declaration_list"];
+
+/**
+ * True for a record tree-sitter parsed as a function's return type. A macro or a
+ * multi-line template parameter list can derail the parse, so fmt's
+ * `class basic_memory_buffer` became a function_definition whose doc comment
+ * sits out of reach above the `template` line.
+ */
+function isRecordInReturnType(node: Parser.SyntaxNode): boolean {
+  for (let current = node.parent; current !== null; current = current.parent) {
+    if (C_RECORD_CONTAINERS.includes(current.type)) return false;
+    if (current.type === "function_definition") return true;
+  }
+  return false;
+}
+
 /** True for a C/C++ record that declares members, not one that only names a type. */
 function isDefinedRecord(node: Parser.SyntaxNode): boolean {
+  if (isRecordInReturnType(node)) return false;
   return node.children.some((child) => C_RECORD_BODIES.includes(child.type));
 }
 
@@ -59,8 +78,11 @@ function classifyFunctionOrPrototype(node: Parser.SyntaxNode): DocumentableType 
     return isInsideRecordBody(node) ? "method" : "function";
   }
 
-  // C/C++ function declarations in headers (prototypes)
-  if (node.type === "declaration" && hasFunctionDeclarator(node)) return "function";
+  // C/C++ prototypes. Inside a class body these are members: constructors,
+  // destructors, and member templates parse as `declaration`, not `field_declaration`.
+  if (node.type === "declaration" && hasFunctionDeclarator(node)) {
+    return isInsideRecordBody(node) ? "method" : "function";
+  }
 
   return null;
 }
@@ -112,11 +134,38 @@ function getDocumentableType(node: Parser.SyntaxNode): DocumentableType | null {
   return classifyByParent(node);
 }
 
+/** C++ function bodies that replace the body with `= default` or `= delete`. */
+const SPECIAL_METHOD_CLAUSES = ["default_method_clause", "delete_method_clause"];
+
+/** True for `template <>`, an explicit specialisation of a template declared elsewhere. */
+function isExplicitSpecialization(node: Parser.SyntaxNode): boolean {
+  let parent = node.parent;
+  while (parent?.type === "template_declaration") {
+    const params = parent.childForFieldName("parameters");
+    if (params !== null && params.namedChildCount === 0) return true;
+    parent = parent.parent;
+  }
+  return false;
+}
+
+/**
+ * True for C++ declarations that need no doc comment of their own: a `friend`
+ * grants access to a function declared elsewhere, a defaulted or deleted
+ * member has compiler-defined behaviour, and an explicit specialisation is
+ * documented by its primary template.
+ */
+function isExemptCppDeclaration(node: Parser.SyntaxNode): boolean {
+  if (node.parent?.type === "friend_declaration") return true;
+  if (node.children.some((child) => SPECIAL_METHOD_CLAUSES.includes(child.type))) return true;
+  return isExplicitSpecialization(node);
+}
+
 /** Returns documentable info if node is a function, class, or method. */
 export function getDocumentableNode(node: Parser.SyntaxNode): DocumentableNode | null {
   if (node.type === "arrow_function") {
     return getNamedArrowFunction(node);
   }
+  if (isExemptCppDeclaration(node)) return null;
 
   const type = getDocumentableType(node);
   if (type === null) return null;
@@ -145,18 +194,42 @@ function getNamedArrowFunction(node: Parser.SyntaxNode): DocumentableNode | null
   return { name, type: "function", lineCount };
 }
 
-/** Checks if a C/C++ declaration node contains a function declarator (i.e., is a function prototype). */
-function hasFunctionDeclarator(node: Parser.SyntaxNode): boolean {
-  for (const child of node.children) {
-    if (child.type === "function_declarator") {
-      return true;
-    }
-    // Handle pointer return types: void *func() has pointer_declarator containing function_declarator
-    if (child.type === "pointer_declarator" && hasFunctionDeclarator(child)) {
-      return true;
-    }
+// Declarators that wrap a function's declarator without changing what it
+// declares: `T *f()`, `T &f()`, and `T f [[nodiscard]] ()`.
+const C_DECLARATOR_WRAPPERS = [
+  "pointer_declarator",
+  "reference_declarator",
+  "attributed_declarator",
+];
+
+/**
+ * Finds the function_declarator a C/C++ declaration declares, or null.
+ * A parenthesized declarator (`void (*fp)(int)`) declares a function pointer
+ * variable, so the walk stops there instead of naming the variable.
+ */
+function findFunctionDeclarator(node: Parser.SyntaxNode): Parser.SyntaxNode | null {
+  let current = node.childForFieldName("declarator");
+  while (current !== null) {
+    if (current.type === "function_declarator") return current;
+    if (!C_DECLARATOR_WRAPPERS.includes(current.type)) return null;
+    current =
+      current.childForFieldName("declarator") ??
+      current.namedChildren.find((child) => child.type.endsWith("declarator")) ??
+      null;
   }
-  return false;
+  return null;
+}
+
+/** Reads the name a C/C++ function declarator declares, or null for anything else. */
+function getCFunctionName(node: Parser.SyntaxNode): string | null {
+  const name = findFunctionDeclarator(node)?.childForFieldName("declarator");
+  if (!name || !DECLARATOR_NAME_TYPES.includes(name.type) || name.text === "") return null;
+  return name.text;
+}
+
+/** Checks if a C/C++ declaration node declares a function (i.e., is a prototype). */
+function hasFunctionDeclarator(node: Parser.SyntaxNode): boolean {
+  return getCFunctionName(node) !== null;
 }
 
 // C/C++ node types whose name lives inside a declarator rather than a direct child.
@@ -172,12 +245,11 @@ export function extractName(node: Parser.SyntaxNode): string | null {
   if (nameField) return nameField.text;
 
   // C/C++ nest the name inside declarators for prototypes (`declaration`,
-  // `field_declaration`) and bodies (`function_definition`) alike. This runs
-  // before the identifier scan because a class-typed return value (`Point
-  // make()`) puts a type_identifier ahead of the declarator.
-  if (C_DECLARATOR_HOLDERS.includes(node.type)) {
-    const declaredName = extractNameFromCDeclaration(node);
-    if (declaredName !== null) return declaredName;
+  // `field_declaration`) and bodies (`function_definition`) alike. Returning here
+  // keeps the identifier scan below from naming a function after its return type
+  // (`Point make()`). Python's function_definition has no declarator.
+  if (C_DECLARATOR_HOLDERS.includes(node.type) && node.childForFieldName("declarator")) {
+    return getCFunctionName(node);
   }
 
   for (const child of node.children) {
@@ -191,50 +263,5 @@ export function extractName(node: Parser.SyntaxNode): string | null {
     }
   }
 
-  return null;
-}
-
-// A declarator names its function differently by context: free functions use
-// `identifier`, out-of-line definitions `qualified_identifier` (`Widget::resize`),
-// and in-class members `field_identifier`.
-const DECLARATOR_NAME_TYPES = ["identifier", "qualified_identifier", "field_identifier"];
-
-/** Extracts identifier from a function_declarator node. */
-function getIdentifierFromFunctionDeclarator(node: Parser.SyntaxNode): string | null {
-  const identifier = node.children.find((c) => DECLARATOR_NAME_TYPES.includes(c.type));
-  return identifier?.text ?? null;
-}
-
-/**
- * Finds a function_declarator within a pointer_declarator and extracts its name.
- * Each `*` of a `struct Foo **make(void)` adds another pointer_declarator level.
- */
-function getNameFromPointerDeclarator(pointerDecl: Parser.SyntaxNode): string | null {
-  for (const child of pointerDecl.children) {
-    if (child.type === "function_declarator") {
-      return getIdentifierFromFunctionDeclarator(child);
-    }
-    if (child.type === "pointer_declarator") {
-      const name = getNameFromPointerDeclarator(child);
-      if (name !== null) return name;
-    }
-  }
-  return null;
-}
-
-/**
- * Extracts function name from C/C++ declaration nodes.
- * Handles both direct function_declarator and pointer_declarator wrapping function_declarator.
- */
-function extractNameFromCDeclaration(node: Parser.SyntaxNode): string | null {
-  for (const child of node.children) {
-    if (child.type === "function_declarator") {
-      return getIdentifierFromFunctionDeclarator(child);
-    }
-    if (child.type === "pointer_declarator") {
-      const name = getNameFromPointerDeclarator(child);
-      if (name !== null) return name;
-    }
-  }
   return null;
 }

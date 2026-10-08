@@ -21,7 +21,7 @@ const DECLARATOR_TYPES = [
 // `identifier`, in-class members `field_identifier`, out-of-line definitions
 // `qualified_identifier` (`Widget::resize`), and C++ special members
 // `destructor_name` (`~Widget`) or `operator_name` (`operator=`).
-const DECLARATOR_NAME_TYPES = [
+export const DECLARATOR_NAME_TYPES = [
   "identifier",
   "field_identifier",
   "qualified_identifier",
