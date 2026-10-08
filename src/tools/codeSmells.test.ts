@@ -91,7 +91,7 @@ describe("filtering", () => {
 
     expect(result.summary.by_type.todo).toBeGreaterThanOrEqual(1);
     expect(result.summary.by_type.fixme).toBeGreaterThanOrEqual(1);
-    // Other types should be 0 since we only searched for TODO and FIXME
+    // Other types should be 0 since only the todo and fixme types were requested
     expect(result.summary.by_type.hack).toBe(0);
     expect(result.summary.by_type.xxx).toBe(0);
   });
