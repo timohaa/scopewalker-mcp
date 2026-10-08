@@ -38,6 +38,11 @@ describe("detectLanguage", () => {
   it("detects C++ files", () => {
     expect(detectLanguage("foo.cpp")).toBe("cpp");
     expect(detectLanguage("foo.cc")).toBe("cpp");
+    expect(detectLanguage("foo.hh")).toBe("cpp");
+    expect(detectLanguage("foo.hxx")).toBe("cpp");
+    expect(detectLanguage("foo.ipp")).toBe("cpp");
+    expect(detectLanguage("foo.inl")).toBe("cpp");
+    expect(detectLanguage("foo.tpp")).toBe("cpp");
     expect(detectLanguage("foo.hpp")).toBe("cpp");
   });
 

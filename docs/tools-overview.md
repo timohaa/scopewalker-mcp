@@ -7,7 +7,7 @@ Scopewalker MCP provides 9 tools for codebase analysis.
 Most tools share these parameters:
 
 | Name              | Type     | Description                                                                                              |
-|-------------------|----------|----------------------------------------------------------------------------------------------------------|
+| ----------------- | -------- | -------------------------------------------------------------------------------------------------------- |
 | `path`            | string   | Path to file or directory (required)                                                                     |
 | `include_hidden`  | boolean  | Include hidden files (default: false)                                                                    |
 | `ignore_patterns` | string[] | Glob patterns to exclude (max 100 entries, 512 characters each)                                          |
@@ -56,15 +56,15 @@ totals are computed from the filtered results.
 
 Function detection and parsing support:
 
-| Language              | Extensions                                   | Detection                            |
-|-----------------------|----------------------------------------------|--------------------------------------|
-| TypeScript/JavaScript | `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs` | `function`, arrow functions, methods |
-| Python                | `.py`                                        | `def`, `async def`                   |
-| Go                    | `.go`                                        | `func`, methods with receivers       |
-| Rust                  | `.rs`                                        | `fn` (including `impl` methods)      |
-| Java                  | `.java`                                      | method and constructor declarations  |
-| C/C++                 | `.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp`    | function definitions                 |
-| Ruby                  | `.rb`                                        | `def`, `def self.<name>`             |
+| Language              | Extensions                                                                       | Detection                            |
+| --------------------- | -------------------------------------------------------------------------------- | ------------------------------------ |
+| TypeScript/JavaScript | `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`                                     | `function`, arrow functions, methods |
+| Python                | `.py`                                                                            | `def`, `async def`                   |
+| Go                    | `.go`                                                                            | `func`, methods with receivers       |
+| Rust                  | `.rs`                                                                            | `fn` (including `impl` methods)      |
+| Java                  | `.java`                                                                          | method and constructor declarations  |
+| C/C++                 | `.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx`, `.ipp`, `.inl`, `.tpp` | function definitions                 |
+| Ruby                  | `.rb`                                                                            | `def`, `def self.<name>`             |
 
 Files with any other extension are skipped by the AST-based tools. `get_line_counts` uses tokei instead, so it reports on every language tokei recognizes.
 
@@ -77,7 +77,7 @@ Files with any other extension are skipped by the AST-based tools. `get_line_cou
 All tools return structured errors:
 
 | Code                   | Description                                                                                                       |
-|------------------------|-------------------------------------------------------------------------------------------------------------------|
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `PATH_NOT_FOUND`       | Path does not exist                                                                                               |
 | `NOT_A_DIRECTORY`      | Expected directory, got file (reserved; every tool accepts both)                                                  |
 | `NOT_A_FILE`           | Expected file, got directory (reserved; every tool accepts both)                                                  |

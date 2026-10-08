@@ -28,6 +28,12 @@ const EXTENSION_MAP: Record<string, SupportedLanguage> = {
   ".cc": "cpp",
   ".cxx": "cpp",
   ".hpp": "cpp",
+  ".hh": "cpp",
+  ".hxx": "cpp",
+  // Template implementation files included from headers
+  ".ipp": "cpp",
+  ".inl": "cpp",
+  ".tpp": "cpp",
   ".rb": "ruby",
 };
 
