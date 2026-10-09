@@ -93,3 +93,37 @@ describe("client roots", () => {
     expect(await errorCodeFor(client, rootA)).toBe("PERMISSION_DENIED");
   });
 });
+
+describe("empty and multiple client roots", () => {
+  it("uses default roots when the client initially shares an empty list", async () => {
+    client = await connectWithRoots({ current: [] });
+
+    expect(await errorCodeFor(client, process.cwd())).toBeUndefined();
+    expect(await errorCodeFor(client, rootA)).toBeUndefined();
+  });
+
+  it("restores default roots when the client clears its roots", async () => {
+    const roots = { current: [rootA] };
+    client = await connectWithRoots(roots);
+    expect(await errorCodeFor(client, process.cwd())).toBe("PERMISSION_DENIED");
+
+    roots.current = [];
+    await client.sendRootsListChanged();
+
+    expect(await errorCodeFor(client, process.cwd())).toBeUndefined();
+    expect(await errorCodeFor(client, rootB)).toBeUndefined();
+  });
+
+  it("revokes a removed root while retaining another shared root", async () => {
+    const roots = { current: [rootA, rootB] };
+    client = await connectWithRoots(roots);
+    expect(await errorCodeFor(client, rootA)).toBeUndefined();
+    expect(await errorCodeFor(client, rootB)).toBeUndefined();
+
+    roots.current = [rootB];
+    await client.sendRootsListChanged();
+
+    expect(await errorCodeFor(client, rootA)).toBe("PERMISSION_DENIED");
+    expect(await errorCodeFor(client, rootB)).toBeUndefined();
+  });
+});

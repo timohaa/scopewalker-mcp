@@ -185,3 +185,28 @@ describe("validatePath - client roots", () => {
     expect(result.valid).toBe(true);
   });
 });
+
+describe("validatePath - missing allowed roots", () => {
+  it("retains missing configured roots without restoring default access", async () => {
+    const missingRoot = resolve("./nonexistent-root-12345");
+    process.env.SCOPEWALKER_ALLOWED_ROOTS = missingRoot;
+
+    expect(await validatePath("./package.json")).toMatchObject({
+      valid: false,
+      error: { error: { code: "PERMISSION_DENIED", allowed_roots: [missingRoot] } },
+    });
+  });
+
+  it("accepts an existing root alongside a missing client root", async () => {
+    const roots = [resolve("./nonexistent-root-12345"), resolve("./src")];
+
+    expect(await validatePath("./src/index.ts", roots)).toMatchObject({
+      valid: true,
+      isDirectory: false,
+    });
+    expect(await validatePath("./package.json", roots)).toMatchObject({
+      valid: false,
+      error: { error: { code: "PERMISSION_DENIED" } },
+    });
+  });
+});
