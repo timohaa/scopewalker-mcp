@@ -23,7 +23,7 @@ See [TOOLS.md](TOOLS.md) for the quick reference, [docs/](docs/) for per-tool pa
 ## Safety Defaults
 
 - **No network access:** All analysis runs locally over stdio: no data leaves your machine, no API keys or external services involved.
-- **Path scoping:** All tools only operate inside allowed roots (defaults: current working directory and system temp). Override with `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`.
+- **Path scoping:** All tools only operate inside allowed roots. `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2` takes precedence when set. Otherwise the server uses the workspace roots your MCP client shares, and falls back to the current working directory and system temp when the client shares none.
 - **Large file guard:** AST-based tools skip files larger than 1 MB to avoid excessive memory/CPU use. Tokei-based line counts do not enforce this limit.
 - **Input ceilings:** `max_files` caps at 10000, `max_depth` at 64, `limit` at 5000.
 - **Symlinks:** Directory scans do not follow symbolic links.

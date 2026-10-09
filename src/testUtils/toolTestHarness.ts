@@ -1,4 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolContext } from "../utils/clientRoots.js";
+import { NO_CLIENT_ROOTS } from "../utils/clientRoots.js";
 
 export interface ToolResponse {
   content: { type: string; text: string }[];
@@ -19,11 +21,11 @@ class ToolTestServer {
 
 /** Registers a tool and returns its handler for direct invocation in tests. */
 export function getToolHandler(
-  registerToolFn: (server: McpServer) => void,
+  registerToolFn: (server: McpServer, context: ToolContext) => void,
   toolName: string
 ): ToolHandler {
   const server = new ToolTestServer();
-  registerToolFn(server as unknown as McpServer);
+  registerToolFn(server as unknown as McpServer, NO_CLIENT_ROOTS);
 
   const handler = server.tools.get(toolName);
   if (!handler) {

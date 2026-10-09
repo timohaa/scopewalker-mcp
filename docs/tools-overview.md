@@ -44,7 +44,11 @@ match, but that has at least one matching item, keeps only the matching items, a
 per-file aggregate fields reflect that filtered set, not the file's true totals. Summary
 totals are computed from the filtered results.
 
-**Path scoping:** All tools resolve paths with `realpath` and will reject requests outside allowed roots. Defaults: current working directory and system temp. Override with `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`.
+**Path scoping:** All tools resolve paths with `realpath` and will reject requests outside allowed roots. The allowed roots come from the first source that is set:
+
+1. `SCOPEWALKER_ALLOWED_ROOTS=/abs/path1,/abs/path2`
+2. The `file://` roots the client shares through the MCP roots capability. The server requests them after initialization and again on each `roots/list_changed` notification. If the request fails, the server logs to stderr and uses the defaults.
+3. The current working directory and system temp
 
 **Default ignores:** File discovery skips common build artifacts, caches, and lock files. Examples include `node_modules`, `dist`, `vendor`, and `package-lock.json`. Directory-scanning tools respect the single `.gitignore` at the scanned path via the `ignore` library. Nested `.gitignore` files in subdirectories are not read, and neither is the repository root's when you scan a subdirectory (see [known-bugs.md](./known-bugs.md)). Tokei-based tools (`get_line_counts`, file-size checks in `check_thresholds`) also respect `.gitignore` through tokei's built-in ignore handling, which only applies inside a git repository.
 

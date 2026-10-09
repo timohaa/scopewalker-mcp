@@ -13,6 +13,7 @@ import { registerDocumentationCoverageTool } from "./tools/documentationCoverage
 import { registerFunctionsTool } from "./tools/functions.js";
 import { registerLineCountsTool } from "./tools/lineCounts.js";
 import { registerPropDrillingTool } from "./tools/propDrilling.js";
+import { trackClientRoots } from "./utils/clientRoots.js";
 
 export const SERVER_NAME = "scopewalker-mcp";
 
@@ -85,7 +86,10 @@ function applySchemaStrippingOverride(server: McpServer): void {
   }));
 }
 
-/** Builds the MCP server with every tool registered and the $schema override applied. */
+/**
+ * Builds the MCP server with every tool registered, client roots tracked, and
+ * the $schema override applied.
+ */
 export function createServer(): McpServer {
   const server = new McpServer(
     {
@@ -99,15 +103,16 @@ export function createServer(): McpServer {
     }
   );
 
-  registerLineCountsTool(server);
-  registerFunctionsTool(server);
-  registerCheckThresholdsTool(server);
-  registerCodeInventoryTool(server);
-  registerCodeSmellsTool(server);
-  registerComplexityMetricsTool(server);
-  registerDocumentationCoverageTool(server);
-  registerPropDrillingTool(server);
-  registerDeadCodeTool(server);
+  const context = trackClientRoots(server);
+  registerLineCountsTool(server, context);
+  registerFunctionsTool(server, context);
+  registerCheckThresholdsTool(server, context);
+  registerCodeInventoryTool(server, context);
+  registerCodeSmellsTool(server, context);
+  registerComplexityMetricsTool(server, context);
+  registerDocumentationCoverageTool(server, context);
+  registerPropDrillingTool(server, context);
+  registerDeadCodeTool(server, context);
 
   applySchemaStrippingOverride(server);
 

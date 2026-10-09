@@ -18,7 +18,7 @@
       "environmentVariables": [
         {
           "name": "SCOPEWALKER_ALLOWED_ROOTS",
-          "description": "Comma-separated absolute paths the tools may analyze. Defaults to the current working directory and the system temp directory.",
+          "description": "Comma-separated absolute paths the tools may analyze. Takes precedence over the roots the MCP client shares. When unset, the client's roots apply, or the current working directory and system temp if the client shares none.",
           "isRequired": false,
           "isSecret": false,
           "format": "string"

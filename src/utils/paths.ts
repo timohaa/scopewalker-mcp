@@ -18,8 +18,12 @@ export interface PathValidationFailure {
 
 export type PathValidationResult = PathValidationSuccess | PathValidationFailure;
 
-/** Allowed roots default to the current working directory and system temp. */
-function getAllowedRoots(): string[] {
+/**
+ * Resolves the allowed roots. SCOPEWALKER_ALLOWED_ROOTS wins when set, since the
+ * operator configured it explicitly. Otherwise the roots the client shared apply,
+ * and without those the current working directory and system temp.
+ */
+function getAllowedRoots(clientRoots: string[] | undefined): string[] {
   const fromEnv = process.env.SCOPEWALKER_ALLOWED_ROOTS;
   /** Resolves symlinks for an allowed root, falling back to its absolute path. */
   const normalizeRoot = (p: string): string => {
@@ -36,6 +40,10 @@ function getAllowedRoots(): string[] {
       .map((p) => p.trim())
       .filter((p) => p !== "")
       .map(normalizeRoot);
+  }
+
+  if (clientRoots !== undefined && clientRoots.length > 0) {
+    return clientRoots.map(normalizeRoot);
   }
 
   const roots = [process.cwd(), tmpdir()];
@@ -56,8 +64,11 @@ function isWithinAllowedRoots(resolvedPath: string, allowedRoots: string[]): boo
  * Validates that a path exists, is within an allowed root, and returns its
  * resolved (symlink-following) form.
  */
-export async function validatePath(inputPath: string): Promise<PathValidationResult> {
-  const allowedRoots = getAllowedRoots();
+export async function validatePath(
+  inputPath: string,
+  clientRoots?: string[]
+): Promise<PathValidationResult> {
+  const allowedRoots = getAllowedRoots(clientRoots);
   const normalizedPath = resolve(normalize(inputPath));
 
   try {

@@ -7,6 +7,7 @@ import type {
   FileParameterAnalysis,
   ThreadedParameter,
 } from "../types/propDrilling.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -63,7 +64,7 @@ const inputSchema = {
 };
 
 /** Registers the get_prop_drilling tool for detecting parameter threading. */
-export function registerPropDrillingTool(server: McpServer): void {
+export function registerPropDrillingTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "get_prop_drilling",
     {
@@ -75,7 +76,7 @@ export function registerPropDrillingTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

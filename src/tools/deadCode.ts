@@ -7,6 +7,7 @@ import {
   type DeadCodeResult,
   deadCodeResultSchema,
 } from "../types/index.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -97,7 +98,7 @@ function countDeclarations(candidates: DeadCodeCandidate[]): Map<string, number>
 }
 
 /** Registers the find_dead_code tool for reporting symbols nothing in the scan references. */
-export function registerDeadCodeTool(server: McpServer): void {
+export function registerDeadCodeTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "find_dead_code",
     {
@@ -109,7 +110,7 @@ export function registerDeadCodeTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

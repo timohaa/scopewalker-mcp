@@ -8,6 +8,7 @@ import {
   type LineCountsResult,
   lineCountsResultSchema,
 } from "../types/index.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -42,7 +43,7 @@ const inputSchema = {
 };
 
 /** Registers the get_line_counts tool for analyzing file line metrics via tokei. */
-export function registerLineCountsTool(server: McpServer): void {
+export function registerLineCountsTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "get_line_counts",
     {
@@ -53,7 +54,7 @@ export function registerLineCountsTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

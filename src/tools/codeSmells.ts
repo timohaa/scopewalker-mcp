@@ -3,6 +3,7 @@ import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles } from "../lib/sourceFileWalker.js";
 import { codeSmellsResultSchema, type FileSmells } from "../types/index.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -48,7 +49,7 @@ const inputSchema = {
 };
 
 /** Registers the get_code_smells tool for finding TODO, FIXME, HACK, etc. */
-export function registerCodeSmellsTool(server: McpServer): void {
+export function registerCodeSmellsTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "get_code_smells",
     {
@@ -59,7 +60,7 @@ export function registerCodeSmellsTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { findFiles, DEFAULT_IGNORE_PATTERNS } from "../lib/glob.js";
 import { analyze } from "../lib/tokei.js";
 import { checkThresholdsResultSchema } from "../types/index.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -47,7 +48,7 @@ const DEFAULT_MAX_FUNCTION_LINES = 100;
 const DEFAULT_LIMIT = 20;
 
 /** Registers the check_thresholds tool for finding oversized files and functions. */
-export function registerCheckThresholdsTool(server: McpServer): void {
+export function registerCheckThresholdsTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "check_thresholds",
     {
@@ -58,7 +59,7 @@ export function registerCheckThresholdsTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

@@ -9,6 +9,7 @@ import {
   type FileComplexity,
   type SupportedLanguage,
 } from "../types/index.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -59,7 +60,7 @@ const inputSchema = {
 };
 
 /** Registers the get_complexity_metrics tool for nesting, parameters, and cognitive complexity. */
-export function registerComplexityMetricsTool(server: McpServer): void {
+export function registerComplexityMetricsTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "get_complexity_metrics",
     {
@@ -71,7 +72,7 @@ export function registerComplexityMetricsTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

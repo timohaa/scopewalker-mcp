@@ -9,6 +9,7 @@ import {
   type FileInventory,
   type InventoryItem,
 } from "../types/index.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -58,7 +59,7 @@ const inputSchema = {
 };
 
 /** Registers the get_code_inventory tool for listing classes, functions, and exports. */
-export function registerCodeInventoryTool(server: McpServer): void {
+export function registerCodeInventoryTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "get_code_inventory",
     {
@@ -69,7 +70,7 @@ export function registerCodeInventoryTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

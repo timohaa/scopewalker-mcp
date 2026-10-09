@@ -157,3 +157,31 @@ describe("validatePath - SCOPEWALKER_ALLOWED_ROOTS", () => {
     }
   });
 });
+
+describe("validatePath - client roots", () => {
+  it("confines paths to the client's roots when the env var is unset", async () => {
+    const clientRoots = [resolve("./src")];
+
+    const inside = await validatePath("./src/index.ts", clientRoots);
+    expect(inside.valid).toBe(true);
+
+    // The working directory is allowed by default, but not once the client names its roots.
+    const outside = await validatePath("./package.json", clientRoots);
+    expect(outside.valid).toBe(false);
+    if (!outside.valid) {
+      expect(outside.error.error.code).toBe("PERMISSION_DENIED");
+    }
+  });
+
+  it("ignores client roots when SCOPEWALKER_ALLOWED_ROOTS is set", async () => {
+    process.env.SCOPEWALKER_ALLOWED_ROOTS = resolve("./src");
+
+    const result = await validatePath("./src/index.ts", [tmpdir()]);
+    expect(result.valid).toBe(true);
+  });
+
+  it("falls back to the default roots for an empty client list", async () => {
+    const result = await validatePath("./package.json", []);
+    expect(result.valid).toBe(true);
+  });
+});

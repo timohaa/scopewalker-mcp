@@ -7,6 +7,7 @@ import {
   type FunctionLineCountsResult,
   functionsResultSchema,
 } from "../types/index.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -64,7 +65,7 @@ const inputSchema = {
 };
 
 /** Registers the get_functions tool for function counts and line metrics. */
-export function registerFunctionsTool(server: McpServer): void {
+export function registerFunctionsTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "get_functions",
     {
@@ -75,7 +76,7 @@ export function registerFunctionsTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

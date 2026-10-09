@@ -28,7 +28,7 @@
     "allowed_roots": {
       "type": "string",
       "title": "Allowed roots",
-      "description": "Comma-separated absolute paths the analysis tools may access, e.g. /Users/me/projects. Leave empty to allow only the server's working directory and system temp.",
+      "description": "Comma-separated absolute paths the analysis tools may access, e.g. /Users/me/projects. Takes precedence over the roots the client shares. Leave empty to use the client's roots, or the server's working directory and system temp if it shares none.",
       "required": false,
       "default": ""
     }

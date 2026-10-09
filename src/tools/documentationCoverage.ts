@@ -3,6 +3,7 @@ import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import { documentationCoverageResultSchema } from "../types/index.js";
+import type { ToolContext } from "../utils/clientRoots.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
@@ -45,7 +46,7 @@ const inputSchema = {
 };
 
 /** Registers the get_documentation_coverage tool for finding undocumented code. */
-export function registerDocumentationCoverageTool(server: McpServer): void {
+export function registerDocumentationCoverageTool(server: McpServer, context: ToolContext): void {
   server.registerTool(
     "get_documentation_coverage",
     {
@@ -57,7 +58,7 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
-      const pathValidation = await validatePath(args.path);
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
       if (!pathValidation.valid) {
         return createErrorResponse(pathValidation.error);
       }

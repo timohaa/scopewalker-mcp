@@ -7,22 +7,29 @@ Each tool lives in `src/tools/[toolName].ts`. That file holds the zod `inputSche
 ## MCP Tool Registration
 
 ```typescript
-server.registerTool(
-  "tool_name",
-  {
-    description: "Tool description",
-    inputSchema: { path: z.string().describe("Path description") },
-  },
-  async (args) => {
-    const pathValidation = await validatePath(args.path);
-    if (!pathValidation.valid) {
-      return createErrorResponse(pathValidation.error);
+export function registerToolNameTool(server: McpServer, context: ToolContext): void {
+  server.registerTool(
+    "tool_name",
+    {
+      title: "Tool Name",
+      description: "Tool description",
+      inputSchema: { path: pathSchema },
+      outputSchema: withResponseMeta(toolNameResultSchema),
+      annotations: READ_ONLY_ANNOTATIONS,
+    },
+    async (args) => {
+      const pathValidation = await validatePath(args.path, await context.getClientRoots());
+      if (!pathValidation.valid) {
+        return createErrorResponse(pathValidation.error);
+      }
+      // Implementation
+      return createSuccessResponse(result, { itemCount: items.length });
     }
-    // Implementation
-    return createSuccessResponse(result, { itemCount: items.length });
-  }
-);
+  );
+}
 ```
+
+Define the result as a Zod schema in `src/types/` and derive its type with `z.infer`. The SDK validates every successful result against `outputSchema`, and `src/server.outputSchema.test.ts` calls each tool through a real client. Add a case there for every result variant. Shared parameters (`path`, `include_hidden`, `ignore_patterns`, `extensions`, `max_depth`, `max_files`, `summary_only`) take their schema and description from `src/utils/schemaLimits.ts`.
 
 AST-based file-scanning tools generally use this handler shape after `validatePath`:
 
