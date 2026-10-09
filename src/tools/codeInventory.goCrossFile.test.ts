@@ -89,6 +89,7 @@ async function inventoryByQualifiedName(
   return index;
 }
 
+/** Lists the method names of an inventory item, or none when the item is missing. */
 const methodNames = (item: InventoryItem | undefined): string[] =>
   (item?.methods ?? []).map((m) => m.name);
 

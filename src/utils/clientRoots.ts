@@ -8,11 +8,6 @@ export interface ToolContext {
   getClientRoots(): Promise<string[] | undefined>;
 }
 
-/** Context for handlers that run without a connected client, such as unit tests. */
-export const NO_CLIENT_ROOTS: ToolContext = {
-  getClientRoots: () => Promise.resolve(undefined),
-};
-
 /** Converts root URIs to paths. The SDK rejects any roots/list result whose URIs are not file://. */
 function toLocalPaths(roots: { uri: string }[]): string[] | undefined {
   const paths = roots.map((root) => fileURLToPath(root.uri));
@@ -28,6 +23,7 @@ function toLocalPaths(roots: { uri: string }[]): string[] | undefined {
 export function trackClientRoots(server: McpServer): ToolContext {
   let current: Promise<string[] | undefined> = Promise.resolve(undefined);
 
+  /** Starts a roots/list request; handlers then await this latest fetch. */
   const refresh = (): void => {
     current = server.server.listRoots().then(
       ({ roots }) => toLocalPaths(roots),

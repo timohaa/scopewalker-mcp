@@ -35,7 +35,11 @@ Framework: **vitest** (`describe`, `it`, `expect`, `vi`).
 3. **Choose the right harness**:
    - **Tools** (anything in `src/tools/` that registers via `register*Tool`)
      → use `getToolHandler` + `parseContent` from
-     `src/testUtils/toolTestHarness.ts`
+     `src/testUtils/toolTestHarness.ts`; `parseContent` reads the JSON
+     text block, and `firstItem` returns the first element of a list or
+     fails the test when it is empty (needed under `noUncheckedIndexedAccess`)
+   - **Schema or roots behavior through a real client** → extend
+     `src/server.outputSchema.test.ts` or `src/server.roots.test.ts`
    - **Helpers / lib / utils** → import the function directly
 4. **Create test file** following the patterns below
 5. **Run tests** with the smallest scope:

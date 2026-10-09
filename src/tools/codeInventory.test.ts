@@ -12,6 +12,7 @@ import { registerCodeInventoryTool } from "./codeInventory.js";
 // that one unparsable file is skipped instead of aborting the whole scan.
 vi.mock("../lib/treeSitter.js", async (importOriginal) => {
   const actual = await importOriginal<typeof TreeSitterModule>();
+  /** Parses normally, but throws for code containing a "// BOOM" marker. */
   const parseCode = async (
     code: string,
     language: SupportedLanguage

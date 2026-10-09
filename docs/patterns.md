@@ -70,7 +70,7 @@ walkNode(tree.rootNode, (node) => {
 ## Error Handling
 
 - Structured errors built with `createError(code, message, details)`, shaped `{ error: { code, message, path?, ...details } }`
-- Codes: `PATH_NOT_FOUND`, `PARSE_ERROR`, `UNSUPPORTED_LANGUAGE`, `TOOL_NOT_AVAILABLE`, and more; see the full table in [tools-overview.md](./tools-overview.md#error-codes)
+- Codes: `PATH_NOT_FOUND`, `IO_ERROR`, `PARSE_ERROR`, `UNSUPPORTED_LANGUAGE`, `TOOL_NOT_AVAILABLE`, and more; see the full table in [tools-overview.md](./tools-overview.md#error-codes)
 - Set `isError: true` for error responses
 
 ## Testing
@@ -80,3 +80,5 @@ const handler = getToolHandler(registerMyTool, "tool_name");
 const response = await handler({ path: testDir });
 const result = parseContent<ResultType>(response);
 ```
+
+`getToolHandler` registers the tool on a mock server with no client roots and calls the handler directly, so it does not validate `outputSchema`. Use `firstItem(list)` instead of `list[0]` when a test needs the first element. Cover schema conformance in `src/server.outputSchema.test.ts` and root resolution in `src/server.roots.test.ts`.

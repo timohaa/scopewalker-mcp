@@ -1,6 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ToolContext } from "../utils/clientRoots.js";
-import { NO_CLIENT_ROOTS } from "../utils/clientRoots.js";
+
+/** Context for handlers invoked without a connected client, so no client roots exist. */
+const NO_CLIENT_ROOTS: ToolContext = {
+  getClientRoots: () => Promise.resolve(undefined),
+};
 
 export interface ToolResponse {
   content: { type: string; text: string }[];
@@ -14,6 +18,7 @@ type ToolHandler = (args: Record<string, unknown>) => Promise<ToolResponse>;
 class ToolTestServer {
   tools = new Map<string, ToolHandler>();
 
+  /** Records the handler under its tool name; the config is not needed to invoke it. */
   registerTool(name: string, _schema: unknown, handler: ToolHandler): void {
     this.tools.set(name, handler);
   }
