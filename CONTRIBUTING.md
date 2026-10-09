@@ -40,14 +40,14 @@ npm run test:coverage  # Run tests with coverage report
 1. Create `src/tools/[toolName].ts` with the tool implementation
 2. Create `src/types/[concern].ts` for type definitions (named by domain, e.g., `complexity.ts`, `thresholds.ts`)
 3. Export types from `src/types/index.ts`
-4. Register the tool in `createServer()` in `src/server.ts`, and add its name to `EXPECTED_TOOLS` in `src/server.test.ts`
+4. Register the tool in `createServer()` in `src/server.ts`, add its name to `EXPECTED_TOOLS` in `src/server.test.ts`, and add its calls to `CALLS` in `src/server.outputSchema.test.ts`
 5. Add tests in `src/tools/[toolName].test.ts`
 6. Update every file that documents or enumerates the tool set:
    - `docs/tools-*.md`: full documentation in the appropriate file
    - `TOOLS.md`: quick reference table
    - `README.md`: tool list, and the tool count there and in `docs/tools-overview.md`
    - `docs/usage-examples.md`: the tool list in the example `AGENTS.md` snippet
-   - `.claude/agents/standards-enforcer.md`: the tool table, if the tool reports a standards violation
+   - `docs/code-quality.md` and the `tools` list in `.claude/agents/standards-enforcer.md`, if the tool reports a standards violation
 
 ## Pull Request Process
 
