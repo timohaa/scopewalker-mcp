@@ -36,7 +36,7 @@ Use these non-fixing scripts because `npm run check` runs `lint:fix`.
 Run the shared Scopewalker checks for the selected scope. Inspect all in-scope findings;
 cross-file scans must cover `src/` even when only a few files changed.
 
-For changed Markdown, run one `npx markdownlint <all changed Markdown files>` command
+For changed Markdown, run one `npx markdownlint-cli <all changed Markdown files>` command
 and verify affected links, tool arguments, and workflow references. In `full` mode,
 include all tracked Markdown. Documentation-only changes need no source tests or code scans.
 

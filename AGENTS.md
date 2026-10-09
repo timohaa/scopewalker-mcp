@@ -24,7 +24,7 @@ If LSP tools are available in your session, prefer them (`workspaceSymbol`, `fin
 - For ambiguous requests, sketch a short plan and state assumptions and tradeoffs before editing.
 - Write the minimum code that solves the problem. Avoid speculative abstractions, drive-by renames, and unrelated cleanup.
 - Define a success criterion before starting and loop until it passes. Verify tool output with the tool itself or its tests; `npm run check` alone is insufficient.
-- Pass every target file to one command (`npx vitest run a.test.ts b.test.ts`, `npx markdownlint f1 f2`, or one `grep -nE` across all files).
+- Pass every target file to one command (`npx vitest run a.test.ts b.test.ts`, `npx markdownlint-cli f1 f2`, or one `grep -nE` across all files).
 - **Never create `_enhanced`, `_v2`, or `_new` duplicate file variants**; edit the original file.
 
 ## Reference Docs
