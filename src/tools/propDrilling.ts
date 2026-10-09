@@ -14,11 +14,14 @@ import {
 } from "../utils/responses.js";
 import {
   boundedInt,
-  ignorePatternsSchema,
   extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
   maxDepthSchema,
   maxFilesSchema,
-  limitSchema,
+  pathSchema,
+  summaryOnlySchema,
 } from "../utils/schemaLimits.js";
 import {
   analyzeFilesForParameters,
@@ -42,22 +45,19 @@ function selectThreadedParameters(
 }
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  max_depth: maxDepthSchema.describe("Max depth"),
-  max_files: maxFilesSchema.describe("Max files to scan"),
-  limit: limitSchema.describe("Max results"),
+  path: pathSchema,
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  max_depth: maxDepthSchema,
+  max_files: maxFilesSchema,
+  limit: limitSchema.describe("Max parameters returned (default 20)"),
   min_occurrences: boundedInt(1_000).describe("Minimum function occurrences to flag (default 3)"),
   exclude_common: z
     .boolean()
     .optional()
     .describe("Exclude common parameter names like id, key, className (default false)"),
-  summary_only: z
-    .boolean()
-    .optional()
-    .describe("Return only summary without per-parameter details (default false)"),
+  summary_only: summaryOnlySchema,
 };
 
 /** Registers the get_prop_drilling tool for detecting parameter threading. */

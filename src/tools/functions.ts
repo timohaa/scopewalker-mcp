@@ -11,11 +11,13 @@ import {
 } from "../utils/responses.js";
 import {
   boundedInt,
-  ignorePatternsSchema,
   extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
   maxDepthSchema,
   maxFilesSchema,
-  limitSchema,
+  pathSchema,
 } from "../utils/schemaLimits.js";
 import {
   calculateSummary as calculateLinesSummary,
@@ -32,20 +34,28 @@ const DEFAULT_LIMIT = 20;
 const MAX_FUNCTIONS_PER_FILE = 100;
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  detail: z.enum(["counts", "lines"]).optional().describe("Detail level"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  max_depth: maxDepthSchema.describe("Max depth"),
-  max_files: maxFilesSchema.describe("Max files to scan"),
-  min_lines: boundedInt(10_000).describe("Min lines (lines mode)"),
+  path: pathSchema,
+  detail: z
+    .enum(["counts", "lines"])
+    .optional()
+    .describe("counts: functions per file; lines: lines per function (default counts)"),
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  max_depth: maxDepthSchema,
+  max_files: maxFilesSchema,
+  min_lines: boundedInt(10_000).describe(
+    "Lines mode only: skip functions shorter than this many lines"
+  ),
   sort_by: z
     .enum(["count_desc", "count_asc", "lines_desc", "lines_asc", "name"])
     .optional()
-    .describe("Sort order"),
-  limit: limitSchema.describe("Max results"),
-  grep: z.string().optional().describe("Filter by keyword"),
+    .describe("Sort order (default count_desc for counts, lines_desc for lines)"),
+  limit: limitSchema.describe("Max files returned (default 20)"),
+  grep: z
+    .string()
+    .optional()
+    .describe("Keep files or functions whose path or name contains this text (case-insensitive)"),
 };
 
 /** Registers the get_functions tool for function counts and line metrics. */

@@ -1,6 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type Parser from "tree-sitter";
-import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
@@ -12,11 +11,14 @@ import {
   READ_ONLY_ANNOTATIONS,
 } from "../utils/responses.js";
 import {
-  ignorePatternsSchema,
   extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
   maxDepthSchema,
   maxFilesSchema,
-  limitSchema,
+  pathSchema,
+  summaryOnlySchema,
 } from "../utils/schemaLimits.js";
 import {
   collectFunctions,
@@ -40,14 +42,14 @@ import { collectSubtreeNestingDepths } from "./complexityMetricsNesting.js";
 const DEFAULT_LIMIT = 20;
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  max_depth: maxDepthSchema.describe("Max depth"),
-  max_files: maxFilesSchema.describe("Max files to scan"),
-  summary_only: z.boolean().optional().describe("Summary only"),
-  limit: limitSchema.describe("Max results"),
+  path: pathSchema,
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  max_depth: maxDepthSchema,
+  max_files: maxFilesSchema,
+  summary_only: summaryOnlySchema,
+  limit: limitSchema.describe("Max files returned, most complex first (default 20)"),
 };
 
 /** Registers the get_complexity_metrics tool for nesting, parameters, and cognitive complexity. */

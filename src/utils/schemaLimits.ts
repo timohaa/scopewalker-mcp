@@ -4,6 +4,7 @@
  * extensions, ...) that callers control directly; without an upper bound a
  * caller can request work disproportionate to the task, so these caps are
  * applied uniformly instead of being duplicated (and drifting) per tool.
+ * Parameters shared by every tool also carry their description here.
  */
 import { isAbsolute } from "node:path";
 import { z } from "zod";
@@ -34,9 +35,27 @@ const RELATIVE_PATTERN_MESSAGE =
 export const boundedInt = (max: number): z.ZodOptional<z.ZodNumber> =>
   z.number().int().positive().max(max).optional();
 
-export const maxFilesSchema = boundedInt(MAX_FILES_CEILING);
-export const maxDepthSchema = boundedInt(MAX_DEPTH_CEILING);
+export const maxFilesSchema = boundedInt(MAX_FILES_CEILING).describe(
+  "Stop after scanning this many files (default unlimited)"
+);
+export const maxDepthSchema = boundedInt(MAX_DEPTH_CEILING).describe(
+  "Max directory depth to descend (default unlimited)"
+);
 export const limitSchema = boundedInt(LIMIT_CEILING);
+
+export const pathSchema = z
+  .string()
+  .describe("File or directory to analyze; must be inside the allowed roots");
+
+export const includeHiddenSchema = z
+  .boolean()
+  .optional()
+  .describe("Include dotfiles and dot-directories (default false)");
+
+export const summaryOnlySchema = z
+  .boolean()
+  .optional()
+  .describe("Return summary totals without per-item details (default false)");
 
 export const ignorePatternsSchema = z
   .array(
@@ -46,7 +65,8 @@ export const ignorePatternsSchema = z
       .refine((pattern) => !isUnusablePattern(pattern), { message: RELATIVE_PATTERN_MESSAGE })
   )
   .max(MAX_ARRAY_LENGTH)
-  .optional();
+  .optional()
+  .describe("Extra gitignore-style patterns to exclude, relative to path");
 
 /** Entries feed a fast-glob brace pattern, so only plain extension tokens are allowed. */
 export const extensionsSchema = z
@@ -57,4 +77,5 @@ export const extensionsSchema = z
       .regex(/^\.?[A-Za-z0-9_+-]+$/)
   )
   .max(MAX_ARRAY_LENGTH)
-  .optional();
+  .optional()
+  .describe('Only scan these extensions, e.g. [".ts", ".py"] (default all supported)');

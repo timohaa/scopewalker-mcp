@@ -10,18 +10,30 @@ import {
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
 } from "../utils/responses.js";
-import { ignorePatternsSchema, extensionsSchema, limitSchema } from "../utils/schemaLimits.js";
+import {
+  extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
+  pathSchema,
+} from "../utils/schemaLimits.js";
 
 const DEFAULT_LIMIT = 20;
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  sort_by: z.enum(["lines_desc", "lines_asc", "name"]).optional().describe("Sort order"),
-  limit: limitSchema.describe("Max results"),
-  grep: z.string().optional().describe("Filter by keyword"),
+  path: pathSchema,
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  sort_by: z
+    .enum(["lines_desc", "lines_asc", "name"])
+    .optional()
+    .describe("Sort by total lines or path (default lines_desc)"),
+  limit: limitSchema.describe("Max files returned (default 20)"),
+  grep: z
+    .string()
+    .optional()
+    .describe("Keep files whose path contains this text (case-insensitive)"),
 };
 
 /** Registers the get_line_counts tool for analyzing file line metrics via tokei. */

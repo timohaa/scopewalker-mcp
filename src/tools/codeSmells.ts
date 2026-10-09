@@ -10,11 +10,13 @@ import {
   READ_ONLY_ANNOTATIONS,
 } from "../utils/responses.js";
 import {
-  ignorePatternsSchema,
   extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
   maxDepthSchema,
   maxFilesSchema,
-  limitSchema,
+  pathSchema,
 } from "../utils/schemaLimits.js";
 import {
   ALL_SMELL_TYPES,
@@ -27,18 +29,21 @@ import {
 const DEFAULT_LIMIT = 20;
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  max_depth: maxDepthSchema.describe("Max depth"),
-  max_files: maxFilesSchema.describe("Max files to scan"),
+  path: pathSchema,
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  max_depth: maxDepthSchema,
+  max_files: maxFilesSchema,
   types: z
     .array(z.enum(["todo", "fixme", "hack", "xxx", "bug", "unused", "deprecated", "unsafe_cast"]))
     .optional()
-    .describe("Smell types to detect"),
-  limit: limitSchema.describe("Max results"),
-  include_text: z.boolean().optional().describe("Include comment text"),
+    .describe("Smell types to detect (default all)"),
+  limit: limitSchema.describe("Max files returned (default 20)"),
+  include_text: z
+    .boolean()
+    .optional()
+    .describe("Include each marker's comment text (default false)"),
 };
 
 /** Registers the get_code_smells tool for finding TODO, FIXME, HACK, etc. */

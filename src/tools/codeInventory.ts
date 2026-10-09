@@ -11,11 +11,13 @@ import {
   READ_ONLY_ANNOTATIONS,
 } from "../utils/responses.js";
 import {
-  ignorePatternsSchema,
   extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
   maxDepthSchema,
   maxFilesSchema,
-  limitSchema,
+  pathSchema,
 } from "../utils/schemaLimits.js";
 import { dropOutOfLineMembers } from "./codeInventoryCpp.js";
 import { collectExportedNames, markExported } from "./codeInventoryExports.js";
@@ -32,15 +34,21 @@ const DEFAULT_LIMIT = 20;
 const MAX_ITEMS_PER_FILE = 100;
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  max_depth: maxDepthSchema.describe("Max depth"),
-  max_files: maxFilesSchema.describe("Max files to scan"),
-  include_private: z.boolean().optional().describe("Include private symbols"),
-  limit: limitSchema.describe("Max results"),
-  grep: z.string().optional().describe("Filter by keyword"),
+  path: pathSchema,
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  max_depth: maxDepthSchema,
+  max_files: maxFilesSchema,
+  include_private: z
+    .boolean()
+    .optional()
+    .describe("Include private and unexported symbols (default false)"),
+  limit: limitSchema.describe("Max files returned (default 20)"),
+  grep: z
+    .string()
+    .optional()
+    .describe("Keep files or symbols whose path or name contains this text (case-insensitive)"),
 };
 
 /** Registers the get_code_inventory tool for listing classes, functions, and exports. */

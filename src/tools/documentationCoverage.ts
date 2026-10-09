@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
@@ -11,11 +10,14 @@ import {
 } from "../utils/responses.js";
 import {
   boundedInt,
-  ignorePatternsSchema,
   extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
   maxDepthSchema,
   maxFilesSchema,
-  limitSchema,
+  pathSchema,
+  summaryOnlySchema,
 } from "../utils/schemaLimits.js";
 import {
   analyzeFileDocumentation,
@@ -27,15 +29,17 @@ import { tallyCoverage, type CoverageTally } from "./documentationCoverageTally.
 const DEFAULT_LIMIT = 20;
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  max_depth: maxDepthSchema.describe("Max depth"),
-  max_files: maxFilesSchema.describe("Max files to scan"),
-  min_lines: boundedInt(10_000).describe("Min function lines"),
-  summary_only: z.boolean().optional().describe("Summary only"),
-  limit: limitSchema.describe("Max results"),
+  path: pathSchema,
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  max_depth: maxDepthSchema,
+  max_files: maxFilesSchema,
+  min_lines: boundedInt(10_000).describe(
+    "Ignore functions shorter than this many lines (default 1)"
+  ),
+  summary_only: summaryOnlySchema,
+  limit: limitSchema.describe("Max undocumented items returned (default 20)"),
 };
 
 /** Registers the get_documentation_coverage tool for finding undocumented code. */

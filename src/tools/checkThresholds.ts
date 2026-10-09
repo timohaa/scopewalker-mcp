@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 import { findFiles, DEFAULT_IGNORE_PATTERNS } from "../lib/glob.js";
 import { analyze } from "../lib/tokei.js";
 import { validatePath } from "../utils/paths.js";
@@ -10,11 +9,13 @@ import {
 } from "../utils/responses.js";
 import {
   boundedInt,
-  ignorePatternsSchema,
   extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
   maxDepthSchema,
   maxFilesSchema,
-  limitSchema,
+  pathSchema,
 } from "../utils/schemaLimits.js";
 import {
   findOversizedFiles,
@@ -24,15 +25,19 @@ import {
 } from "./checkThresholdsHelpers.js";
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  max_file_lines: boundedInt(10_000).describe("File line threshold"),
-  max_function_lines: boundedInt(10_000).describe("Function line threshold"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  max_depth: maxDepthSchema.describe("Max depth"),
-  max_files: maxFilesSchema.describe("Max files to scan"),
-  limit: limitSchema.describe("Max violations"),
+  path: pathSchema,
+  max_file_lines: boundedInt(10_000).describe(
+    "Flag files longer than this many lines (default 300)"
+  ),
+  max_function_lines: boundedInt(10_000).describe(
+    "Flag functions longer than this many lines (default 100)"
+  ),
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  max_depth: maxDepthSchema,
+  max_files: maxFilesSchema,
+  limit: limitSchema.describe("Max violations returned per list (default 20)"),
 };
 
 const DEFAULT_MAX_FILE_LINES = 300;

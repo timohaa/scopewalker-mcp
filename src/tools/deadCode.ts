@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
@@ -11,11 +10,13 @@ import {
   READ_ONLY_ANNOTATIONS,
 } from "../utils/responses.js";
 import {
-  ignorePatternsSchema,
   extensionsSchema,
+  ignorePatternsSchema,
+  includeHiddenSchema,
+  limitSchema,
   maxDepthSchema,
   maxFilesSchema,
-  limitSchema,
+  pathSchema,
 } from "../utils/schemaLimits.js";
 import { collectCandidates } from "./deadCodeCandidates.js";
 import { countOccurrences, resolveFindings } from "./deadCodeReferences.js";
@@ -23,13 +24,13 @@ import { countOccurrences, resolveFindings } from "./deadCodeReferences.js";
 const DEFAULT_LIMIT = 20;
 
 const inputSchema = {
-  path: z.string().describe("Target path"),
-  include_hidden: z.boolean().optional().describe("Include hidden"),
-  ignore_patterns: ignorePatternsSchema.describe("Exclude patterns"),
-  extensions: extensionsSchema.describe("Filter by extensions"),
-  max_depth: maxDepthSchema.describe("Max depth"),
-  max_files: maxFilesSchema.describe("Max files to scan"),
-  limit: limitSchema.describe("Max results per list"),
+  path: pathSchema,
+  include_hidden: includeHiddenSchema,
+  ignore_patterns: ignorePatternsSchema,
+  extensions: extensionsSchema,
+  max_depth: maxDepthSchema,
+  max_files: maxFilesSchema,
+  limit: limitSchema.describe("Max items returned per result list (default 20)"),
 };
 
 interface ScanResult {
