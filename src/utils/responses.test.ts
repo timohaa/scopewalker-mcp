@@ -8,21 +8,21 @@ describe("createSuccessResponse", () => {
     const response = createSuccessResponse(data);
 
     expect(response.content).toHaveLength(1);
-    expect(response.content[0].type).toBe("text");
-    expect(JSON.parse(response.content[0].text)).toEqual(data);
+    expect(response.content[0]?.type).toBe("text");
+    expect(JSON.parse(response.content[0]?.text ?? "")).toEqual(data);
     expect(response).not.toHaveProperty("isError");
   });
 
   it("handles nested objects", () => {
     const data = { nested: { deep: { value: true } } };
     const response = createSuccessResponse(data);
-    expect(JSON.parse(response.content[0].text)).toEqual(data);
+    expect(JSON.parse(response.content[0]?.text ?? "")).toEqual(data);
   });
 
   it("includes _meta block when itemCount is provided", () => {
     const data = { files: ["a.ts", "b.ts"] };
     const response = createSuccessResponse(data, { itemCount: 2 });
-    const parsed = JSON.parse(response.content[0].text) as {
+    const parsed = JSON.parse(response.content[0]?.text ?? "") as {
       _meta: ResponseMeta;
       files: string[];
     };
@@ -36,7 +36,7 @@ describe("createSuccessResponse", () => {
   it("does not include _meta block when no options provided", () => {
     const data = { files: ["a.ts"] };
     const response = createSuccessResponse(data);
-    const parsed = JSON.parse(response.content[0].text) as { _meta?: unknown };
+    const parsed = JSON.parse(response.content[0]?.text ?? "") as { _meta?: unknown };
 
     expect(parsed._meta).toBeUndefined();
   });
@@ -50,7 +50,7 @@ describe("createSuccessResponse", () => {
     }));
     const data = { violations: largeArray };
     const response = createSuccessResponse(data, { itemCount: 2000 });
-    const parsed = JSON.parse(response.content[0].text) as { _meta: ResponseMeta };
+    const parsed = JSON.parse(response.content[0]?.text ?? "") as { _meta: ResponseMeta };
 
     expect(parsed._meta.warning).toBeDefined();
     expect(parsed._meta.warning).toContain("Large response");
@@ -59,7 +59,7 @@ describe("createSuccessResponse", () => {
   it("does not add warning for small responses", () => {
     const data = { files: ["a.ts", "b.ts"] };
     const response = createSuccessResponse(data, { itemCount: 2 });
-    const parsed = JSON.parse(response.content[0].text) as { _meta: ResponseMeta };
+    const parsed = JSON.parse(response.content[0]?.text ?? "") as { _meta: ResponseMeta };
 
     expect(parsed._meta.warning).toBeUndefined();
   });
@@ -68,7 +68,7 @@ describe("createSuccessResponse", () => {
 describe("funding metadata", () => {
   it("carries an inert funding URL inside _meta", () => {
     const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
-    const parsed = JSON.parse(response.content[0].text) as { _meta: ResponseMeta };
+    const parsed = JSON.parse(response.content[0]?.text ?? "") as { _meta: ResponseMeta };
 
     expect(parsed._meta.funding).toBe(
       "https://buymeacoffee.com/thaanpaa?utm_source=scopewalker-mcp&utm_medium=mcp_response&utm_campaign=funding"
@@ -77,7 +77,7 @@ describe("funding metadata", () => {
 
   it("never adds a top-level field instructing the agent to relay anything", () => {
     const response = createSuccessResponse({ files: ["a.ts"] }, { itemCount: 1 });
-    const parsed = JSON.parse(response.content[0].text) as Record<string, unknown>;
+    const parsed = JSON.parse(response.content[0]?.text ?? "") as Record<string, unknown>;
 
     expect(parsed).not.toHaveProperty("_support");
     expect(Object.keys(parsed)).toEqual(["_meta", "files"]);
@@ -90,10 +90,10 @@ describe("createErrorResponse", () => {
     const response = createErrorResponse(error);
 
     expect(response.content).toHaveLength(1);
-    expect(response.content[0].type).toBe("text");
+    expect(response.content[0]?.type).toBe("text");
     expect(response.isError).toBe(true);
 
-    const parsed = JSON.parse(response.content[0].text) as { error: { code: string } };
+    const parsed = JSON.parse(response.content[0]?.text ?? "") as { error: { code: string } };
     expect(parsed.error.code).toBe("PATH_NOT_FOUND");
   });
 });

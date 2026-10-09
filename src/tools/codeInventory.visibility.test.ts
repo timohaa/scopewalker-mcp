@@ -79,7 +79,7 @@ describe("codeInventory tool - Java visibility", () => {
     const response = await handler({ path: join(dir, "Acct.java") });
     const result = parseContent<CodeInventoryResult>(response);
 
-    expect(result.inventory[0].items.find((i) => i.name === "Acct")?.exported).toBe(true);
+    expect(result.inventory[0]?.items.find((i) => i.name === "Acct")?.exported).toBe(true);
     expect(result.summary.exported_symbols).toBe(1);
   });
 
@@ -87,7 +87,7 @@ describe("codeInventory tool - Java visibility", () => {
     const response = await handler({ path: join(dir, "Hidden.java"), include_private: true });
     const result = parseContent<CodeInventoryResult>(response);
 
-    expect(result.inventory[0].items.find((i) => i.name === "Hidden")?.exported).toBe(false);
+    expect(result.inventory[0]?.items.find((i) => i.name === "Hidden")?.exported).toBe(false);
   });
 });
 

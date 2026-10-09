@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import { firstItem, getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { ComplexityMetricsResult, FileComplexity } from "../types/index.js";
 import { registerComplexityMetricsTool } from "./complexityMetrics.js";
 
@@ -23,7 +23,7 @@ async function metricsFor(file: string, code: string): Promise<FileComplexity> {
   const path = join(testDir, file);
   await writeFile(path, code);
   const result = parseContent<ComplexityMetricsResult>(await handler({ path }));
-  return result.files[0];
+  return firstItem(result.files);
 }
 
 /** Writes one file and returns the name of its most complex function. */

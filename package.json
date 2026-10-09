@@ -9,8 +9,7 @@
     "scopewalker-mcp": "./dist/index.js"
   },
   "files": [
-    "dist",
-    "!dist/**/*.test.*"
+    "dist"
   ],
   "repository": {
     "type": "git",
@@ -25,7 +24,7 @@
     "url": "https://buymeacoffee.com/thaanpaa?utm_source=scopewalker-mcp&utm_medium=npm&utm_campaign=funding"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "bundle:mcpb": "npx --yes @anthropic-ai/mcpb pack . scopewalker-mcp.mcpb",
     "prepublishOnly": "npm run check && npm run test && npm run build",
     "check": "npm run check:versions && npm run lint:fix && npm run typecheck",

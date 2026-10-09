@@ -35,7 +35,7 @@ describe("analyze - extension filtering", () => {
       const names = reportNames(result.data);
       expect(names.some((name) => name.endsWith("component.tsx"))).toBe(true);
       expect(names.some((name) => name.endsWith("util.ts"))).toBe(false);
-      expect(result.data.TSX.reports).toHaveLength(1);
+      expect(result.data.TSX?.reports).toHaveLength(1);
     }
   });
 

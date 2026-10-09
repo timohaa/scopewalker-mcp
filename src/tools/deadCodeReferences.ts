@@ -24,7 +24,7 @@ function countGoDirectives(text: string, counts: Map<string, number>): void {
   GO_DIRECTIVE.lastIndex = 0;
   let match = GO_DIRECTIVE.exec(text);
   while (match !== null) {
-    for (const token of tokenize(match[1])) {
+    for (const token of tokenize(match[1] ?? "")) {
       bump(counts, token);
     }
     match = GO_DIRECTIVE.exec(text);

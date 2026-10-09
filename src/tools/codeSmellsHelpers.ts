@@ -165,14 +165,10 @@ function walkTreeForUnsafeCasts(
   // tree-sitter's TypeScript grammar exposes no field names for it, so children
   // are read positionally: first is the expression, last is the target type.
   if (node.type === "as_expression") {
-    const namedChildren = node.namedChildren;
-    if (namedChildren.length > 0 && namedChildren[0].type === "as_expression") {
-      const innerExpr = namedChildren[0];
-      const innerNamedChildren = innerExpr.namedChildren;
-      if (
-        innerNamedChildren.length > 0 &&
-        isUnknownOrAnyType(innerNamedChildren[innerNamedChildren.length - 1])
-      ) {
+    const innerExpr = node.namedChildren[0];
+    if (innerExpr?.type === "as_expression") {
+      const innerType = innerExpr.namedChildren.at(-1);
+      if (innerType !== undefined && isUnknownOrAnyType(innerType)) {
         const lineStart = node.startPosition.row;
         const lineEnd = node.endPosition.row;
         const lines = content.split("\n").slice(lineStart, lineEnd + 1);

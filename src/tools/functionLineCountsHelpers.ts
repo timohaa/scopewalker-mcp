@@ -68,7 +68,7 @@ function collectCommentSpans(
 /** Checks whether every non-whitespace character of a line falls inside a comment span. */
 function isFullyCommented(line: string, spans: [number, number][]): boolean {
   for (let col = 0; col < line.length; col++) {
-    if (/\s/.test(line[col])) continue;
+    if (/\s/.test(line.charAt(col))) continue;
     const covered = spans.some(([start, end]) => col >= start && col < end);
     if (!covered) return false;
   }

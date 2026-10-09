@@ -63,7 +63,7 @@ export function isRecordDefinition(node: Parser.SyntaxNode): boolean {
 /** Reads the class a qualified name belongs to, e.g. `Widget` from `outer::Widget::size`. */
 function qualifierOf(name: string): string | null {
   const parts = name.split("::");
-  return parts.length > 1 ? parts[parts.length - 2] : null;
+  return parts.at(-2) ?? null;
 }
 
 /**

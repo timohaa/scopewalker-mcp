@@ -60,18 +60,18 @@ async function isDocumented(
 describe("getDocumentableNode - classification by node type", () => {
   it("classifies a TypeScript function and class", async () => {
     const found = await documentablesOf(`class Widget {}\nfunction build() {}`, "typescript");
-    expect(found.Widget.type).toBe("class");
-    expect(found.build.type).toBe("function");
+    expect(found.Widget?.type).toBe("class");
+    expect(found.build?.type).toBe("function");
   });
 
   it("classifies a TypeScript class method as method", async () => {
     const found = await documentablesOf(`class W { resize() {} }`, "typescript");
-    expect(found.resize.type).toBe("method");
+    expect(found.resize?.type).toBe("method");
   });
 
   it("classifies a named arrow function as function", async () => {
     const found = await documentablesOf(`const build = () => {};`, "typescript");
-    expect(found.build.type).toBe("function");
+    expect(found.build?.type).toBe("function");
   });
 
   it("ignores an inline callback arrow", async () => {
@@ -81,7 +81,7 @@ describe("getDocumentableNode - classification by node type", () => {
 
   it("reports lineCount spanning the whole declaration", async () => {
     const found = await documentablesOf(`function f() {\n  return 1;\n}`, "typescript");
-    expect(found.f.lineCount).toBe(3);
+    expect(found.f?.lineCount).toBe(3);
   });
 });
 
@@ -91,8 +91,8 @@ describe("getDocumentableNode - parent-context rules", () => {
       `def free_fn\n  1\nend\n\nclass C\n  def member\n    2\n  end\nend`,
       "ruby"
     );
-    expect(found.free_fn.type).toBe("function");
-    expect(found.member.type).toBe("method");
+    expect(found.free_fn?.type).toBe("function");
+    expect(found.member?.type).toBe("method");
   });
 
   it("classifies a C++ in-class member as method and a free function as function", async () => {
@@ -100,18 +100,18 @@ describe("getDocumentableNode - parent-context rules", () => {
       `class Point {\n  void reset() {}\n};\nint main() { return 0; }`,
       "cpp"
     );
-    expect(found.reset.type).toBe("method");
-    expect(found.main.type).toBe("function");
+    expect(found.reset?.type).toBe("method");
+    expect(found.main?.type).toBe("function");
   });
 
   it("classifies a C header prototype as function", async () => {
     const found = await documentablesOf(`int compute(int a);`, "c");
-    expect(found.compute.type).toBe("function");
+    expect(found.compute?.type).toBe("function");
   });
 
   it("classifies a C++ struct as class", async () => {
     const found = await documentablesOf(`struct Pair { int a; };`, "cpp");
-    expect(found.Pair.type).toBe("class");
+    expect(found.Pair?.type).toBe("class");
   });
 
   it("classifies a Go method declaration as method", async () => {
@@ -119,8 +119,8 @@ describe("getDocumentableNode - parent-context rules", () => {
       `package m\nfunc (p *Point) Move() {}\nfunc Free() {}`,
       "go"
     );
-    expect(found.Move.type).toBe("method");
-    expect(found.Free.type).toBe("function");
+    expect(found.Move?.type).toBe("method");
+    expect(found.Free?.type).toBe("function");
   });
 });
 

@@ -36,10 +36,10 @@ export const DEFAULT_IGNORE_PATTERNS: readonly string[] = [
 
 export interface GlobOptions {
   cwd: string;
-  includeHidden?: boolean;
-  ignorePatterns?: string[];
-  extensions?: string[];
-  maxDepth?: number;
+  includeHidden?: boolean | undefined;
+  ignorePatterns?: string[] | undefined;
+  extensions?: string[] | undefined;
+  maxDepth?: number | undefined;
 }
 
 /** Allows letters, digits, underscores, pluses, and hyphens in extension tokens used to build glob patterns. */
@@ -57,8 +57,9 @@ export async function findFiles(options: GlobOptions): Promise<string[]> {
     const exts = extensions
       .map((e) => (e.startsWith(".") ? e.slice(1) : e))
       .filter((e) => EXTENSION_PATTERN.test(e));
-    if (exts.length > 0) {
-      pattern = exts.length === 1 ? `**/*.${exts[0]}` : `**/*.{${exts.join(",")}}`;
+    const [first, ...rest] = exts;
+    if (first !== undefined) {
+      pattern = rest.length === 0 ? `**/*.${first}` : `**/*.{${exts.join(",")}}`;
     }
   }
 
@@ -68,7 +69,7 @@ export async function findFiles(options: GlobOptions): Promise<string[]> {
     cwd,
     dot: includeHidden,
     onlyFiles: true,
-    deep: maxDepth,
+    deep: maxDepth ?? Infinity,
     ignore: [...DEFAULT_IGNORE_PATTERNS],
     // Don't follow symlinks: validatePath only confines the top-level path, so a symlink
     // inside the scanned tree could otherwise point outside the allowed root.

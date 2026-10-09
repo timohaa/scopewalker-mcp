@@ -35,8 +35,14 @@ export function getToolHandler(
 /** Parses JSON content from a tool response. */
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T used for caller's type inference
 export function parseContent<T>(response: ToolResponse): T {
-  if (response.content.length === 0) {
-    throw new Error("Response content is empty");
+  return JSON.parse(firstItem(response.content).text) as T;
+}
+
+/** Returns the first item, failing the test when the list is empty. */
+export function firstItem<T>(items: readonly T[]): T {
+  const [first] = items;
+  if (first === undefined) {
+    throw new Error("Expected at least one item");
   }
-  return JSON.parse(response.content[0].text) as T;
+  return first;
 }

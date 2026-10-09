@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import { firstItem, getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { ComplexityMetricsResult } from "../types/index.js";
 import { registerComplexityMetricsTool } from "./complexityMetrics.js";
 
@@ -26,7 +26,7 @@ async function metricsFor(
   const path = join(testDir, file);
   await writeFile(path, code);
   const result = parseContent<ComplexityMetricsResult>(await handler({ path }));
-  return result.files[0].metrics;
+  return firstItem(result.files).metrics;
 }
 
 /** Asserts two spellings of the same construct score identically on all three metrics. */

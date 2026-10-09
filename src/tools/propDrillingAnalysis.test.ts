@@ -106,7 +106,7 @@ describe("aggregateParameters", () => {
 
     const result = aggregateParameters(analyses, 3);
     expect(result.length).toBe(1);
-    expect(result[0].risk).toBe("low");
+    expect(result[0]?.risk).toBe("low");
   });
 });
 
@@ -132,7 +132,7 @@ describe("aggregateParameters - risk scoring and ordering", () => {
 
     const result = aggregateParameters(analyses, 3);
     expect(result.length).toBe(1);
-    expect(result[0].risk).toBe("medium");
+    expect(result[0]?.risk).toBe("medium");
   });
 
   it("sorts by occurrences descending", () => {
@@ -169,8 +169,8 @@ describe("aggregateParameters - risk scoring and ordering", () => {
     ];
 
     const result = aggregateParameters(analyses, 3);
-    expect(result[0].name).toBe("beta"); // 4 occurrences
-    expect(result[1].name).toBe("alpha"); // 3 occurrences
+    expect(result[0]?.name).toBe("beta"); // 4 occurrences
+    expect(result[1]?.name).toBe("alpha"); // 3 occurrences
   });
 
   it("assigns medium risk for 2 occurrences with forwardingRatio > 0.5", () => {
@@ -191,7 +191,7 @@ describe("aggregateParameters - risk scoring and ordering", () => {
     expect(result.length).toBe(1);
     // 2 occurrences, 2/2 = 1.0 ratio: too few occurrences for the ">= 3" medium
     // path, but the "occurrences >= 2 && ratio > 0.5" alternative still applies.
-    expect(result[0].risk).toBe("medium");
+    expect(result[0]?.risk).toBe("medium");
   });
 });
 

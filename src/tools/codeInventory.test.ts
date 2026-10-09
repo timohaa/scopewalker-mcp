@@ -134,8 +134,8 @@ describe("codeInventory tool", () => {
     const result = parseContent<CodeInventoryResult>(response);
 
     expect(result.inventory).toHaveLength(1);
-    expect(result.inventory[0].file).toContain("service.ts");
-    expect(result.inventory[0].items.map((i) => i.name)).toContain("AuthService");
+    expect(result.inventory[0]?.file).toContain("service.ts");
+    expect(result.inventory[0]?.items.map((i) => i.name)).toContain("AuthService");
   });
 
   it("returns error for nonexistent path", async () => {

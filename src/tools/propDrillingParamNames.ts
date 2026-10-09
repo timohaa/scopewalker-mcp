@@ -90,10 +90,8 @@ function extractPythonParamNames(paramListNode: Parser.SyntaxNode, names: string
 
 /** Extracts the value-side name from an object destructuring pair: { userId: id } -> "id". */
 function extractPairPatternName(pairNode: Parser.SyntaxNode): string | null {
-  const lastIdx = pairNode.namedChildren.length - 1;
-  if (lastIdx < 0) return null;
-  const valueNode = pairNode.namedChildren[lastIdx];
-  return valueNode.type === "identifier" ? valueNode.text : null;
+  const valueNode = pairNode.namedChildren.at(-1);
+  return valueNode?.type === "identifier" ? valueNode.text : null;
 }
 
 /** Extracts names from a TS/JS destructured object parameter: { userId, theme }. */
@@ -135,8 +133,9 @@ function unwrapTypedParameter(
   names: string[],
   language: SupportedLanguage
 ): void {
-  if (node.namedChildren.length > 0) {
-    extractNamesFromParamNode(node.namedChildren[0], names, language);
+  const pattern = node.namedChildren[0];
+  if (pattern !== undefined) {
+    extractNamesFromParamNode(pattern, names, language);
   }
 }
 

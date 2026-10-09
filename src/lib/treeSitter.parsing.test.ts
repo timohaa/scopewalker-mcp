@@ -81,7 +81,7 @@ function second() {}`;
     const functions = await getFunctions(code, "typescript");
     const named = functions.filter((f) => f.name !== "<anonymous>");
     expect(named.length).toBeGreaterThanOrEqual(2);
-    expect(named[0].startLine).toBe(1);
+    expect(named[0]?.startLine).toBe(1);
   });
 
   it("finds a function despite realistic deep nesting (below the walk depth cap)", async () => {

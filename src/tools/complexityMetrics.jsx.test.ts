@@ -42,9 +42,9 @@ describe("complexityMetrics JSX props - detection thresholds", () => {
 
     const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
     expect(hotspots).toHaveLength(1);
-    expect(hotspots[0].function).toBe("MyComponent");
-    expect(hotspots[0].value).toBe(6);
-    expect(hotspots[0].recommendation).toContain("grouping props");
+    expect(hotspots[0]?.function).toBe("MyComponent");
+    expect(hotspots[0]?.value).toBe(6);
+    expect(hotspots[0]?.recommendation).toContain("grouping props");
   });
 
   it("does not report hotspot for PascalCase component with <=5 props", async () => {
@@ -175,7 +175,7 @@ describe("complexityMetrics JSX props - additional patterns", () => {
 
     const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
     expect(hotspots).toHaveLength(1);
-    expect(hotspots[0].value).toBe(6); // 5 attributes + 1 spread
+    expect(hotspots[0]?.value).toBe(6); // 5 attributes + 1 spread
   });
 
   it("counts props on Namespace.Component (member_expression)", async () => {
@@ -201,7 +201,7 @@ describe("complexityMetrics JSX props - additional patterns", () => {
 
     const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
     expect(hotspots).toHaveLength(1);
-    expect(hotspots[0].function).toBe("Form.Field");
-    expect(hotspots[0].value).toBe(6);
+    expect(hotspots[0]?.function).toBe("Form.Field");
+    expect(hotspots[0]?.value).toBe(6);
   });
 });

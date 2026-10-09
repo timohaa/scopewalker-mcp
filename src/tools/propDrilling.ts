@@ -97,6 +97,7 @@ export function registerPropDrillingTool(server: McpServer): void {
 
       const limit = args.limit ?? DEFAULT_LIMIT;
       const limited = threaded.slice(0, limit);
+      const [top] = threaded;
 
       const result: PropDrillingResult = {
         path: resolvedPath,
@@ -107,8 +108,7 @@ export function registerPropDrillingTool(server: McpServer): void {
           total_parameters_scanned: totalParamsScanned,
           // Summary totals describe the full list; limit only trims the returned details
           threaded_parameters_found: threaded.length,
-          highest_occurrence:
-            threaded.length > 0 ? { name: threaded[0].name, count: threaded[0].occurrences } : null,
+          highest_occurrence: top !== undefined ? { name: top.name, count: top.occurrences } : null,
         },
       };
 

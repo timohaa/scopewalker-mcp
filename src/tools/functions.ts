@@ -87,9 +87,9 @@ export function registerFunctionsTool(server: McpServer): void {
 async function handleCountsMode(
   scan: SourceScan,
   args: {
-    grep?: string;
-    sort_by?: "count_desc" | "count_asc" | "lines_desc" | "lines_asc" | "name";
-    limit?: number;
+    grep?: string | undefined;
+    sort_by?: "count_desc" | "count_asc" | "lines_desc" | "lines_asc" | "name" | undefined;
+    limit?: number | undefined;
   }
 ): Promise<ReturnType<typeof createSuccessResponse>> {
   let files = await analyzeFilesForCounts(scan);
@@ -138,10 +138,10 @@ async function handleCountsMode(
 async function handleLinesMode(
   scan: SourceScan,
   args: {
-    min_lines?: number;
-    grep?: string;
-    sort_by?: "count_desc" | "count_asc" | "lines_desc" | "lines_asc" | "name";
-    limit?: number;
+    min_lines?: number | undefined;
+    grep?: string | undefined;
+    sort_by?: "count_desc" | "count_asc" | "lines_desc" | "lines_asc" | "name" | undefined;
+    limit?: number | undefined;
   }
 ): Promise<ReturnType<typeof createSuccessResponse>> {
   let files = await analyzeFilesForLines(scan, args.min_lines);

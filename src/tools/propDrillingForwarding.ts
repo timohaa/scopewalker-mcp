@@ -14,9 +14,9 @@ function checkNodeForwarding(node: Parser.SyntaxNode, state: ForwardingState): v
     state.forwarded.add(node.text);
     return;
   }
-  if (node.type === "member_expression" && node.namedChildren.length > 0) {
+  if (node.type === "member_expression") {
     const obj = node.namedChildren[0];
-    if (obj.type === "identifier" && state.paramSet.has(obj.text)) {
+    if (obj?.type === "identifier" && state.paramSet.has(obj.text)) {
       state.forwarded.add(obj.text);
     }
   }
@@ -85,7 +85,7 @@ function checkJsxExpressionForwarding(
   // Shorthand: <Child userId={userId} /> where attr name matches expr identifier
   if (attrName !== null && state.paramSet.has(attrName) && jsxExprNode.namedChildren.length === 1) {
     const exprChild = jsxExprNode.namedChildren[0];
-    if (exprChild.type === "identifier" && exprChild.text === attrName) {
+    if (exprChild?.type === "identifier" && exprChild.text === attrName) {
       state.forwarded.add(attrName);
     }
   }

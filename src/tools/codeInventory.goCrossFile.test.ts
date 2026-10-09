@@ -83,7 +83,7 @@ async function inventoryByQualifiedName(
 
   const index = new Map<string, InventoryItem>();
   for (const file of result.inventory) {
-    const pkg = file.file.split("/")[0];
+    const [pkg = ""] = file.file.split("/");
     for (const item of file.items) index.set(`${pkg}/${item.name}`, item);
   }
   return index;

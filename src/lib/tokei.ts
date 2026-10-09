@@ -21,9 +21,9 @@ export interface TokeiFileReport {
 export type TokeiOutput = Record<string, TokeiLanguageStats>;
 
 export interface TokeiOptions {
-  extensions?: string[];
-  exclude?: string[];
-  includeHidden?: boolean;
+  extensions?: string[] | undefined;
+  exclude?: string[] | undefined;
+  includeHidden?: boolean | undefined;
 }
 
 /**

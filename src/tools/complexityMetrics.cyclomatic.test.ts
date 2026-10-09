@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import { firstItem, getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { ComplexityMetricsResult, FileComplexity } from "../types/index.js";
 import { registerComplexityMetricsTool } from "./complexityMetrics.js";
 
@@ -32,7 +32,7 @@ async function analyze(file: string, code: string): Promise<FileComplexity> {
   const path = join(testDir, file);
   await writeFile(path, code);
   const result = parseContent<ComplexityMetricsResult>(await handler({ path }));
-  return result.files[0];
+  return firstItem(result.files);
 }
 
 describe("cyclomatic complexity", () => {
@@ -122,23 +122,23 @@ describe("cyclomatic severity bands", () => {
 
     expect(file.metrics.max_cyclomatic_complexity).toBe(11);
     expect(file.functions).toHaveLength(1);
-    expect(file.functions[0].name).toBe("busy");
-    expect(file.functions[0].cyclomatic_complexity).toBe(11);
-    expect(file.functions[0].severity).toBe("high");
+    expect(file.functions[0]?.name).toBe("busy");
+    expect(file.functions[0]?.cyclomatic_complexity).toBe(11);
+    expect(file.functions[0]?.severity).toBe("high");
   });
 
   it("keeps a function at the extreme boundary on high", async () => {
     const file = await analyze("at-extreme.ts", fnWithDecisions("heavy", 29));
 
-    expect(file.functions[0].cyclomatic_complexity).toBe(30);
-    expect(file.functions[0].severity).toBe("high");
+    expect(file.functions[0]?.cyclomatic_complexity).toBe(30);
+    expect(file.functions[0]?.severity).toBe("high");
   });
 
   it("flags a function past the extreme boundary", async () => {
     const file = await analyze("extreme.ts", fnWithDecisions("monster", 30));
 
-    expect(file.functions[0].cyclomatic_complexity).toBe(31);
-    expect(file.functions[0].severity).toBe("extreme");
+    expect(file.functions[0]?.cyclomatic_complexity).toBe(31);
+    expect(file.functions[0]?.severity).toBe("extreme");
   });
 });
 
@@ -181,6 +181,7 @@ ${inner}
 
     expect(file.functions).toHaveLength(2);
     const [parent, callback] = file.functions;
+    if (parent === undefined || callback === undefined) throw new Error("Expected two functions");
     expect(parent.name).toBe("outer");
     expect(callback.name).toBe("cb");
     expect(parent.cyclomatic_complexity).toBeGreaterThanOrEqual(callback.cyclomatic_complexity);

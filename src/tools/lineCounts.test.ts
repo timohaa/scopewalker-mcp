@@ -78,7 +78,7 @@ describe("sorting and totals", () => {
 
     const result = parseContent<LineCountsResult>(response);
     expect(result.files.map((f) => f.path)).toEqual(["main.ts", "helper.ts"]);
-    expect(result.files[0].lines.total).toBe(9);
+    expect(result.files[0]?.lines.total).toBe(9);
     expect(result.summary.total_lines).toBe(13);
     expect(result.summary.total_files).toBe(2);
   });
@@ -86,8 +86,8 @@ describe("sorting and totals", () => {
   it("supports alternate sorting", async () => {
     const response = await handler({ path: testDir, sort_by: "name" });
     const result = parseContent<LineCountsResult>(response);
-    expect(result.files[0].path).toBe("helper.ts");
-    expect(result.files[1].path).toBe("main.ts");
+    expect(result.files[0]?.path).toBe("helper.ts");
+    expect(result.files[1]?.path).toBe("main.ts");
   });
 
   it("sorts by lines ascending", async () => {
@@ -95,8 +95,8 @@ describe("sorting and totals", () => {
     const result = parseContent<LineCountsResult>(response);
 
     // helper.ts has 4 lines, main.ts has 9 lines
-    expect(result.files[0].path).toBe("helper.ts");
-    expect(result.files[1].path).toBe("main.ts");
+    expect(result.files[0]?.path).toBe("helper.ts");
+    expect(result.files[1]?.path).toBe("main.ts");
   });
 });
 
@@ -149,7 +149,7 @@ describe("errors and filtering", () => {
 
     // Should only include helper.ts (matches "helper")
     expect(result.files.length).toBe(1);
-    expect(result.files[0].path).toBe("helper.ts");
+    expect(result.files[0]?.path).toBe("helper.ts");
   });
 
   it("grep filter is case-insensitive", async () => {
@@ -158,7 +158,7 @@ describe("errors and filtering", () => {
 
     // Should match main.ts despite uppercase search
     expect(result.files.length).toBe(1);
-    expect(result.files[0].path).toBe("main.ts");
+    expect(result.files[0]?.path).toBe("main.ts");
   });
 
   it("forwards include_hidden to the tokei analyzer", async () => {

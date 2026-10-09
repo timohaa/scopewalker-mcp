@@ -21,7 +21,7 @@ export interface SourceScan {
   /** True when `filePaths` are relative to `basePath`; false when they are already full paths. */
   isDirectory: boolean;
   /** Stop after this many files are yielded; undefined or non-positive means no cap. */
-  maxFiles?: number;
+  maxFiles?: number | undefined;
 }
 
 /**

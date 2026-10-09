@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import { firstItem, getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { FunctionCountsResult } from "../types/index.js";
 import { registerFunctionsTool } from "./functions.js";
 
@@ -23,7 +23,7 @@ async function functionsIn(file: string, code: string): Promise<{ name: string; 
   const path = join(testDir, file);
   await writeFile(path, code);
   const result = parseContent<FunctionCountsResult>(await handler({ path, detail: "counts" }));
-  return result.files[0].functions;
+  return firstItem(result.files).functions;
 }
 
 // The TypeScript/JavaScript function-node list used to contain `function`, which
