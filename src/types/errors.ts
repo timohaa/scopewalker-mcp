@@ -5,6 +5,7 @@ export type ErrorCode =
   | "PERMISSION_DENIED"
   | "UNSUPPORTED_LANGUAGE"
   | "PARSE_ERROR"
+  | "IO_ERROR"
   | "GIT_NOT_FOUND"
   | "NOT_A_GIT_REPO"
   | "TOOL_NOT_AVAILABLE";

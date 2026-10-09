@@ -80,29 +80,29 @@ export async function validatePath(inputPath: string): Promise<PathValidationRes
       isDirectory: stats.isDirectory(),
     };
   } catch (err) {
-    if (err instanceof Error && "code" in err) {
-      const nodeErr = err as NodeJS.ErrnoException;
-      if (nodeErr.code === "ENOENT") {
-        return {
-          valid: false,
-          error: createError("PATH_NOT_FOUND", `Path does not exist: ${inputPath}`, {
-            path: inputPath,
-          }),
-        };
-      }
-      if (nodeErr.code === "EACCES") {
-        return {
-          valid: false,
-          error: createError("PERMISSION_DENIED", `Cannot access: ${inputPath}`, {
-            path: inputPath,
-          }),
-        };
-      }
+    const errno =
+      err instanceof Error && "code" in err ? (err as NodeJS.ErrnoException).code : undefined;
+    if (errno === "ENOENT") {
+      return {
+        valid: false,
+        error: createError("PATH_NOT_FOUND", `Path does not exist: ${inputPath}`, {
+          path: inputPath,
+        }),
+      };
+    }
+    if (errno === "EACCES") {
+      return {
+        valid: false,
+        error: createError("PERMISSION_DENIED", `Cannot access: ${inputPath}`, {
+          path: inputPath,
+        }),
+      };
     }
     return {
       valid: false,
-      error: createError("PARSE_ERROR", "Failed to validate path", {
+      error: createError("IO_ERROR", "Failed to validate path", {
         path: inputPath,
+        ...(errno !== undefined && { errno }),
       }),
     };
   }

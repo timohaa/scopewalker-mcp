@@ -59,7 +59,7 @@ describe("validatePath", () => {
     }
   });
 
-  it("returns parse error for unexpected failures", async () => {
+  it("returns an I/O error for unexpected failures", async () => {
     const fakePath = resolve("./error-path");
     vi.mocked(realpath).mockResolvedValueOnce(fakePath);
     vi.mocked(stat).mockRejectedValueOnce(new Error("unexpected failure"));
@@ -67,7 +67,21 @@ describe("validatePath", () => {
     const result = await validatePath("./error-path");
     expect(result.valid).toBe(false);
     if (!result.valid) {
-      expect(result.error.error.code).toBe("PARSE_ERROR");
+      expect(result.error.error.code).toBe("IO_ERROR");
+      expect(result.error.error).not.toHaveProperty("errno");
+    }
+  });
+
+  it("names the errno code of an unexpected filesystem failure", async () => {
+    vi.mocked(realpath).mockRejectedValueOnce(
+      Object.assign(new Error("too many links"), { code: "ELOOP" })
+    );
+
+    const result = await validatePath("./loop-path");
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.error.error.code).toBe("IO_ERROR");
+      expect(result.error.error).toHaveProperty("errno", "ELOOP");
     }
   });
 });

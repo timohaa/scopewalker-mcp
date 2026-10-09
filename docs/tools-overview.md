@@ -84,6 +84,7 @@ All tools return structured errors:
 | `PERMISSION_DENIED`    | Cannot read path, or path is outside allowed roots                                                                |
 | `UNSUPPORTED_LANGUAGE` | Cannot parse this file type (reserved; unsupported files are currently skipped, not errored)                      |
 | `PARSE_ERROR`          | Unexpected analysis failure (e.g., tokei output could not be parsed, or its 512 MB/30s streaming guards were hit) |
+| `IO_ERROR`             | Unexpected filesystem failure while validating the path; `errno` names the cause when Node reports one            |
 | `TOOL_NOT_AVAILABLE`   | A required external CLI is missing (returned when tokei is not installed)                                         |
 | `GIT_NOT_FOUND`        | Git executable not found (reserved)                                                                               |
 | `NOT_A_GIT_REPO`       | Path is not inside a git repository (reserved)                                                                    |
