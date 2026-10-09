@@ -4,7 +4,11 @@ import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import {
   boundedInt,
   ignorePatternsSchema,
@@ -39,9 +43,11 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
   server.registerTool(
     "get_documentation_coverage",
     {
+      title: "Documentation Coverage",
       description:
         "Finds undocumented functions/classes. Use limit/summary_only to control output.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);

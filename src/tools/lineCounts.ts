@@ -5,7 +5,11 @@ import { DEFAULT_IGNORE_PATTERNS } from "../lib/glob.js";
 import { analyze } from "../lib/tokei.js";
 import type { FileLineCount, LineCountsResult } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import { ignorePatternsSchema, extensionsSchema, limitSchema } from "../utils/schemaLimits.js";
 
 const DEFAULT_LIMIT = 20;
@@ -25,8 +29,10 @@ export function registerLineCountsTool(server: McpServer): void {
   server.registerTool(
     "get_line_counts",
     {
+      title: "Line Counts",
       description: "Returns file line counts (code/blank/comment). Use extensions to filter.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);

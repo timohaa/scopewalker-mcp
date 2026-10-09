@@ -5,7 +5,11 @@ import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type { DeadCodeCandidate, DeadCodeResult } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import {
   ignorePatternsSchema,
   extensionsSchema,
@@ -91,9 +95,11 @@ export function registerDeadCodeTool(server: McpServer): void {
   server.registerTool(
     "find_dead_code",
     {
+      title: "Dead Code",
       description:
         "Finds declared symbols that nothing references. dead_code is proven unreachable within the scan; unreferenced_exports may be used outside it.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);

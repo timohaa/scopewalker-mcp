@@ -4,7 +4,11 @@ import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles } from "../lib/sourceFileWalker.js";
 import type { FileSmells } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import {
   ignorePatternsSchema,
   extensionsSchema,
@@ -42,8 +46,10 @@ export function registerCodeSmellsTool(server: McpServer): void {
   server.registerTool(
     "get_code_smells",
     {
+      title: "Code Smells",
       description: "Finds TODO/FIXME/HACK/BUG markers and unsafe casts in code.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);

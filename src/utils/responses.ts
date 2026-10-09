@@ -1,4 +1,13 @@
+import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import type { ErrorResponse } from "../types/index.js";
+
+/** Every Scopewalker tool only reads local files, so all share these hints. */
+export const READ_ONLY_ANNOTATIONS: ToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
 
 export interface McpSuccessResponse {
   content: { type: "text"; text: string }[];

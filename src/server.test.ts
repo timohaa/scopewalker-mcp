@@ -60,6 +60,20 @@ describe("createServer", () => {
     );
   });
 
+  it("advertises a title and read-only annotations for every tool", () => {
+    // The override rebuilds each tool definition, so fields it forgets to copy
+    // never reach clients.
+    for (const tool of tools) {
+      expect(tool.title).toBeTruthy();
+      expect(tool.annotations).toEqual({
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      });
+    }
+  });
+
   it("advertises the version from package.json", () => {
     // Guards the runtime readFileSync of ../package.json: a wrong relative
     // path throws at server construction rather than being caught at review.

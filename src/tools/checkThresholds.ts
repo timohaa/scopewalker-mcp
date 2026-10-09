@@ -3,7 +3,11 @@ import { z } from "zod";
 import { findFiles, DEFAULT_IGNORE_PATTERNS } from "../lib/glob.js";
 import { analyze } from "../lib/tokei.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import {
   boundedInt,
   ignorePatternsSchema,
@@ -40,8 +44,10 @@ export function registerCheckThresholdsTool(server: McpServer): void {
   server.registerTool(
     "check_thresholds",
     {
+      title: "Size Thresholds",
       description: "Finds files/functions exceeding size thresholds. Use limit to control output.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);

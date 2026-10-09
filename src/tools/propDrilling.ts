@@ -7,7 +7,11 @@ import type {
   ThreadedParameter,
 } from "../types/propDrilling.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import {
   boundedInt,
   ignorePatternsSchema,
@@ -61,9 +65,11 @@ export function registerPropDrillingTool(server: McpServer): void {
   server.registerTool(
     "get_prop_drilling",
     {
+      title: "Prop Drilling",
       description:
         "Detects parameter threading (prop drilling) by finding parameter names passed through chains of functions. Use limit/summary_only to control output.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);

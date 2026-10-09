@@ -6,7 +6,11 @@ import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
 import type { ComplexityMetricsResult, FileComplexity, SupportedLanguage } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import {
   ignorePatternsSchema,
   extensionsSchema,
@@ -51,9 +55,11 @@ export function registerComplexityMetricsTool(server: McpServer): void {
   server.registerTool(
     "get_complexity_metrics",
     {
+      title: "Complexity Metrics",
       description:
         "Returns complexity metrics (nesting, params, cognitive, per-function cyclomatic). Use limit/summary_only to control output.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);

@@ -5,7 +5,11 @@ import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { parseCode } from "../lib/treeSitter.js";
 import type { CodeInventoryResult, FileInventory, InventoryItem } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import {
   ignorePatternsSchema,
   extensionsSchema,
@@ -44,8 +48,10 @@ export function registerCodeInventoryTool(server: McpServer): void {
   server.registerTool(
     "get_code_inventory",
     {
+      title: "Code Inventory",
       description: "Lists classes, functions, methods, and exports. Use extensions to filter.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);

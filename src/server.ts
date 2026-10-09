@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { z } from "zod";
 import { toJSONSchema } from "zod";
@@ -15,9 +16,16 @@ import { registerPropDrillingTool } from "./tools/propDrilling.js";
 
 export const SERVER_NAME = "scopewalker-mcp";
 
+/** The fields of the SDK's private registered-tool record that tools/list reads. */
 interface McpRegisteredTool {
+  title?: string;
   description?: string;
   inputSchema: z.ZodType;
+  outputSchema?: z.ZodType;
+  annotations?: Tool["annotations"];
+  execution?: Tool["execution"];
+  _meta?: Tool["_meta"];
+  enabled: boolean;
 }
 
 /**
@@ -34,13 +42,22 @@ function readVersion(): string {
   return version;
 }
 
+/** Converts a Zod schema to draft-7 JSON Schema without the $schema key. */
+function toToolJsonSchema(schema: z.ZodType, io: "input" | "output"): Tool["inputSchema"] {
+  const json = toJSONSchema(schema, { target: "draft-7", io }) as Record<string, unknown>;
+  delete json.$schema;
+  return json as Tool["inputSchema"];
+}
+
 /**
- * Strips $schema from every tool's inputSchema in the tools/list response.
+ * Strips $schema from every tool's input and output schema in the tools/list response.
  * The MCP SDK emits $schema when converting Zod v4 schemas via
  * z4mini.toJSONSchema(..., { target: 'draft-7' }), and some API providers
  * silently reject tool definitions that include it. Reaches into the SDK's
  * private _registeredTools because there is no public accessor; src/server.test.ts
  * asserts the tool list stays populated so an SDK rename fails loudly.
+ * Mirrors the SDK's own handler otherwise: disabled tools are hidden, and title,
+ * annotations, execution and _meta pass through unchanged.
  */
 function applySchemaStrippingOverride(server: McpServer): void {
   const registeredTools = (
@@ -48,14 +65,23 @@ function applySchemaStrippingOverride(server: McpServer): void {
   )._registeredTools;
 
   server.server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: Object.entries(registeredTools).map(([name, tool]) => {
-      const schema = toJSONSchema(tool.inputSchema, { target: "draft-7" }) as Record<
-        string,
-        unknown
-      >;
-      delete schema.$schema;
-      return { name, description: tool.description, inputSchema: schema };
-    }),
+    tools: Object.entries(registeredTools)
+      .filter(([, tool]) => tool.enabled)
+      .map(([name, tool]): Tool => {
+        const { outputSchema, title, description, annotations, execution, _meta } = tool;
+        return {
+          name,
+          ...(title !== undefined && { title }),
+          ...(description !== undefined && { description }),
+          inputSchema: toToolJsonSchema(tool.inputSchema, "input"),
+          ...(outputSchema !== undefined && {
+            outputSchema: toToolJsonSchema(outputSchema, "output"),
+          }),
+          ...(annotations !== undefined && { annotations }),
+          ...(execution !== undefined && { execution }),
+          ...(_meta !== undefined && { _meta }),
+        };
+      }),
   }));
 }
 

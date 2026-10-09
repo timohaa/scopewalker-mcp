@@ -4,7 +4,11 @@ import { findFiles } from "../lib/glob.js";
 import type { SourceScan } from "../lib/sourceFileWalker.js";
 import type { FunctionCountsResult, FunctionLineCountsResult } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
-import { createErrorResponse, createSuccessResponse } from "../utils/responses.js";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  READ_ONLY_ANNOTATIONS,
+} from "../utils/responses.js";
 import {
   boundedInt,
   ignorePatternsSchema,
@@ -49,8 +53,10 @@ export function registerFunctionsTool(server: McpServer): void {
   server.registerTool(
     "get_functions",
     {
+      title: "Functions",
       description: "Returns function/method info. Use detail=lines for line counts per function.",
       inputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
       const pathValidation = await validatePath(args.path);
