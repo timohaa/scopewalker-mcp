@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ToolContext } from "../utils/clientRoots.js";
 
 /** Context for handlers invoked without a connected client, so no client roots exist. */
@@ -14,30 +14,39 @@ export interface ToolResponse {
 
 type ToolHandler = (args: Record<string, unknown>) => Promise<ToolResponse>;
 
-/** Mock MCP server that captures registered tools for testing. */
-class ToolTestServer {
-  tools = new Map<string, ToolHandler>();
-
-  /** Records the handler under its tool name; the config is not needed to invoke it. */
-  registerTool(name: string, _schema: unknown, handler: ToolHandler): void {
-    this.tools.set(name, handler);
-  }
+/** A registered tool record from the SDK's private registry. */
+interface RegisteredToolRecord {
+  handler: (args: Record<string, unknown>, extra: Record<string, never>) => Promise<ToolResponse>;
 }
 
-/** Registers a tool and returns its handler for direct invocation in tests. */
+/** Narrows an SDK registry entry to one holding a directly callable handler. */
+function isRegisteredToolRecord(value: unknown): value is RegisteredToolRecord {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "handler" in value &&
+    typeof value.handler === "function"
+  );
+}
+
+/** Registers a tool on a real server and returns its handler for direct invocation in tests. */
 export function getToolHandler(
   registerToolFn: (server: McpServer, context: ToolContext) => void,
   toolName: string
 ): ToolHandler {
-  const server = new ToolTestServer();
-  registerToolFn(server as unknown as McpServer, NO_CLIENT_ROOTS);
+  const server = new McpServer({ name: "tool-test-harness", version: "0.0.0" });
+  registerToolFn(server, NO_CLIENT_ROOTS);
 
-  const handler = server.tools.get(toolName);
-  if (!handler) {
+  const registry: unknown = Reflect.get(server, "_registeredTools");
+  const tool: unknown =
+    typeof registry === "object" && registry !== null
+      ? Object.entries(registry).find(([name]) => name === toolName)?.[1]
+      : undefined;
+  if (!isRegisteredToolRecord(tool)) {
     throw new Error(`Tool ${toolName} was not registered`);
   }
 
-  return handler;
+  return (args) => tool.handler(args, {});
 }
 
 /** Parses JSON content from a tool response. */

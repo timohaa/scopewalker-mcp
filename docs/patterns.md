@@ -81,4 +81,4 @@ const response = await handler({ path: testDir });
 const result = parseContent<ResultType>(response);
 ```
 
-`getToolHandler` registers the tool on a mock server with no client roots and calls the handler directly, so it does not validate `outputSchema`. Use `firstItem(list)` instead of `list[0]` when a test needs the first element. Cover schema conformance in `src/server.outputSchema.test.ts` and root resolution in `src/server.roots.test.ts`.
+`getToolHandler` registers the tool on a real `McpServer` with no client roots, reads its handler from the SDK's private `_registeredTools` registry, and calls it directly, so it does not validate `outputSchema`. Use `firstItem(list)` instead of `list[0]` when a test needs the first element. Cover schema conformance in `src/server.outputSchema.test.ts` and root resolution in `src/server.roots.test.ts`.

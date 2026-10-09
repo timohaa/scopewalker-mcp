@@ -50,6 +50,26 @@ function toToolJsonSchema(schema: z.ZodType, io: "input" | "output"): Tool["inpu
   return json as Tool["inputSchema"];
 }
 
+/** Narrows the SDK's private registry to the tool records tools/list reads. */
+function isToolRegistry(value: unknown): value is Record<string, McpRegisteredTool> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Object.values(value).every(
+      (tool: unknown) => typeof tool === "object" && tool !== null && "enabled" in tool
+    )
+  );
+}
+
+/** Reads the SDK's private tool registry, failing loudly if an SDK change moves it. */
+function readRegisteredTools(server: McpServer): Record<string, McpRegisteredTool> {
+  const registry: unknown = Reflect.get(server, "_registeredTools");
+  if (!isToolRegistry(registry)) {
+    throw new Error("MCP SDK no longer exposes _registeredTools");
+  }
+  return registry;
+}
+
 /**
  * Strips $schema from every tool's input and output schema in the tools/list response.
  * The MCP SDK emits $schema when converting Zod v4 schemas via
@@ -61,9 +81,7 @@ function toToolJsonSchema(schema: z.ZodType, io: "input" | "output"): Tool["inpu
  * annotations, execution and _meta pass through unchanged.
  */
 function applySchemaStrippingOverride(server: McpServer): void {
-  const registeredTools = (
-    server as unknown as { _registeredTools: Record<string, McpRegisteredTool> }
-  )._registeredTools;
+  const registeredTools = readRegisteredTools(server);
 
   server.server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: Object.entries(registeredTools)
