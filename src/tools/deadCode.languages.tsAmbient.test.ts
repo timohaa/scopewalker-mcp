@@ -10,11 +10,13 @@ const handler = getToolHandler(registerDeadCodeTool, "find_dead_code");
 
 let dir: string;
 
+/** Runs find_dead_code on a path and returns the parsed result. */
 async function scan(path: string): Promise<DeadCodeResult> {
   const response = await handler({ path, limit: 100 });
   return parseContent<DeadCodeResult>(response);
 }
 
+/** Runs find_dead_code on a path and returns dead code plus unreferenced exports. */
 async function findingsOf(path: string): Promise<DeadCodeItem[]> {
   const result = await scan(path);
   return [...result.dead_code, ...result.unreferenced_exports];

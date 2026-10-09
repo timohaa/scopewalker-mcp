@@ -21,6 +21,7 @@ async function getFirstFunction(
     "function_expression",
   ];
 
+  /** Depth-first search for the first function-like node. */
   function find(node: Parser.SyntaxNode): Parser.SyntaxNode | null {
     if (funcTypes.includes(node.type)) return node;
     for (const child of node.children) {
@@ -44,6 +45,7 @@ async function findNodeByType(
   const tree = await parseCode(code, language);
   if (tree === null) throw new Error("Failed to parse code");
 
+  /** Depth-first search for the first node of the target type. */
   function find(node: Parser.SyntaxNode): Parser.SyntaxNode | null {
     if (node.type === nodeType) return node;
     for (const child of node.children) {

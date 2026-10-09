@@ -13,6 +13,7 @@ import { registerPropDrillingTool } from "./propDrilling.js";
 // that one unparsable file is skipped instead of aborting the whole scan.
 vi.mock("../lib/treeSitter.js", async (importOriginal) => {
   const actual = await importOriginal<typeof TreeSitterModule>();
+  /** Throws for sources containing the BOOM marker; otherwise delegates to the real parser. */
   const parseCode = async (
     code: string,
     language: SupportedLanguage

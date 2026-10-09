@@ -105,6 +105,7 @@ afterAll(async () => {
 });
 
 describe("find_dead_code - TS/JS core detection", () => {
+  /** Path of the `basic` fixture directory under the test root. */
   const basicDir = (): string => join(rootDir, "basic");
 
   it("marks a non-exported unused top-level function as dead_code", async () => {

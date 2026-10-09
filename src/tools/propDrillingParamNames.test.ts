@@ -26,6 +26,7 @@ async function nodeOfType(
   const tree = await parseCode(code, language);
   if (tree === null) throw new Error(`Failed to parse ${language}`);
 
+  /** Depth-first search for the first node of the target type. */
   function find(node: Parser.SyntaxNode): Parser.SyntaxNode | null {
     if (node.type === nodeType) return node;
     for (const child of node.children) {

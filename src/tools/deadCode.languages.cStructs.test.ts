@@ -8,6 +8,7 @@ import { registerDeadCodeTool } from "./deadCode.js";
 
 const handler = getToolHandler(registerDeadCodeTool, "find_dead_code");
 
+/** Runs find_dead_code on a path and returns dead code plus unreferenced exports. */
 async function findingsOf(path: string): Promise<DeadCodeItem[]> {
   const response = await handler({ path, limit: 100 });
   const result = parseContent<DeadCodeResult>(response);

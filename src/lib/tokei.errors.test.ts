@@ -14,6 +14,7 @@ interface FakeChild extends EventEmitter {
   kill: ReturnType<typeof vi.fn>;
 }
 
+/** Builds an EventEmitter-based stand-in for the tokei child process. */
 function createFakeChild(): FakeChild {
   const child = new EventEmitter() as FakeChild;
   child.stdout = new EventEmitter();
@@ -153,6 +154,7 @@ describe("analyze - failure paths: process outcome errors", () => {
 });
 
 describe("analyze - argument construction", () => {
+  /** Completes the pending analyze call by emitting a clean close with no output. */
   function resolveWithEmptyOutput(): void {
     fakeChild.emit("close", 0);
   }

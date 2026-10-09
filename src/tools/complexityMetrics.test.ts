@@ -13,6 +13,7 @@ import { registerComplexityMetricsTool } from "./complexityMetrics.js";
 // treeSitter exports (countImports, getFunctionNodeTypes) pass through untouched.
 vi.mock("../lib/treeSitter.js", async (importOriginal) => {
   const actual = await importOriginal<typeof TreeSitterModule>();
+  /** Throws for sources containing the BOOM marker; otherwise delegates to the real parser. */
   const parseCode = async (
     code: string,
     language: SupportedLanguage
