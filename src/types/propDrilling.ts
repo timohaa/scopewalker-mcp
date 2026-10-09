@@ -32,7 +32,6 @@ export const propDrillingSummarySchema = z.object({
   threaded_parameters_found: z.number(),
   highest_occurrence: z.object({ name: z.string(), count: z.number() }).nullable(),
 });
-export type PropDrillingSummary = z.infer<typeof propDrillingSummarySchema>;
 
 export const propDrillingResultSchema = z.object({
   path: z.string(),

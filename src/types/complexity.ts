@@ -11,7 +11,6 @@ export type ComplexityHotspot = z.infer<typeof complexityHotspotSchema>;
 
 /** Radon's cyclomatic bands: "high" above 10, "extreme" above 30. */
 export const complexitySeveritySchema = z.enum(["high", "extreme"]);
-export type ComplexitySeverity = z.infer<typeof complexitySeveritySchema>;
 
 export const functionComplexitySchema = z.object({
   name: z.string(),

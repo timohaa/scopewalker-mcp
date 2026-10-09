@@ -37,7 +37,6 @@ export const deadCodeSummarySchema = z.object({
   dead_code_found: z.number(),
   unreferenced_exports_found: z.number(),
 });
-export type DeadCodeSummary = z.infer<typeof deadCodeSummarySchema>;
 
 export const deadCodeResultSchema = z.object({
   path: z.string(),
