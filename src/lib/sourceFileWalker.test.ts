@@ -1,9 +1,19 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import type * as fsModule from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import { DEFAULT_MAX_FILE_BYTES } from "../utils/fileGuards.js";
 import { walkSourceFiles } from "./sourceFileWalker.js";
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof fsModule>();
+  return { ...actual, readFile: vi.fn(actual.readFile) };
+});
+
+afterEach(() => {
+  vi.mocked(readFile).mockReset();
+});
 
 let testDir: string;
 
@@ -34,6 +44,33 @@ beforeAll(async () => {
   await writeFile(join(testDir, "huge.ts"), `// ${"x".repeat(DEFAULT_MAX_FILE_BYTES + 1)}\n`);
   await writeFile(join(testDir, "plain.h"), "int add(int a, int b);\n");
   await writeFile(join(testDir, "widget.h"), "class Widget {\npublic:\n  void run();\n};\n");
+});
+
+describe("walkSourceFiles read failures", () => {
+  it("continues after a file becomes unreadable and preserves the yield budget", async () => {
+    vi.mocked(readFile).mockRejectedValueOnce(
+      Object.assign(new Error("permission changed after stat"), { code: "EACCES" })
+    );
+
+    expect(await walkedPaths(["a.ts", "b.ts", "c.ts"], 1)).toEqual(["b.ts"]);
+    expect(readFile).toHaveBeenCalledTimes(2);
+    expect(readFile).toHaveBeenNthCalledWith(1, join(testDir, "a.ts"), "utf-8");
+    expect(readFile).toHaveBeenNthCalledWith(2, join(testDir, "b.ts"), "utf-8");
+  });
+
+  it("propagates errors injected by the consumer", async () => {
+    const walker = walkSourceFiles({
+      filePaths: ["a.ts", "b.ts"],
+      basePath: testDir,
+      isDirectory: true,
+    });
+    expect((await walker.next()).value).toMatchObject({ relativePath: "a.ts" });
+
+    const error = new Error("analysis failed");
+    await expect(walker.throw(error)).rejects.toBe(error);
+    expect(await walker.next()).toEqual({ done: true, value: undefined });
+    expect(readFile).toHaveBeenCalledTimes(1);
+  });
 });
 
 afterAll(async () => {
