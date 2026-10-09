@@ -51,7 +51,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "fast-glob": "^3.3.3",
     "ignore": "^7.0.5",
     "tree-sitter": "^0.25.0",
