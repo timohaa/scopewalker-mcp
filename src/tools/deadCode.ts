@@ -2,12 +2,17 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
-import type { DeadCodeCandidate, DeadCodeResult } from "../types/index.js";
+import {
+  type DeadCodeCandidate,
+  type DeadCodeResult,
+  deadCodeResultSchema,
+} from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   extensionsSchema,
@@ -100,6 +105,7 @@ export function registerDeadCodeTool(server: McpServer): void {
       description:
         "Finds declared symbols that nothing references. dead_code is proven unreachable within the scan; unreferenced_exports may be used outside it.",
       inputSchema,
+      outputSchema: withResponseMeta(deadCodeResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {

@@ -13,6 +13,16 @@ describe("createSuccessResponse", () => {
     expect(response).not.toHaveProperty("isError");
   });
 
+  it("returns the serialized object as structuredContent", () => {
+    const data = { files: ["a.ts"] };
+    const plain = createSuccessResponse(data);
+    const withMeta = createSuccessResponse(data, { itemCount: 1 });
+
+    expect(plain.structuredContent).toEqual(data);
+    expect(withMeta.structuredContent).toEqual(JSON.parse(withMeta.content[0]?.text ?? ""));
+    expect(withMeta.structuredContent).toHaveProperty("_meta.item_count", 1);
+  });
+
   it("handles nested objects", () => {
     const data = { nested: { deep: { value: true } } };
     const response = createSuccessResponse(data);

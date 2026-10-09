@@ -3,12 +3,17 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DEFAULT_IGNORE_PATTERNS } from "../lib/glob.js";
 import { analyze } from "../lib/tokei.js";
-import type { FileLineCount, LineCountsResult } from "../types/index.js";
+import {
+  type FileLineCount,
+  type LineCountsResult,
+  lineCountsResultSchema,
+} from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   extensionsSchema,
@@ -44,6 +49,7 @@ export function registerLineCountsTool(server: McpServer): void {
       title: "Line Counts",
       description: "Returns file line counts (code/blank/comment). Use extensions to filter.",
       inputSchema,
+      outputSchema: withResponseMeta(lineCountsResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {

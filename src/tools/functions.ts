@@ -2,12 +2,17 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import type { SourceScan } from "../lib/sourceFileWalker.js";
-import type { FunctionCountsResult, FunctionLineCountsResult } from "../types/index.js";
+import {
+  type FunctionCountsResult,
+  type FunctionLineCountsResult,
+  functionsResultSchema,
+} from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   boundedInt,
@@ -66,6 +71,7 @@ export function registerFunctionsTool(server: McpServer): void {
       title: "Functions",
       description: "Returns function/method info. Use detail=lines for line counts per function.",
       inputSchema,
+      outputSchema: withResponseMeta(functionsResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {

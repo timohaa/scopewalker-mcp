@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
+import { propDrillingResultSchema } from "../types/index.js";
 import type {
   PropDrillingResult,
   FileParameterAnalysis,
@@ -11,6 +12,7 @@ import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   boundedInt,
@@ -69,6 +71,7 @@ export function registerPropDrillingTool(server: McpServer): void {
       description:
         "Detects parameter threading (prop drilling) by finding parameter names passed through chains of functions. Use limit/summary_only to control output.",
       inputSchema,
+      outputSchema: withResponseMeta(propDrillingResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {

@@ -2,11 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
+import { documentationCoverageResultSchema } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   boundedInt,
@@ -51,6 +53,7 @@ export function registerDocumentationCoverageTool(server: McpServer): void {
       description:
         "Finds undocumented functions/classes. Use limit/summary_only to control output.",
       inputSchema,
+      outputSchema: withResponseMeta(documentationCoverageResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {

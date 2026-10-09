@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 export interface ToolResponse {
   content: { type: string; text: string }[];
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
 }
 

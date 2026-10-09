@@ -91,7 +91,7 @@ All tools return structured errors:
 
 ## Response Format
 
-Responses are JSON-serialized in MCP content blocks. When item counts are available, an `_meta` block is included with:
+Each tool advertises an `outputSchema`. A successful result carries the object as `structuredContent` and the same object serialized as JSON in a text content block, for clients that ignore structured output. Error results (`isError: true`) carry only the text block. The schemas live in `src/types/`. When item counts are available, an `_meta` block is included with:
 
 - `item_count`: number of primary items (e.g., files, violations, functions)
 - `response_size_chars`: serialized payload size

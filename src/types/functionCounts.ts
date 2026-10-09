@@ -1,53 +1,78 @@
-import type { LineStats } from "./lineCounts.js";
+import { z } from "zod";
+import { lineStatsSchema } from "./lineCounts.js";
 
-export interface FunctionInfo {
-  name: string;
-  line: number;
-}
+export const functionInfoSchema = z.object({
+  name: z.string(),
+  line: z.number(),
+});
+export type FunctionInfo = z.infer<typeof functionInfoSchema>;
 
-export interface FileFunctionCount {
-  path: string;
-  language: string;
-  function_count: number;
-  functions: FunctionInfo[];
-}
+export const fileFunctionCountSchema = z.object({
+  path: z.string(),
+  language: z.string(),
+  function_count: z.number(),
+  functions: z.array(functionInfoSchema),
+});
+export type FileFunctionCount = z.infer<typeof fileFunctionCountSchema>;
 
-export interface FunctionCountsResult {
-  path: string;
-  is_directory: boolean;
-  files: FileFunctionCount[];
-  summary: {
-    total_files_analyzed: number;
-    total_functions: number;
-    files_with_no_functions: number;
-  };
-}
+const functionCountsSummarySchema = z.object({
+  total_files_analyzed: z.number(),
+  total_functions: z.number(),
+  files_with_no_functions: z.number(),
+});
 
-export interface FunctionLineInfo {
-  name: string;
-  start_line: number;
-  end_line: number;
-  lines: LineStats;
-}
+export const functionCountsResultSchema = z.object({
+  path: z.string(),
+  is_directory: z.boolean(),
+  files: z.array(fileFunctionCountSchema),
+  summary: functionCountsSummarySchema,
+});
+export type FunctionCountsResult = z.infer<typeof functionCountsResultSchema>;
 
-export interface FileFunctionLineCount {
-  path: string;
-  language: string;
-  functions: FunctionLineInfo[];
-}
+export const functionLineInfoSchema = z.object({
+  name: z.string(),
+  start_line: z.number(),
+  end_line: z.number(),
+  lines: lineStatsSchema,
+});
+export type FunctionLineInfo = z.infer<typeof functionLineInfoSchema>;
 
-export interface FunctionLineCountsResult {
-  path: string;
-  is_directory: boolean;
-  files: FileFunctionLineCount[];
-  summary: {
-    total_functions: number;
-    average_lines_per_function: number;
-    largest_function: {
-      name: string;
-      file: string;
-      lines: number;
-    } | null;
-    functions_over_50_lines: number;
-  };
-}
+export const fileFunctionLineCountSchema = z.object({
+  path: z.string(),
+  language: z.string(),
+  functions: z.array(functionLineInfoSchema),
+});
+export type FileFunctionLineCount = z.infer<typeof fileFunctionLineCountSchema>;
+
+const functionLineCountsSummarySchema = z.object({
+  total_functions: z.number(),
+  average_lines_per_function: z.number(),
+  largest_function: z
+    .object({
+      name: z.string(),
+      file: z.string(),
+      lines: z.number(),
+    })
+    .nullable(),
+  functions_over_50_lines: z.number(),
+});
+
+export const functionLineCountsResultSchema = z.object({
+  path: z.string(),
+  is_directory: z.boolean(),
+  files: z.array(fileFunctionLineCountSchema),
+  summary: functionLineCountsSummarySchema,
+});
+export type FunctionLineCountsResult = z.infer<typeof functionLineCountsResultSchema>;
+
+/**
+ * get_functions returns the counts or the lines shape depending on `detail`.
+ * MCP requires an object at the top of an output schema, so the variants are
+ * merged field by field rather than offered as a top-level union.
+ */
+export const functionsResultSchema = z.object({
+  path: z.string(),
+  is_directory: z.boolean(),
+  files: z.array(z.union([fileFunctionCountSchema, fileFunctionLineCountSchema])),
+  summary: z.union([functionCountsSummarySchema, functionLineCountsSummarySchema]),
+});

@@ -3,12 +3,18 @@ import type Parser from "tree-sitter";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { detectLanguage, parseCode } from "../lib/treeSitter.js";
-import type { ComplexityMetricsResult, FileComplexity, SupportedLanguage } from "../types/index.js";
+import {
+  type ComplexityMetricsResult,
+  complexityMetricsResultSchema,
+  type FileComplexity,
+  type SupportedLanguage,
+} from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   extensionsSchema,
@@ -61,6 +67,7 @@ export function registerComplexityMetricsTool(server: McpServer): void {
       description:
         "Returns complexity metrics (nesting, params, cognitive, per-function cyclomatic). Use limit/summary_only to control output.",
       inputSchema,
+      outputSchema: withResponseMeta(complexityMetricsResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {

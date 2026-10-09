@@ -2,12 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles } from "../lib/sourceFileWalker.js";
-import type { FileSmells } from "../types/index.js";
+import { codeSmellsResultSchema, type FileSmells } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   extensionsSchema,
@@ -54,6 +55,7 @@ export function registerCodeSmellsTool(server: McpServer): void {
       title: "Code Smells",
       description: "Finds TODO/FIXME/HACK/BUG markers and unsafe casts in code.",
       inputSchema,
+      outputSchema: withResponseMeta(codeSmellsResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {

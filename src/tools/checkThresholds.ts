@@ -1,11 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { findFiles, DEFAULT_IGNORE_PATTERNS } from "../lib/glob.js";
 import { analyze } from "../lib/tokei.js";
+import { checkThresholdsResultSchema } from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   boundedInt,
@@ -52,6 +54,7 @@ export function registerCheckThresholdsTool(server: McpServer): void {
       title: "Size Thresholds",
       description: "Finds files/functions exceeding size thresholds. Use limit to control output.",
       inputSchema,
+      outputSchema: withResponseMeta(checkThresholdsResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {

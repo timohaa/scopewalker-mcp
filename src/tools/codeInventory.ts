@@ -3,12 +3,18 @@ import { z } from "zod";
 import { findFiles } from "../lib/glob.js";
 import { walkSourceFiles, type SourceScan } from "../lib/sourceFileWalker.js";
 import { parseCode } from "../lib/treeSitter.js";
-import type { CodeInventoryResult, FileInventory, InventoryItem } from "../types/index.js";
+import {
+  type CodeInventoryResult,
+  codeInventoryResultSchema,
+  type FileInventory,
+  type InventoryItem,
+} from "../types/index.js";
 import { validatePath } from "../utils/paths.js";
 import {
   createErrorResponse,
   createSuccessResponse,
   READ_ONLY_ANNOTATIONS,
+  withResponseMeta,
 } from "../utils/responses.js";
 import {
   extensionsSchema,
@@ -59,6 +65,7 @@ export function registerCodeInventoryTool(server: McpServer): void {
       title: "Code Inventory",
       description: "Lists classes, functions, methods, and exports. Use extensions to filter.",
       inputSchema,
+      outputSchema: withResponseMeta(codeInventoryResultSchema),
       annotations: READ_ONLY_ANNOTATIONS,
     },
     async (args) => {
