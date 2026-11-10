@@ -42,9 +42,17 @@ include all tracked Markdown. Documentation-only changes need no source tests or
 
 ## 3. Review What Automation Misses
 
-Search all changed source/test files in one command for unjustified `eslint-disable`,
-`@ts-ignore`, and `console.log`. Inspect the diff for commented-out dead code.
+Search all changed source/test files in one command for `eslint-disable`, `@ts-ignore`,
+`.skip`, `.todo`, `skipIf`, `retry`, and `console.log`. Any suppression, skip, or retry
+added by the change is **must fix**. Inspect the diff for commented-out dead code.
 Verify behavior changes have appropriate tests and tool changes update `TOOLS.md` and `docs/`.
+
+Check the diff against the rules in [AGENTS.md](../../../AGENTS.md):
+
+- Changed tests can fail, do not restate the implementation's logic, and use recorded fixtures instead of hand-written fake responses.
+- New code does not duplicate existing code that could be reused or extracted.
+- No lint, type, coverage, hook, or CI configuration was weakened.
+- No file outside the task's needs was deleted or renamed. List every deletion in the report.
 
 Classify every Scopewalker finding using the shared dispositions. Confirmed violations are
 **must fix**, including pre-existing violations inside the selected scope.

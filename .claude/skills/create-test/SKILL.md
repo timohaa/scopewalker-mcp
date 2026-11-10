@@ -19,8 +19,10 @@ Tests live **alongside** the source file:
 | `src/utils/<name>.ts`        | `src/utils/<name>.test.ts`        |
 | `src/tools/<name>Helpers.ts` | `src/tools/<name>Helpers.test.ts` |
 
-Variants (e.g., language-specific cases for a single tool) use a dotted
-suffix: `documentationCoverage.languages.test.ts`.
+Name each test module for the behaviour it pins. When one module's tests
+cover several behaviours, split them into files with a dotted behaviour
+suffix: `documentationCoverage.languages.test.ts`, `tokei.errors.test.ts`.
+`describe` and `it` titles state the behaviour, not the function name.
 
 Framework: **vitest** (`describe`, `it`, `expect`, `vi`).
 
@@ -83,7 +85,7 @@ afterAll(async () => {
 describe("myTool", () => {
   it("returns expected result for a valid path", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<MyToolResult>(response);
+    const result = parseContent(response) as MyToolResult;
 
     expect(result.files).toHaveLength(1);
   });
@@ -117,8 +119,21 @@ describe("myHelper", () => {
 
 - ESM imports: **always** include the `.js` extension (the project is
   `"type": "module"`)
-- Use `vi.mock()` to stub external dependencies (`../lib/tokei.js`,
-  filesystem boundaries)
+- Search `src/testUtils/` and neighbouring tests for an existing helper
+  before writing one; extract shared setup instead of copying it
+- Run the real `tokei` binary and real parsers; never mock a success
+  payload. To inspect call arguments, wrap the real function in a spy
+  (`vi.fn(actual.analyze)` inside `vi.mock` with `importOriginal`)
+- Mock only to inject a fault the real tool cannot produce on demand (spawn
+  error, timeout, oversized output). Prefer a real failure where one exists,
+  such as `vi.stubEnv("PATH", "")` for a missing binary
+- Tests read only files in the repo or files they create in their temp
+  directory. No network or live services
+- Every assertion must be able to fail. State expected values as literals;
+  do not recompute them with the implementation's logic
+- No `.skip`, `.todo`, `skipIf`, `retry`, or suppression comments. A missing
+  binary, grammar, or fixture fails the test
+- A test that passes only sometimes is a top-severity bug. Fix the cause
 - Use a unique temp directory per test file (`tmpdir() + Date.now()`,
   created in `beforeAll`) and resolve it with `realpath` to avoid macOS
   `/private/var` vs `/var` symlink issues

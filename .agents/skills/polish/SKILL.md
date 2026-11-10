@@ -5,7 +5,7 @@ description: "Run the quality fixer pipeline and require verified resolution of 
 
 # Polish
 
-Read the repository [Codex workflow adapters](../../../AGENTS.md#codex-workflows),
+Read the repository [Codex workflow adapters](../../../docs/codex-workflows.md),
 then read and follow the shared [polish workflow](../../../.claude/skills/polish/SKILL.md).
 Apply the adapters to Claude-specific instructions. Resolve workflow paths from
 the repository root, including when invoked from a subdirectory.

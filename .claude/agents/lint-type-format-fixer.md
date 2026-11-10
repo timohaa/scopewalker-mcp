@@ -55,7 +55,8 @@ the version fields it names rather than touching source.
 ## Key Guidelines
 
 - **Preserve functionality**: never change code behavior to fix a lint error
-- **No suppression comments** (`eslint-disable`, `@ts-ignore`) unless unavoidable; explain why in a comment if used
+- **No suppression comments** (`eslint-disable`, `@ts-ignore`). Fix the cause; if you cannot, leave the error and flag it for human review
+- Do not relax ESLint, TypeScript, or Prettier configuration to clear an error
 - **Batch similar fixes**: apply the same fix pattern consistently across all occurrences
 
 ## Edge Cases
@@ -70,5 +71,5 @@ End with a report covering:
 
 1. Initial error/warning counts by category (formatting, type errors, lint errors)
 2. Files modified and the fixes made
-3. Final verification results (should show all checks passing)
+3. The actual final verification results, including any remaining failures
 4. Any issues that required a judgment call or human review

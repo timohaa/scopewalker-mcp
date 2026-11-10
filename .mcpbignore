@@ -13,7 +13,6 @@ eslint.config.js
 vitest.config.ts
 tsconfig.json
 AGENTS.md
-CLAUDE.md
 GEMINI.md
 CONTRIBUTING.md
 TOOLS.md

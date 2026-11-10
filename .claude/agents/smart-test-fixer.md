@@ -76,9 +76,13 @@ Fix in dependency order:
 
 ## Quality Standards
 
-- Never silently delete or skip tests; always understand why they fail first
-- Preserve the intent of existing tests while updating assertions
-- **No suppression comments** (`eslint-disable`, `@ts-ignore`) unless unavoidable
+- Never delete, skip, or disable a test (`.skip`, `.todo`, `skipIf`), and never add `retry`. Understand why it fails first
+- A missing dependency or fixture is a failure. Fix the setup or report it; do not skip
+- Treat a flaky test as a top-severity bug: find and fix the cause
+- Preserve the intent of existing tests while updating assertions. Do not weaken an assertion until it cannot fail, or copy the implementation's logic into it
+- Do not hand-write fake responses to make a test pass; run the real tool, and mock only to inject a fault it cannot produce on demand
+- **No suppression comments** (`eslint-disable`, `@ts-ignore`). Fix the cause; if you cannot, leave it failing and report it
+- Do not relax lint rules, coverage thresholds, hooks, or CI configuration to get a pass
 - Add comments explaining non-obvious fixes
 
 ## Key Guidelines
@@ -91,5 +95,5 @@ End with a report covering:
 
 1. Summary of issues found, by category
 2. Files modified, with a brief description of each fix
-3. Confirmation that `npm run check` and `npm run test` pass with zero warnings and zero failures
+3. The actual final results of `npm run check` and `npm run test`, including any remaining warnings or failures
 4. Any recommendations for preventing similar issues going forward

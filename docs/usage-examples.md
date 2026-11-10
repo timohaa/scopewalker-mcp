@@ -150,7 +150,7 @@ This is a convenience tip; Scopewalker does not require a particular instruction
 
 | Coding tool     | How to reuse a shared `AGENTS.md`                                                                                                                                                 |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Claude Code     | Put `@AGENTS.md` in a root `CLAUDE.md`. Relative imports resolve from the importing file. [Claude documentation](https://code.claude.com/docs/en/memory#import-additional-files). |
+| Claude Code     | Reads a root `AGENTS.md` directly when no `CLAUDE.md` exists (v2.1.277 or later). [Claude documentation](https://code.claude.com/docs/en/memory#agents-md).                       |
 | Antigravity CLI | Reads a workspace-root `AGENTS.md` directly on startup. [Antigravity documentation](https://antigravity.google/docs/cli/best-practices/#write-a-codebase-rule-file).              |
 | Gemini CLI      | Put `@./AGENTS.md` in a root `GEMINI.md`, or configure `context.fileName` to load `AGENTS.md` directly. [Gemini documentation](https://geminicli.com/docs/cli/gemini-md/).        |
 | Codex           | Reads `AGENTS.md` directly through its instruction hierarchy; no pointer file is needed. [OpenAI documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md).    |
@@ -167,7 +167,7 @@ Keep their descriptions and references synchronized. These entrypoint locations 
 OpenAI's [skills](https://learn.chatgpt.com/docs/build-skills) and
 [subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents) documentation.
 
-The repository's [Codex adapters](../AGENTS.md#codex-workflows) handle client-specific instructions.
+The repository's [Codex adapters](./codex-workflows.md) handle client-specific instructions.
 Its polish entrypoints are explicit-only.
 
 Maintain one enforcement reference instead of repeating tool catalogs in every skill.

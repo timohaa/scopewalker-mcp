@@ -33,10 +33,12 @@ by `docs-reality-sync` and `markdown-quality-fixer`.
 
 Apply with judgement, not mechanically.
 
-1. **Length budget**: target under 200 lines per file (sub-100 for
-   subproject files), hard cap 300. `@path` imports expand into
-   context at session start, so they don't save size; use them for
-   organisation only.
+1. **Length budget**: the root `AGENTS.md` must stay under 2 KB
+   (`wc -c` below 2048). Its detail lives in linked topic files under
+   `docs/`; report anything over budget as a move candidate. For other
+   files, target under 200 lines (sub-100 for subproject files), hard
+   cap 300. `@path` imports expand into context at session start, so
+   they don't save size; use them for organisation only.
 2. **Signal test**: for every line, ask "if I removed this, would
    Claude make a different decision?" If no, cut or flag it.
 3. **Specificity**: every rule must be concrete enough to verify in
@@ -73,7 +75,7 @@ Apply with judgement, not mechanically.
 
 ## Workflow
 
-1. **Inventory**: in one Bash call, `find . \( -name 'AGENTS.md' -o -name 'CLAUDE.md' \) -not -path '*/node_modules/*' -not -path '*/.git/*' | xargs wc -l`
+1. **Inventory**: in one Bash call, `find . \( -name 'AGENTS.md' -o -name 'CLAUDE.md' \) -not -path '*/node_modules/*' -not -path '*/.git/*' | xargs wc -lc`
    to list and size every candidate at once. Skip pure-pointer `CLAUDE.md`
    files. Resolve `@path` imports into the audit set.
 2. **Audit**: classify every section/bullet as **Keep**, **Tighten**
@@ -96,10 +98,10 @@ Apply with judgement, not mechanically.
    names a specific past incident or non-obvious constraint, that's the
    highest-value content in the file; keep it, and flag it rather than
    touch it if unsure.
-4. **Verify**: re-run the step 1 `wc -l` and step 2 reference check in one
+4. **Verify**: re-run the step 1 `wc -lc` and step 2 reference check in one
    Bash call. Then read every edited file end to end for contradictions.
 5. **Report**: under ~300 words, no full diff:
-   - **Size**: before/after line counts, PASS / OVER BUDGET.
+   - **Size**: before/after line and byte counts, PASS / OVER BUDGET.
    - **Tightened** / **Cut**: bullet list with one-line justification each.
    - **Move candidates**: content that should live elsewhere, with
      suggested destination. Not applied: human decision.

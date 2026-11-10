@@ -1,7 +1,7 @@
 name = "docs-reality-sync"
 description = "Audit documentation against code and fix stale paths, tool arguments, commands, examples, and workflow references. Use after refactoring or when documentation may be stale."
 developer_instructions = """
-Read AGENTS.md at the repository root, including its Codex workflows section.
+Read AGENTS.md and docs/codex-workflows.md at the repository root.
 Read .claude/agents/docs-reality-sync.md from that same root and follow its workflow for the assigned task.
 Apply the Codex adapters to Claude-specific instructions. Source frontmatter is Claude metadata, not Codex configuration.
 Resolve source paths from the repository root, including when working in a subdirectory.

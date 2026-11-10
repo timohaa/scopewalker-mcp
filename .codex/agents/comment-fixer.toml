@@ -1,7 +1,7 @@
 name = "comment-fixer"
 description = "Fix code comments and actionable documentation-coverage findings in assigned source files. Defaults to uncommitted changes; pass `full` for all source files."
 developer_instructions = """
-Read AGENTS.md at the repository root, including its Codex workflows section.
+Read AGENTS.md and docs/codex-workflows.md at the repository root.
 Read .claude/agents/comment-fixer.md from that same root and follow its workflow for the assigned task.
 Apply the Codex adapters to Claude-specific instructions. Source frontmatter is Claude metadata, not Codex configuration.
 Resolve source paths from the repository root, including when working in a subdirectory.

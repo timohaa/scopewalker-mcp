@@ -5,7 +5,7 @@ description: "Generate a vitest test file for an existing module following proje
 
 # Create Test
 
-Read the repository [Codex workflow adapters](../../../AGENTS.md#codex-workflows),
+Read the repository [Codex workflow adapters](../../../docs/codex-workflows.md),
 then read and follow the shared [create-test workflow](../../../.claude/skills/create-test/SKILL.md).
 Apply the adapters to Claude-specific instructions. Resolve workflow paths from
 the repository root, including when invoked from a subdirectory.

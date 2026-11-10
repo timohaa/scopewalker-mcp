@@ -21,6 +21,7 @@ Infer these from the request and repository; ask only for missing requirements:
 ### 2. Reference existing patterns
 
 Read `docs/patterns.md` for tool registration, error handling, and testing patterns. Also read an existing tool in `src/tools/` as a concrete example.
+Search `src/lib/`, `src/utils/`, and `src/tools/*Helpers.ts` for code the new tool can reuse. Extract shared logic instead of copying it.
 
 ### 3. Create files
 

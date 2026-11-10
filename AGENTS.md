@@ -1,78 +1,39 @@
 # AGENTS.md
 
-## What
+MCP server providing codebase analysis tools for AI assistants. `npm run check` runs version sync, lint, and typecheck; `npm run test` runs the tests.
 
-MCP server providing codebase analysis tools for AI assistants. It is a thin orchestration layer over external parsing, file discovery, and line counting via `tokei`.
+## Tests
 
-## How
+- A test must be able to fail: never copy the implementation's logic into the test or write assertions that are always true.
+- Name each test module for the behaviour it pins.
+- Never skip silently. A missing dependency or fixture is a failure, not a skip.
+- Tests run only on recorded data in the repo, never against live systems.
+- Don't hand-write fake responses. Record the real response as a fixture and test against it.
+- A flaky test is a top-severity bug: fix the cause, don't retry or disable.
 
-```bash
-npm run build          # Build
-npm run check          # Version sync + lint + typecheck (run before committing)
-npm run test           # Run tests
-npm run test:coverage  # Tests with coverage
-```
+## Code
 
-Use the project's own MCP tools to understand and validate code.
-For source/test changes, enforce [docs/code-quality.md](./docs/code-quality.md) before completion or committing.
-Fix actionable findings in scope and rerun the detecting tools; unresolved findings or incomplete scans cannot pass.
+- Search for existing code before writing new; reuse or extract, never copy-paste.
+- Never silence a linter, type checker or test (`noqa`, `type: ignore`, `eslint-disable`, `@ts-ignore`, `skip`). Fix the cause, or stop and ask.
+- Don't weaken or bypass a check, hook or CI gate to get a change through.
 
-If LSP tools are available in your session, prefer them (`workspaceSymbol`, `findReferences`, `goToDefinition`, `hover`) over Grep/Read for code navigation; otherwise use Grep for text/pattern searches.
+## Scope
 
-## Behavior
+- Write only inside your own working clone.
+- Don't delete or rename files you didn't create in this task unless the task says so. List any deletions in the PR description.
+- Keep the diff to what the task needs.
 
-- For ambiguous requests, sketch a short plan and state assumptions and tradeoffs before editing.
-- Write the minimum code that solves the problem. Avoid speculative abstractions, drive-by renames, and unrelated cleanup.
-- Define a success criterion before starting and loop until it passes. Verify tool output with the tool itself or its tests; `npm run check` alone is insufficient.
-- Pass every target file to one command (`npx vitest run a.test.ts b.test.ts`, `npx markdownlint-cli f1 f2`, or one `grep -nE` across all files).
-- **Never create `_enhanced`, `_v2`, or `_new` duplicate file variants**; edit the original file.
+## Before finishing
 
-## Reference Docs
+- Run the tests and linters, and report the actual results, including failures.
+- Source/test changes must pass [docs/code-quality.md](./docs/code-quality.md).
 
-- [TOOLS.md](./TOOLS.md): tool reference
-- [docs/](./docs/): tool documentation and enforcement requirements; check [docs/known-bugs.md](./docs/known-bugs.md) before chasing unexpected output
-- `.claude/skills/create-tool`, `.claude/skills/create-test`: workflows and code examples for adding tools/tests
-- `/polish`, `/review-changes`: quality-pipeline slash commands (see `.claude/skills/` for the rest)
-- `.claude/agents/`: specialized agents for standards, testing, docs, and code-quality enforcement (see directory for the full list)
+## This file
 
-## Codex Workflows
+- Keep it under 2 KB. Put detail in topic files and link to them here.
 
-Codex entrypoints live in `.agents/skills/` and `.codex/agents/`.
-They load the shared workflows in `.claude/`; edit those sources to update behavior.
-Use `$create-tool`, `$create-test <file-path>`, `$review-changes [full]`, or `$polish [full]`.
-Polish remains explicit-only. Ask for a specialized agent by its filename stem.
-If new entrypoints do not appear, restart Codex in this repository.
+## Topic files
 
-Apply these adapters when following a shared Claude workflow in Codex:
-
-- Treat Claude frontmatter (`model`, `tools`, `argument-hint`, `disable-model-invocation`) as source metadata. Codex entrypoints control invocation policy; agents inherit the session model and permissions.
-- Use available shell, file-editing, and search tools for `Bash`, `Read`, `Write`, `Edit`, `Glob`, and `Grep`. Map Scopewalker tools by operation name, regardless of MCP server prefix. Use available documentation or web tools when Context7 is unavailable.
-- Translate `/skill` invocations to `$skill`, preserving arguments such as `full`.
-- Translate `Agent` and `subagent_type` into the available Codex delegation API. Select the matching custom agent when supported. Otherwise, pass its `.claude/agents/<name>.md` path and these adapters to a general subagent.
-- Preserve pipeline order and waits. Run polish steps 4a/4b concurrently when supported. If delegation is unavailable, read each agent definition and run the steps sequentially; report that fallback.
-- Resolve workflow commands and paths from this repository root. Read applicable nested `AGENTS.md` instructions before editing subprojects.
-- Ask only for requirements missing from the task and repository context. Shared workflows do not override user instructions or authorize unrelated work.
-- Include `.agents/skills/` and `.codex/agents/` in documentation audits. Verify entrypoint references as well as shared sources.
-- When auditing instructions, distinguish Claude's `@path` imports from Codex's `AGENTS.md` discovery. Verify Codex behavior against official OpenAI documentation; preserve both clients' working entrypoints.
-
-Discovery and configuration follow the official [skills](https://learn.chatgpt.com/docs/build-skills) and [subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents) documentation.
-
-## Writing Style
-
-Applies to chat responses, commit messages, PR descriptions, and docs. Ban the rhetorical move, not just the phrase — restating it in new words is still banned.
-
-- No antithesis filler ("it's not X, it's Y", "isn't just X, it's Y") — implies a distinction without stating one.
-- No preamble that announces insight instead of giving it ("here's the thing", "the real question is", "worth noting", "to be clear", "let me be direct").
-- No closing aphorisms ("that's the whole game", "that's the tell").
-- No sentence fragments used for emphasis, no sentence that exists only for rhythm.
-- No vague jargon standing in for a plain claim ("load-bearing", "surface area", "first-class", "at scale", "does the heavy lifting").
-- Do not use "gate" or "gating" as generic verbs or metaphors. Reserve them for actual gates, such as physical, noise, or logic gates.
-- No intensifiers propping up a claim that should stand on its own ("genuinely", "truly", "actually", "honestly").
-- No rule-of-three or "two things:" list where an item is filler.
-- Lead with the action, not the topic: "I'd skip the architecture doc," not "The architecture doc is the bit I'd skip."
-- One idea per sentence; prefer sentences under ~20 words.
-
-Examples:
-
-- "Two honest caveats, because they are the actual insight." -> "Note that"
-- "Watch what dissolves. Each piece of the current machinery becomes a line of ordinary code." -> "The current machinery simplifies to"
+- [docs/agent-workflow.md](./docs/agent-workflow.md): commands, method, navigation, skills and agents
+- [docs/writing-style.md](./docs/writing-style.md): required for chat, commits, PRs, and docs
+- [docs/codex-workflows.md](./docs/codex-workflows.md): Codex entrypoints and adapters
