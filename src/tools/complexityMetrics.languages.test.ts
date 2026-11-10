@@ -37,7 +37,7 @@ func main() {
     );
 
     const response = await handler({ path: join(testDir, "sample.go") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.dependency_count).toBe(3);
   });
@@ -61,7 +61,7 @@ func classify(x int) string {
     );
 
     const response = await handler({ path: join(testDir, "expr_switch.go") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Go names the node expression_switch_statement, not switch_statement, so a
     // single-switch function used to score zero
@@ -90,7 +90,7 @@ func describe(x interface{}) string {
     );
 
     const response = await handler({ path: join(testDir, "type_switch.go") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Go's type switch is a separate node type again (type_switch_statement), so
     // it too used to score zero
@@ -110,7 +110,7 @@ describe("parameter counts across grammars", () => {
     );
 
     const response = await handler({ path: join(testDir, "params.rs") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.max_parameters).toBe(3);
   });
@@ -124,7 +124,7 @@ end
     );
 
     const response = await handler({ path: join(testDir, "params.rb") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.max_parameters).toBe(4);
   });
@@ -137,7 +137,7 @@ end
     );
 
     const response = await handler({ path: join(testDir, "params.c") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.max_parameters).toBe(5);
   });
@@ -157,7 +157,7 @@ func (p *Point) Scale(f int) int { return f }
     );
 
     const response = await handler({ path: join(testDir, "params.go") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.max_parameters).toBe(4);
   });
@@ -177,7 +177,7 @@ end
     );
 
     const response = await handler({ path: join(testDir, "sample.rb") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.dependency_count).toBe(2);
   });
@@ -198,7 +198,7 @@ end
     );
 
     const response = await handler({ path: join(testDir, "elsif_chain.rb") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Ruby's elsif is its own node rather than a nested if, so the chain used to
     // score as a single branch
@@ -226,7 +226,7 @@ describe("Rust", () => {
     );
 
     const response = await handler({ path: join(testDir, "else_if_chain.rs") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Rust names the node if_expression, not if_statement, so the else-if
     // detection used to miss and report the chain as real nesting
@@ -257,7 +257,7 @@ describe("Rust", () => {
     );
 
     const response = await handler({ path: join(testDir, "true_nesting.rs") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.max_nesting_depth).toBe(5);
   });
@@ -278,7 +278,7 @@ describe("Rust", () => {
     );
 
     const response = await handler({ path: join(testDir, "match_closure.rs") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // match_expression and closure_expression were only in the nesting list, so
     // depth already counted both while the score used to come back zero

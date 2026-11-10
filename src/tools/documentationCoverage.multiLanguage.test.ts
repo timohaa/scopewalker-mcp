@@ -65,7 +65,7 @@ end
 
   it("recognizes Python docstrings, including non-string first statements", async () => {
     const response = await langHandler({ path: join(langTestDir, "module.py") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     const names = result.undocumented_items.map((i) => i.name);
     expect(names).toContain("subtract");
@@ -74,7 +74,7 @@ end
 
   it("recognizes Go line-comment doc conventions", async () => {
     const response = await langHandler({ path: join(langTestDir, "math.go") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     const names = result.undocumented_items.map((i) => i.name);
     expect(names).toContain("Subtract");
@@ -83,7 +83,7 @@ end
 
   it("recognizes Ruby line-comment doc conventions and top-level defs", async () => {
     const response = await langHandler({ path: join(langTestDir, "calculator.rb") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     const names = result.undocumented_items.map((i) => i.name);
     expect(names).toContain("subtract");
@@ -96,7 +96,7 @@ describe("documentationCoverage tool - Go methods", () => {
   const goHandler = getToolHandler(registerDocumentationCoverageTool, "get_documentation_coverage");
 
   beforeAll(async () => {
-    goTestDir = join(tmpdir(), `scopewalker-doc-go-test-${String(Date.now())}`);
+    goTestDir = join(tmpdir(), `scopewalker-doc-multi-go-test-${String(Date.now())}`);
     await mkdir(goTestDir, { recursive: true });
 
     await writeFile(
@@ -123,7 +123,7 @@ func (p *Point) Reset() {}
   // skips: `Name() string` was reported as "string" and `Reset()` was dropped.
   it("names Go methods by their field_identifier, not their return type", async () => {
     const response = await goHandler({ path: join(goTestDir, "point.go") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     // Go record types are not documentable classes, so only the two methods count.
     expect(result.summary.total_symbols).toBe(2);
@@ -184,7 +184,7 @@ Point makePoint(int x) { return Point(); }
   // dropped entirely rather than counted as undocumented.
   it("sees C++ function definitions, including qualified ones", async () => {
     const response = await cppHandler({ path: join(cppTestDir, "widget.cpp") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.summary.total_symbols).toBe(3);
 
@@ -196,7 +196,7 @@ Point makePoint(int x) { return Point(); }
 
   it("counts C++ classes and types their members as methods", async () => {
     const response = await cppHandler({ path: join(cppTestDir, "shapes.cpp") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     // Widget, draw, declOnly, makePoint — the data member is not documentable
     expect(result.summary.total_symbols).toBe(4);
@@ -210,7 +210,7 @@ Point makePoint(int x) { return Point(); }
 
   it("names a C++ function by its declarator, not its return type", async () => {
     const response = await cppHandler({ path: join(cppTestDir, "shapes.cpp") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     // `Point makePoint(int)` puts a type_identifier ahead of the declarator
     const names = result.undocumented_items.map((i) => i.name);
@@ -257,7 +257,7 @@ end
   // tool once typed every def a method while get_code_inventory said function.
   it("types a top-level def as a function and class members as methods", async () => {
     const response = await rubyHandler({ path: join(rubyTestDir, "widget.rb") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     const byName = new Map(result.undocumented_items.map((i) => [i.name, i.type]));
     expect(byName.get("top_level")).toBe("function");

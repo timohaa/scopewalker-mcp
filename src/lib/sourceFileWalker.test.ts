@@ -133,10 +133,11 @@ describe("walkSourceFiles", () => {
   });
 
   it("stops reading once the cap is reached", async () => {
-    // "missing.ts" sits past the cap: reaching it at all would mean the generator
+    // "b.ts" sits past the cap: reading it at all would mean the generator
     // kept walking after it had enough, which a lazy stop must not do.
-    const seen = await walkedPaths(["a.ts", "missing.ts"], 1);
+    const seen = await walkedPaths(["a.ts", "b.ts"], 1);
     expect(seen).toEqual(["a.ts"]);
+    expect(vi.mocked(readFile)).toHaveBeenCalledTimes(1);
   });
 
   it("treats a non-positive cap as no cap", async () => {

@@ -56,7 +56,7 @@ afterAll(async () => {
 /** Items the default inventory reports for the fixture. */
 async function defaultItems(): Promise<CodeInventoryResult["inventory"][number]["items"]> {
   const response = await handler({ path: join(testDir, "widget.rs") });
-  const result = parseContent<CodeInventoryResult>(response);
+  const result = parseContent(response) as CodeInventoryResult;
   return result.inventory[0]?.items ?? [];
 }
 
@@ -80,7 +80,7 @@ describe("codeInventory - Rust trait members", () => {
 
   it("counts interface methods without counting the trait as a class", async () => {
     const response = await handler({ path: join(testDir, "widget.rs") });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     expect(result.summary.total_methods).toBe(2);
     expect(result.summary.total_classes).toBe(1);

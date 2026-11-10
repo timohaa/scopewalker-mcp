@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createServer, SERVER_NAME } from "./server.js";
+import { createServer } from "./server.js";
 
 /** Every tool the server is expected to advertise, sorted. */
 const EXPECTED_TOOLS = [
@@ -42,6 +42,7 @@ describe("createServer", () => {
   });
 
   it("strips $schema from every tool inputSchema", () => {
+    expect(tools).toHaveLength(9);
     for (const tool of tools) {
       expect(tool.inputSchema).not.toHaveProperty("$schema");
       expect(tool.inputSchema.type).toBe("object");
@@ -63,6 +64,7 @@ describe("createServer", () => {
   it("advertises a title and read-only annotations for every tool", () => {
     // The override rebuilds each tool definition, so fields it forgets to copy
     // never reach clients.
+    expect(tools).toHaveLength(9);
     for (const tool of tools) {
       expect(tool.title).toBeTruthy();
       expect(tool.annotations).toEqual({
@@ -81,7 +83,7 @@ describe("createServer", () => {
       readFileSync(new URL("../package.json", import.meta.url), "utf8")
     ) as { version: string };
 
-    expect(client.getServerVersion()?.name).toBe(SERVER_NAME);
+    expect(client.getServerVersion()?.name).toBe("scopewalker-mcp");
     expect(client.getServerVersion()?.version).toBe(version);
   });
 });

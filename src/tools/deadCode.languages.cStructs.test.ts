@@ -11,7 +11,7 @@ const handler = getToolHandler(registerDeadCodeTool, "find_dead_code");
 /** Runs find_dead_code on a path and returns dead code plus unreferenced exports. */
 async function findingsOf(path: string): Promise<DeadCodeItem[]> {
   const response = await handler({ path, limit: 100 });
-  const result = parseContent<DeadCodeResult>(response);
+  const result = parseContent(response) as DeadCodeResult;
   return [...result.dead_code, ...result.unreferenced_exports];
 }
 
@@ -93,7 +93,7 @@ struct Foo *make_public(void) {
 
   it("reports an unused pointer-returning function in the bucket its scope names", async () => {
     const response = await handler({ path: join(dir, "factory.c"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.dead_code).toContainEqual(
       expect.objectContaining({ name: "make_hidden", type: "function" })

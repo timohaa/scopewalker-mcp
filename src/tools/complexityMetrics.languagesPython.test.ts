@@ -32,7 +32,7 @@ def main():
     );
 
     const response = await handler({ path: join(testDir, "sample.py") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.dependency_count).toBe(3);
   });
@@ -52,7 +52,7 @@ def main():
     );
 
     const response = await handler({ path: join(testDir, "elif_chain.py") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Python attaches elif_clause to the if_statement instead of nesting a
     // second if, so the chain used to score as a single branch
@@ -79,7 +79,7 @@ def regular_function(a, b, c, d, e, f, g):
     );
 
     const response = await handler({ path: join(testDir, "class_methods.py") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const hotspots = result.files[0]?.hotspots ?? [];
     const paramHotspots = hotspots.filter((h) => h.issue === "parameters");
@@ -103,7 +103,7 @@ def many_params(a, b, c, d, e, f):
     );
 
     const response = await handler({ path: join(testDir, "variadic.py") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const hotspots = result.files[0]?.hotspots ?? [];
     const paramHotspots = hotspots.filter((h) => h.issue === "parameters");
@@ -126,7 +126,7 @@ def g(*, self):
     );
 
     const response = await handler({ path: join(testDir, "keyword_only.py") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // A param named self after a splat/separator is not a receiver and must count
     expect(result.files[0]?.metrics.max_parameters).toBe(1);

@@ -30,7 +30,7 @@ async function expectParity(
     Object.entries(sources).map(([file, code]) => writeFile(join(dir, file), code))
   );
 
-  const result = parseContent<ComplexityMetricsResult>(await handler({ path: dir }));
+  const result = parseContent(await handler({ path: dir })) as ComplexityMetricsResult;
   expect(result.files).toHaveLength(Object.keys(sources).length);
 
   for (const file of result.files) {

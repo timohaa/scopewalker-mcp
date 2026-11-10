@@ -91,7 +91,7 @@ afterAll(async () => {
 describe("core functionality", () => {
   it("detects prop drilling across TSX components", async () => {
     const response = await handler({ path: testDir, min_occurrences: 3 });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     expect(result.is_directory).toBe(true);
     expect(result.summary.files_analyzed).toBeGreaterThan(0);
@@ -104,7 +104,7 @@ describe("core functionality", () => {
 
   it("detects parameter threading in plain TS functions", async () => {
     const response = await handler({ path: testDir, min_occurrences: 3 });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     const token = result.threaded_parameters.find((p) => p.name === "token");
     expect(token).toBeDefined();
@@ -116,7 +116,7 @@ describe("core functionality", () => {
 describe("filtering", () => {
   it("applies min_occurrences threshold", async () => {
     const response = await handler({ path: testDir, min_occurrences: 5 });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     // Nothing should have 5+ occurrences
     expect(result.threaded_parameters.length).toBe(0);
@@ -130,7 +130,7 @@ describe("filtering", () => {
     await writeFile(join(testDir, "common3.ts"), `function e(id: string) { return f(id); }`);
 
     const withCommon = await handler({ path: testDir, min_occurrences: 3 });
-    const resultWith = parseContent<PropDrillingResult>(withCommon);
+    const resultWith = parseContent(withCommon) as PropDrillingResult;
     const idWith = resultWith.threaded_parameters.find((p) => p.name === "id");
 
     const withoutCommon = await handler({
@@ -138,23 +138,22 @@ describe("filtering", () => {
       min_occurrences: 3,
       exclude_common: true,
     });
-    const resultWithout = parseContent<PropDrillingResult>(withoutCommon);
+    const resultWithout = parseContent(withoutCommon) as PropDrillingResult;
     const idWithout = resultWithout.threaded_parameters.find((p) => p.name === "id");
 
     // With common names, "id" should appear; without, it should be filtered
-    if (idWith !== undefined) {
-      expect(idWithout).toBeUndefined();
-    }
+    expect(idWith?.occurrences).toBe(3);
+    expect(idWithout).toBeUndefined();
   });
 
   it("applies limit parameter", async () => {
     const unlimited = await handler({ path: testDir, min_occurrences: 3 });
-    const totalFound =
-      parseContent<PropDrillingResult>(unlimited).summary.threaded_parameters_found;
+    const totalFound = (parseContent(unlimited) as PropDrillingResult).summary
+      .threaded_parameters_found;
     expect(totalFound).toBeGreaterThan(1);
 
     const response = await handler({ path: testDir, min_occurrences: 3, limit: 1 });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     expect(result.threaded_parameters.length).toBeLessThanOrEqual(1);
     // Summary reflects the full result set, not the limited slice
@@ -169,7 +168,7 @@ describe("summary_only mode", () => {
       min_occurrences: 3,
       summary_only: true,
     });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     expect(result.threaded_parameters).toEqual([]);
     expect(result.summary.threaded_parameters_found).toBeGreaterThan(0);
@@ -180,7 +179,7 @@ describe("summary_only mode", () => {
 describe("path handling", () => {
   it("handles single file path", async () => {
     const response = await handler({ path: join(testDir, "utils.ts") });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     expect(result.is_directory).toBe(false);
     expect(result.summary.files_analyzed).toBe(1);
@@ -199,7 +198,7 @@ describe("edge cases", () => {
     await mkdir(emptyDir, { recursive: true });
 
     const response = await handler({ path: emptyDir });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     expect(result.summary.files_analyzed).toBe(0);
     expect(result.threaded_parameters).toEqual([]);
@@ -214,7 +213,7 @@ describe("edge cases", () => {
     await writeFile(join(mixedDir, "notes.txt"), `not source code`);
 
     const response = await handler({ path: mixedDir });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     // notes.txt has no supported language, so it must not count as analyzed
     expect(result.summary.files_analyzed).toBe(1);
@@ -238,7 +237,7 @@ describe("edge cases", () => {
     );
 
     const response = await handler({ path: destructuredDir, min_occurrences: 3 });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     const sessionId = result.threaded_parameters.find((p) => p.name === "sessionId");
     expect(sessionId).toBeDefined();
@@ -253,7 +252,7 @@ describe("edge cases", () => {
 describe("get_prop_drilling - request limits", () => {
   it("analyzes at most max_files files", async () => {
     const response = await handler({ path: testDir, max_files: 1 });
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
 
     expect(result.summary.files_analyzed).toBe(1);
   });
@@ -275,7 +274,7 @@ describe("get_prop_drilling - resilience", () => {
     const response = await handler({ path: boomDir });
     expect(response.isError).toBeFalsy();
 
-    const result = parseContent<PropDrillingResult>(response);
+    const result = parseContent(response) as PropDrillingResult;
     expect(result.summary.files_analyzed).toBe(1);
   });
 });

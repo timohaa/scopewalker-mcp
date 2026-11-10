@@ -15,7 +15,7 @@ async function visibilityOf(
   includePrivate = true
 ): Promise<Map<string, MethodVisibility>> {
   const response = await handler({ path, include_private: includePrivate });
-  const result = parseContent<CodeInventoryResult>(response);
+  const result = parseContent(response) as CodeInventoryResult;
   const target = result.inventory
     .flatMap((file) => file.items)
     .find((item) => item.name === className);
@@ -77,7 +77,7 @@ describe("codeInventory tool - Java visibility", () => {
 
   it("marks a public class as exported", async () => {
     const response = await handler({ path: join(dir, "Acct.java") });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     expect(result.inventory[0]?.items.find((i) => i.name === "Acct")?.exported).toBe(true);
     expect(result.summary.exported_symbols).toBe(1);
@@ -85,7 +85,7 @@ describe("codeInventory tool - Java visibility", () => {
 
   it("does not mark a package-private class as exported", async () => {
     const response = await handler({ path: join(dir, "Hidden.java"), include_private: true });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     expect(result.inventory[0]?.items.find((i) => i.name === "Hidden")?.exported).toBe(false);
   });

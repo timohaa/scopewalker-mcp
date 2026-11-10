@@ -50,7 +50,7 @@ const nested = ${"(".repeat(600)}target()${")".repeat(600)};
 
   it("scans a .d.ts file for references without taking candidates from it", async () => {
     const response = await handler({ path: join(dir, "dts"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.summary.files_scanned).toBe(2);
     expect(result.summary.files_skipped).toBe(0);
@@ -62,14 +62,14 @@ const nested = ${"(".repeat(600)}target()${")".repeat(600)};
 
   it("still counts a reference nested more than 500 AST levels deep", async () => {
     const response = await handler({ path: join(dir, "deepNesting.ts"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     const findings = [...result.dead_code, ...result.unreferenced_exports];
     expect(findings.some((item) => item.name === "target")).toBe(false);
   });
 
   it("marks the scan incomplete when a file exceeds the 1 MB size guard", async () => {
     const response = await handler({ path: join(dir, "oversized.ts"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.summary.scan_complete).toBe(false);
     expect(result.summary.files_scanned).toBe(0);

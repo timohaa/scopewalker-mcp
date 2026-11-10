@@ -79,7 +79,7 @@ async function inventoryByQualifiedName(
     limit: 100,
     include_private: includePrivate,
   });
-  const result = parseContent<CodeInventoryResult>(response);
+  const result = parseContent(response) as CodeInventoryResult;
 
   const index = new Map<string, InventoryItem>();
   for (const file of result.inventory) {
@@ -120,6 +120,7 @@ describe("codeInventory - Go methods across files", () => {
     const items = await inventoryByQualifiedName();
 
     expect(methodNames(items.get("a/Config"))).toContain("Reload");
+    expect(items.has("b/Config")).toBe(true);
     expect(methodNames(items.get("b/Config"))).toEqual([]);
   });
 
@@ -133,7 +134,7 @@ describe("codeInventory - Go methods across files", () => {
 
   it("counts cross-file methods in the summary", async () => {
     const response = await handler({ path: testDir, limit: 100 });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     // Scale, Value, Translate, Reload, Push — `hidden` is private and excluded.
     expect(result.summary.total_methods).toBe(5);
@@ -141,7 +142,7 @@ describe("codeInventory - Go methods across files", () => {
 
   it("excludes unexported methods unless include_private is set", async () => {
     const withoutPrivate = await inventoryByQualifiedName(false);
-    expect(methodNames(withoutPrivate.get("a/Config"))).not.toContain("hidden");
+    expect(methodNames(withoutPrivate.get("a/Config"))).toEqual(["Reload"]);
 
     const withPrivate = await inventoryByQualifiedName(true);
     expect(methodNames(withPrivate.get("a/Config"))).toContain("hidden");

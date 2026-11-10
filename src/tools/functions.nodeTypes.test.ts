@@ -22,7 +22,7 @@ afterAll(async () => {
 async function functionsIn(file: string, code: string): Promise<{ name: string; line: number }[]> {
   const path = join(testDir, file);
   await writeFile(path, code);
-  const result = parseContent<FunctionCountsResult>(await handler({ path, detail: "counts" }));
+  const result = parseContent(await handler({ path, detail: "counts" })) as FunctionCountsResult;
   return firstItem(result.files).functions;
 }
 

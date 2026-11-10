@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import { firstItem, getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { CodeInventoryResult, InventoryItem } from "../types/index.js";
 import { registerCodeInventoryTool } from "./codeInventory.js";
 
@@ -50,7 +50,7 @@ async function inventoryOf(file: string, includePrivate = false): Promise<CodeIn
     path: join(testDir, file),
     include_private: includePrivate,
   });
-  return parseContent<CodeInventoryResult>(response);
+  return parseContent(response) as CodeInventoryResult;
 }
 
 /** Finds one item of a single-file inventory by name. */
@@ -92,7 +92,7 @@ describe("codeInventory - Rust constants", () => {
 
   it("filters a constant without pub from the default view", async () => {
     const result = await inventoryOf("limits.rs");
-    expect(itemNamed(result, "HIDDEN")).toBeUndefined();
+    expect(firstItem(result.inventory).items.map((item) => item.name)).toEqual(["MAX", "NAME"]);
 
     const withPrivate = await inventoryOf("limits.rs", true);
     expect(itemNamed(withPrivate, "HIDDEN")?.exported).toBe(false);

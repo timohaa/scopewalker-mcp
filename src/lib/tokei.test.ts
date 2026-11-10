@@ -21,6 +21,11 @@ beforeAll(async () => {
   await writeFile(join(testDir, "widget.jsx"), "export const Widget = () => <span />;\n");
   await writeFile(join(testDir, "util.ts"), "export const x: number = 1;\n");
   await writeFile(join(testDir, "main.zig"), "pub fn main() void {}\n");
+  await writeFile(join(testDir, ".hidden.ts"), "export const hidden = 1;\n");
+  await mkdir(join(testDir, "dist"));
+  await mkdir(join(testDir, "vendor"));
+  await writeFile(join(testDir, "dist", "bundle.ts"), "export const bundle = 1;\n");
+  await writeFile(join(testDir, "vendor", "lib.ts"), "export const lib = 1;\n");
 });
 
 afterAll(async () => {
@@ -65,6 +70,36 @@ describe("analyze - extension filtering", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(reportNames(result.data)).toHaveLength(0);
+    }
+  });
+});
+
+describe("analyze - hidden files and exclude patterns", () => {
+  it("counts hidden files only when includeHidden is set", async () => {
+    const withHidden = await analyze(testDir, { extensions: ["ts"], includeHidden: true });
+    const withoutHidden = await analyze(testDir, { extensions: ["ts"] });
+    expect(withHidden.success).toBe(true);
+    expect(withoutHidden.success).toBe(true);
+    if (withHidden.success && withoutHidden.success) {
+      expect(reportNames(withHidden.data).some((name) => name.endsWith(".hidden.ts"))).toBe(true);
+      expect(reportNames(withoutHidden.data).some((name) => name.endsWith(".hidden.ts"))).toBe(
+        false
+      );
+    }
+  });
+
+  it("drops files under every exclude pattern", async () => {
+    const all = await analyze(testDir, { extensions: ["ts"] });
+    const filtered = await analyze(testDir, { extensions: ["ts"], exclude: ["dist", "vendor"] });
+    expect(all.success).toBe(true);
+    expect(filtered.success).toBe(true);
+    if (all.success && filtered.success) {
+      const relative = (data: TokeiOutput): string[] =>
+        reportNames(data)
+          .map((name) => name.slice(testDir.length + 1))
+          .sort();
+      expect(relative(all.data)).toEqual(["dist/bundle.ts", "util.ts", "vendor/lib.ts"]);
+      expect(relative(filtered.data)).toEqual(["util.ts"]);
     }
   });
 });

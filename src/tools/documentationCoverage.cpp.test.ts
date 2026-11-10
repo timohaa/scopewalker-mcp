@@ -19,7 +19,7 @@ async function scan(
   for (const [name, source] of Object.entries(files)) {
     await writeFile(join(dir, name), source);
   }
-  return parseContent<DocumentationCoverageResult>(await handler({ path: dir }));
+  return parseContent(await handler({ path: dir })) as DocumentationCoverageResult;
 }
 
 /** Names reported as undocumented for one C++ source file. */

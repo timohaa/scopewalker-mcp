@@ -28,7 +28,7 @@ describe("get_line_counts - HCL extension filters", () => {
     for (const extension of [".hcl", ".tf", ".tfvars"]) {
       const response = await handler({ path: testDir, extensions: [extension], sort_by: "name" });
       expect(response.isError).toBeUndefined();
-      const result = parseContent<LineCountsResult>(response);
+      const result = parseContent(response) as LineCountsResult;
 
       // Tokei filters by language, so each extension selects all three HCL files.
       expect(result.files.map((file) => file.path)).toEqual([

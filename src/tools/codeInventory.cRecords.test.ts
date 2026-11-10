@@ -94,7 +94,7 @@ afterAll(async () => {
 /** Runs the tool over one fixture file and returns its result. */
 async function inventoryOf(file: string): Promise<CodeInventoryResult> {
   const response = await handler({ path: join(testDir, file) });
-  return parseContent<CodeInventoryResult>(response);
+  return parseContent(response) as CodeInventoryResult;
 }
 
 describe("codeInventory - C record references", () => {

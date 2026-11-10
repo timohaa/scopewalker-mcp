@@ -14,7 +14,7 @@ async function findingsOf(
   extra: Record<string, unknown> = {}
 ): Promise<DeadCodeItem[]> {
   const response = await handler({ path, limit: 100, ...extra });
-  const result = parseContent<DeadCodeResult>(response);
+  const result = parseContent(response) as DeadCodeResult;
   return [...result.dead_code, ...result.unreferenced_exports];
 }
 
@@ -117,7 +117,7 @@ describe("find_dead_code - TS/JS core detection", () => {
 
   it("marks an exported unused function as unreferenced_exports rather than dead_code", async () => {
     const response = await handler({ path: basicDir(), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.dead_code.some((item) => item.name === "exportedUnused")).toBe(false);
     expect(result.unreferenced_exports.some((item) => item.name === "exportedUnused")).toBe(true);
@@ -169,7 +169,7 @@ describe("find_dead_code - TS/JS core detection", () => {
     const methodScopeDir = join(rootDir, "methodscope");
 
     const dirResponse = await handler({ path: methodScopeDir, limit: 100 });
-    const dirResult = parseContent<DeadCodeResult>(dirResponse);
+    const dirResult = parseContent(dirResponse) as DeadCodeResult;
     expect(dirResult.dead_code).toContainEqual(
       expect.objectContaining({ name: "secret", type: "method" })
     );
@@ -178,7 +178,7 @@ describe("find_dead_code - TS/JS core detection", () => {
       path: join(methodScopeDir, "acct.ts"),
       limit: 100,
     });
-    const fileResult = parseContent<DeadCodeResult>(fileResponse);
+    const fileResult = parseContent(fileResponse) as DeadCodeResult;
     expect(fileResult.dead_code.some((item) => item.name === "secret")).toBe(false);
     expect(fileResult.unreferenced_exports.some((item) => item.name === "secret")).toBe(true);
   });

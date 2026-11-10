@@ -11,7 +11,7 @@ const handler = getToolHandler(registerDeadCodeTool, "find_dead_code");
 /** Runs the tool over a single file and returns both lists concatenated. */
 async function findingsOf(path: string): Promise<DeadCodeItem[]> {
   const response = await handler({ path, limit: 100 });
-  const result = parseContent<DeadCodeResult>(response);
+  const result = parseContent(response) as DeadCodeResult;
   return [...result.dead_code, ...result.unreferenced_exports];
 }
 
@@ -167,13 +167,13 @@ describe("find_dead_code - false-alarm guards", () => {
 
   it("excludes a `declare const` from candidates entirely", async () => {
     const response = await handler({ path: join(dir, "declareConst.ts"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.summary.symbols_checked).toBe(0);
   });
 
   it("treats an unused top-level function in a script file as unreferenced_exports", async () => {
     const response = await handler({ path: join(dir, "scriptGlobal.js"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.dead_code.some((item) => item.name === "globalFn")).toBe(false);
     expect(result.unreferenced_exports.some((item) => item.name === "globalFn")).toBe(true);
   });
@@ -192,7 +192,7 @@ describe("find_dead_code - false-alarm guards", () => {
 
   it("yields no candidates from a C file using token pasting", async () => {
     const response = await handler({ path: join(dir, "tokenPasting.c"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.summary.symbols_checked).toBe(0);
   });
 
@@ -203,7 +203,7 @@ describe("find_dead_code - false-alarm guards", () => {
 
   it("excludes #[no_mangle] while still treating a #[derive(Debug)] struct as a candidate", async () => {
     const response = await handler({ path: join(dir, "rustAttrs.rs"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     const findings = [...result.dead_code, ...result.unreferenced_exports];
     expect(findings.some((item) => item.name === "ffi_fn")).toBe(false);
     expect(findings.some((item) => item.name === "Data")).toBe(true);

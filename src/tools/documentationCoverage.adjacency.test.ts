@@ -20,7 +20,7 @@ describe("documentationCoverage - comment adjacency (blank line gaps)", () => {
     const path = join(testDir, fileName);
     await writeFile(path, source);
     const response = await handler({ path });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
     return result.undocumented_items.map((item) => item.name);
   }
 
@@ -109,7 +109,7 @@ describe("documentationCoverage - comment adjacency (trailing/attribution)", () 
     const path = join(testDir, fileName);
     await writeFile(path, source);
     const response = await handler({ path });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
     return result.undocumented_items.map((item) => item.name);
   }
 
@@ -185,7 +185,7 @@ describe("documentationCoverage - comment blocks and decorators", () => {
     const path = join(testDir, fileName);
     await writeFile(path, source);
     const response = await handler({ path });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
     return result.undocumented_items.map((item) => item.name);
   }
 

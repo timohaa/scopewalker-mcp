@@ -11,7 +11,7 @@ const handler = getToolHandler(registerDocumentationCoverageTool, "get_documenta
 /** Runs the tool on one file and indexes the undocumented items by name. */
 async function itemsByName(path: string): Promise<Map<string, UndocumentedItem>> {
   const response = await handler({ path });
-  const result = parseContent<DocumentationCoverageResult>(response);
+  const result = parseContent(response) as DocumentationCoverageResult;
   return new Map(result.undocumented_items.map((item) => [item.name, item]));
 }
 

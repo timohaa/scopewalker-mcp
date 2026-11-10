@@ -79,7 +79,7 @@ afterAll(async () => {
 describe("documentationCoverage tool", () => {
   it("calculates documentation coverage and lists gaps", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.coverage.documented).toBe(3);
     expect(result.coverage.undocumented).toBe(4);
@@ -94,7 +94,7 @@ describe("documentationCoverage tool", () => {
 
   it("returns per-file coverage details", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     const documentedFile = result.by_file.find((file) => file.path.endsWith("documented.ts"));
     const undocumentedFile = result.by_file.find((file) => file.path.endsWith("undocumented.ts"));
@@ -107,7 +107,7 @@ describe("documentationCoverage tool", () => {
 
   it("returns summary only when requested", async () => {
     const response = await handler({ path: testDir, summary_only: true });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.coverage.documented).toBe(3);
     expect(result.coverage.undocumented).toBe(4);
@@ -116,7 +116,7 @@ describe("documentationCoverage tool", () => {
 
   it("respects limit parameter", async () => {
     const response = await handler({ path: testDir, limit: 2 });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.undocumented_items).toHaveLength(2);
     // Total undocumented is still 4, but only 2 items returned
@@ -127,13 +127,13 @@ describe("documentationCoverage tool", () => {
     const response = await handler({ path: "/nonexistent/path/12345" });
     expect(response.isError).toBe(true);
 
-    const errorPayload = parseContent<{ error: { code: string } }>(response);
+    const errorPayload = parseContent(response) as { error: { code: string } };
     expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
   });
 
   it("caps scanned files with max_files", async () => {
     const response = await handler({ path: testDir, max_files: 1 });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.by_file).toHaveLength(1);
   });
@@ -166,7 +166,7 @@ export function getIds(items) {
     );
 
     const response = await arrowHandler({ path: join(arrowDir, "callbacks.ts") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.coverage.documented).toBe(1);
     expect(result.coverage.undocumented).toBe(0);
@@ -185,7 +185,7 @@ const withBlock = (x) => {
     );
 
     const response = await arrowHandler({ path: join(arrowDir, "named.ts") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     const names = result.undocumented_items.map((i) => i.name);
     expect(names).toContain("identity");
@@ -226,7 +226,7 @@ export class DecoratedService {
 
   it("finds doc comments above decorators for classes and methods", async () => {
     const response = await decoratorHandler({ path: join(decoratorDir, "decorated.ts") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.coverage.documented).toBe(2);
     expect(result.coverage.undocumented).toBe(0);
@@ -260,7 +260,7 @@ export function log(x: string) {
 
   it("does not treat plain /* */ block comments as documentation", async () => {
     const response = await blockHandler({ path: join(blockDir, "eslint.ts") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.coverage.documented).toBe(0);
     expect(result.undocumented_items.map((i) => i.name)).toContain("log");
@@ -277,7 +277,7 @@ describe("documentationCoverage tool - resilience", () => {
     const response = await handler({ path: testDir });
     expect(response.isError).toBeFalsy();
 
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
     expect(result.by_file.some((file) => file.path.endsWith("boom.ts"))).toBe(false);
     expect(result.by_file.some((file) => file.path.endsWith("documented.ts"))).toBe(true);
   });

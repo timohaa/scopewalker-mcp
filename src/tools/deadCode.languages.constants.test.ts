@@ -13,7 +13,7 @@ let dir: string;
 /** Runs find_dead_code on a path and returns the parsed result. */
 async function scan(path: string): Promise<DeadCodeResult> {
   const response = await handler({ path, limit: 100 });
-  return parseContent<DeadCodeResult>(response);
+  return parseContent(response) as DeadCodeResult;
 }
 
 /** Runs find_dead_code on a path and returns dead code plus unreferenced exports. */

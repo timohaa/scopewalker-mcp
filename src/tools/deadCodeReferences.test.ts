@@ -44,6 +44,7 @@ describe("deadCodeReferences - countOccurrences", () => {
 
   it("does not count a name that appears only in a comment", async () => {
     const counts = await countIn("// mentionMe\nfunction other() {}\n", "typescript");
+    expect(counts.get("other")).toBe(1);
     expect(counts.get("mentionMe")).toBeUndefined();
   });
 
@@ -70,6 +71,7 @@ describe("deadCodeReferences - countOccurrences", () => {
       "package sample\n\n// mentionedOnly is unused\nfunc other() {}\n",
       "go"
     );
+    expect(counts.get("other")).toBe(1);
     expect(counts.get("mentionedOnly")).toBeUndefined();
   });
 });

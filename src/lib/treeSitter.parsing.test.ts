@@ -37,25 +37,19 @@ const dbl2 = (x) => x * 2;`;
     expect(functions.map((f) => f.name)).toContain("method2");
   });
 
-  it("extracts Python functions when grammar available", async () => {
+  it("extracts Python functions", async () => {
     const code = `def foo():
     pass
 
 def bar():
     pass`;
-    try {
-      const functions = await getFunctions(code, "python");
-      const names = functions.map((f) => f.name);
-      if (functions.length > 0) {
-        expect(names).toContain("foo");
-        expect(names).toContain("bar");
-      }
-    } catch {
-      // Grammar may not be available in all environments
-    }
+    const functions = await getFunctions(code, "python");
+    const names = functions.map((f) => f.name);
+    expect(names).toContain("foo");
+    expect(names).toContain("bar");
   });
 
-  it("extracts Go functions when grammar available", async () => {
+  it("extracts Go functions", async () => {
     const code = `package main
 
 func main() {}
@@ -63,16 +57,10 @@ func main() {}
 func helper(x int) int {
     return x
 }`;
-    try {
-      const functions = await getFunctions(code, "go");
-      const names = functions.map((f) => f.name);
-      if (functions.length > 0) {
-        expect(names).toContain("main");
-        expect(names).toContain("helper");
-      }
-    } catch {
-      // Grammar may not be available in all environments
-    }
+    const functions = await getFunctions(code, "go");
+    const names = functions.map((f) => f.name);
+    expect(names).toContain("main");
+    expect(names).toContain("helper");
   });
 
   it("includes line numbers", async () => {
@@ -108,7 +96,7 @@ describe("parseCode", () => {
 });
 
 describe("getFunctions - Ruby", () => {
-  it("extracts Ruby methods when grammar available", async () => {
+  it("extracts Ruby methods", async () => {
     const code = `def regular_method
   puts "hello"
 end
@@ -122,23 +110,17 @@ class MyClass
     "instance"
   end
 end`;
-    try {
-      const functions = await getFunctions(code, "ruby");
-      const names = functions.map((f) => f.name);
-      const hasClassMethod = functions.some((f) => f.name.includes("class_method"));
-      if (functions.length > 0) {
-        expect(names).toContain("regular_method");
-        // singleton_method for self.class_method
-        expect(hasClassMethod).toBe(true);
-      }
-    } catch {
-      // Grammar may not be available in all environments
-    }
+    const functions = await getFunctions(code, "ruby");
+    const names = functions.map((f) => f.name);
+    const hasClassMethod = functions.some((f) => f.name.includes("class_method"));
+    expect(names).toContain("regular_method");
+    // singleton_method for self.class_method
+    expect(hasClassMethod).toBe(true);
   });
 });
 
 describe("getFunctions - Rust", () => {
-  it("extracts Rust functions when grammar available", async () => {
+  it("extracts Rust functions", async () => {
     const code = `fn main() {
     println!("Hello");
 }
@@ -146,21 +128,15 @@ describe("getFunctions - Rust", () => {
 fn helper(x: i32) -> i32 {
     x + 1
 }`;
-    try {
-      const functions = await getFunctions(code, "rust");
-      const names = functions.map((f) => f.name);
-      if (functions.length > 0) {
-        expect(names).toContain("main");
-        expect(names).toContain("helper");
-      }
-    } catch {
-      // Grammar may not be available in all environments
-    }
+    const functions = await getFunctions(code, "rust");
+    const names = functions.map((f) => f.name);
+    expect(names).toContain("main");
+    expect(names).toContain("helper");
   });
 });
 
 describe("getFunctions - Java", () => {
-  it("extracts Java methods when grammar available", async () => {
+  it("extracts Java methods", async () => {
     const code = `public class MyClass {
     public void doSomething() {
         System.out.println("hello");
@@ -170,16 +146,10 @@ describe("getFunctions - Java", () => {
         // constructor
     }
 }`;
-    try {
-      const functions = await getFunctions(code, "java");
-      const names = functions.map((f) => f.name);
-      if (functions.length > 0) {
-        expect(names).toContain("doSomething");
-        expect(names).toContain("MyClass");
-      }
-    } catch {
-      // Grammar may not be available in all environments
-    }
+    const functions = await getFunctions(code, "java");
+    const names = functions.map((f) => f.name);
+    expect(names).toContain("doSomething");
+    expect(names).toContain("MyClass");
   });
 });
 

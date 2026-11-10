@@ -20,7 +20,7 @@ describe("glob - findFiles", () => {
       cwd: fixturesDir,
       extensions: [".ts"],
     });
-    expect(files.every((f) => f.endsWith(".ts"))).toBe(true);
+    expect(files).toEqual(["sample.ts"]);
   });
 
   it("filters by extension case-insensitively (M11)", async () => {
@@ -28,8 +28,7 @@ describe("glob - findFiles", () => {
       cwd: fixturesDir,
       extensions: [".TS"],
     });
-    expect(files.length).toBeGreaterThan(0);
-    expect(files.every((f) => f.toLowerCase().endsWith(".ts"))).toBe(true);
+    expect(files).toEqual(["sample.ts"]);
   });
 
   it("respects ignore patterns", async () => {
@@ -37,7 +36,7 @@ describe("glob - findFiles", () => {
       cwd: fixturesDir,
       ignorePatterns: ["*.py"],
     });
-    expect(files.some((f) => f.endsWith(".py"))).toBe(false);
+    expect(files).toEqual(["sample.go", "sample.ts"]);
   });
 
   it("normalizes simple directory names in ignore patterns", async () => {
@@ -57,8 +56,7 @@ describe("glob - findFiles", () => {
 
   it("returns sorted list", async () => {
     const files = await findFiles({ cwd: fixturesDir });
-    const sorted = [...files].sort();
-    expect(files).toEqual(sorted);
+    expect(files).toEqual(["sample.go", "sample.py", "sample.ts"]);
   });
 });
 
@@ -94,7 +92,7 @@ describe("glob - symlink confinement", () => {
   });
 
   it("does not hang or throw on a symlink cycle", async () => {
-    await expect(findFiles({ cwd: root })).resolves.toBeDefined();
+    await expect(findFiles({ cwd: root })).resolves.toEqual(["real.ts"]);
   });
 
   it("ignores extension entries that would escape the scanned root", async () => {
@@ -102,7 +100,7 @@ describe("glob - symlink confinement", () => {
       cwd: root,
       extensions: ["ts,../../outside/*"],
     });
-    expect(files.some((f) => f.includes("outside") || f.includes("secret"))).toBe(false);
+    expect(files).toEqual(["real.ts"]);
 
     const unfilteredBehavior = await findFiles({ cwd: root, extensions: ["}{"] });
     expect(unfilteredBehavior).toEqual(["real.ts"]);

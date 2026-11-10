@@ -25,24 +25,33 @@ async function metricsFor(
 ): Promise<ComplexityMetricsResult["files"][number]["metrics"]> {
   const path = join(testDir, file);
   await writeFile(path, code);
-  const result = parseContent<ComplexityMetricsResult>(await handler({ path }));
+  const result = parseContent(await handler({ path })) as ComplexityMetricsResult;
   return firstItem(result.files).metrics;
 }
 
-/** Asserts two spellings of the same construct score identically on all three metrics. */
+interface ExpectedScores {
+  cognitive: number;
+  nesting: number;
+  cyclomatic: number;
+}
+
+/** Asserts two spellings of the same construct both score exactly `expected` on all three metrics. */
 async function expectEquivalent(
-  label: string,
+  expected: ExpectedScores,
   a: { file: string; code: string },
   b: { file: string; code: string }
 ): Promise<void> {
-  const left = await metricsFor(a.file, a.code);
-  const right = await metricsFor(b.file, b.code);
-
-  expect(left.cognitive_complexity, `${label} cognitive`).toBe(right.cognitive_complexity);
-  expect(left.max_nesting_depth, `${label} nesting`).toBe(right.max_nesting_depth);
-  expect(left.max_cyclomatic_complexity, `${label} cyclomatic`).toBe(
-    right.max_cyclomatic_complexity
-  );
+  for (const { file, code } of [a, b]) {
+    const metrics = await metricsFor(file, code);
+    expect(
+      {
+        cognitive: metrics.cognitive_complexity,
+        nesting: metrics.max_nesting_depth,
+        cyclomatic: metrics.max_cyclomatic_complexity,
+      },
+      file
+    ).toEqual(expected);
+  }
 }
 
 // Each of these loop forms scored 0 for both cognitive complexity and nesting
@@ -52,7 +61,7 @@ async function expectEquivalent(
 describe("loop form parity", () => {
   it("scores a Java for-each like a classic for", async () => {
     await expectEquivalent(
-      "java for-each",
+      { cognitive: 1, nesting: 1, cyclomatic: 2 },
       {
         file: "Each.java",
         code: `class Each {\n  void f(int[] xs) {\n    for (int x : xs) {\n      g(x);\n    }\n  }\n}\n`,
@@ -66,7 +75,7 @@ describe("loop form parity", () => {
 
   it("scores a C++ range-for like a classic for", async () => {
     await expectEquivalent(
-      "cpp range-for",
+      { cognitive: 1, nesting: 1, cyclomatic: 2 },
       {
         file: "range.cpp",
         code: `void f(std::vector<int> xs) {\n  for (auto x : xs) {\n    g(x);\n  }\n}\n`,
@@ -80,7 +89,7 @@ describe("loop form parity", () => {
 
   it("scores a do-while like a while", async () => {
     await expectEquivalent(
-      "do-while",
+      { cognitive: 1, nesting: 1, cyclomatic: 2 },
       {
         file: "dowhile.ts",
         code: `function f(a: boolean): void {\n  do {\n    x();\n  } while (a);\n}\n`,
@@ -94,7 +103,7 @@ describe("loop form parity", () => {
 
   it("scores a Ruby case/in like a case/when", async () => {
     await expectEquivalent(
-      "ruby case/in",
+      { cognitive: 1, nesting: 1, cyclomatic: 3 },
       {
         file: "casein.rb",
         code: `def f(x)\n  case x\n  in [1, y]\n    y\n  in { k: }\n    k\n  end\nend\n`,
@@ -114,8 +123,10 @@ describe("Ruby statement modifiers", () => {
     const modifier = await metricsFor("modifier.rb", `def f(a)\n  b if a\nend\n`);
     const block = await metricsFor("block.rb", `def f(a)\n  if a\n    b\n  end\nend\n`);
 
-    expect(modifier.cognitive_complexity).toBe(block.cognitive_complexity);
-    expect(modifier.max_cyclomatic_complexity).toBe(block.max_cyclomatic_complexity);
+    expect(modifier.cognitive_complexity).toBe(1);
+    expect(block.cognitive_complexity).toBe(1);
+    expect(modifier.max_cyclomatic_complexity).toBe(2);
+    expect(block.max_cyclomatic_complexity).toBe(2);
     expect(modifier.max_nesting_depth).toBe(0);
     expect(block.max_nesting_depth).toBe(1);
   });

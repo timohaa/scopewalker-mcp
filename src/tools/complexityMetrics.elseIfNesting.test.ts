@@ -25,7 +25,7 @@ async function metricsFor(
 ): Promise<ComplexityMetricsResult["files"][number]["metrics"]> {
   const path = join(testDir, file);
   await writeFile(path, code);
-  const result = parseContent<ComplexityMetricsResult>(await handler({ path }));
+  const result = parseContent(await handler({ path })) as ComplexityMetricsResult;
   return firstItem(result.files).metrics;
 }
 

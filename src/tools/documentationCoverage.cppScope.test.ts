@@ -20,7 +20,7 @@ async function scan(
   for (const [name, source] of Object.entries(files)) {
     await writeFile(join(dir, name), source);
   }
-  return parseContent<DocumentationCoverageResult>(await handler({ path: dir, ...args }));
+  return parseContent(await handler({ path: dir, ...args })) as DocumentationCoverageResult;
 }
 
 beforeAll(async () => {

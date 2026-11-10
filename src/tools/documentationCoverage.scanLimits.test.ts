@@ -31,7 +31,7 @@ describe("documentationCoverage - skipped files", () => {
 
   it("does not report an oversized single file as fully documented", async () => {
     const response = await handler({ path: join(testDir, "huge.ts") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.summary.files_analyzed).toBe(0);
     expect(result.summary.files_skipped).toBe(1);
@@ -41,7 +41,7 @@ describe("documentationCoverage - skipped files", () => {
 
   it("counts the oversized file as skipped while reporting the rest", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.summary.files_analyzed).toBe(1);
     expect(result.summary.files_skipped).toBe(1);
@@ -51,7 +51,7 @@ describe("documentationCoverage - skipped files", () => {
 
   it("reports a complete scan when every supported file was parsed", async () => {
     const response = await handler({ path: join(testDir, "small.ts") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.summary.files_skipped).toBe(0);
     expect(result.summary.scan_complete).toBe(true);

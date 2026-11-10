@@ -79,7 +79,7 @@ afterAll(async () => {
 describe("sorting behavior", () => {
   it("returns per-function line counts ordered by size", async () => {
     const response = await handler({ path: join(testDir, "app.ts") });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     const file = result.files.find((entry) => entry.path.endsWith("app.ts"));
     const namedFunctions = file?.functions.filter((fn) => fn.name !== "<anonymous>");
@@ -92,7 +92,7 @@ describe("sorting behavior", () => {
 
   it("sorts functions by name when sort_by is 'name'", async () => {
     const response = await handler({ path: testDir, sort_by: "name" });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     const file = result.files.find((entry) => entry.path.endsWith("app.ts"));
     const namedFunctions = file?.functions.filter((fn) => fn.name !== "<anonymous>");
@@ -102,7 +102,7 @@ describe("sorting behavior", () => {
 
   it("sorts functions ascending when sort_by is 'lines_asc'", async () => {
     const response = await handler({ path: testDir, sort_by: "lines_asc" });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     const file = result.files.find((entry) => entry.path.endsWith("app.ts"));
     const namedFunctions = file?.functions.filter((fn) => fn.name !== "<anonymous>");
@@ -112,33 +112,26 @@ describe("sorting behavior", () => {
 
   it("sorts files by largest function ascending with lines_asc", async () => {
     const response = await handler({ path: testDir, sort_by: "lines_asc" });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     // Files should be sorted by their largest function, ascending
     // another.ts (6 lines) < app.ts (14 lines) < big.ts (57 lines)
     const filePaths = result.files.map((f) => f.path);
-    const anotherIdx = filePaths.findIndex((p) => p.includes("another"));
-    const appIdx = filePaths.findIndex((p) => p.includes("app"));
-    const bigIdx = filePaths.findIndex((p) => p.includes("big"));
-
-    expect(anotherIdx).toBeLessThan(appIdx);
-    expect(appIdx).toBeLessThan(bigIdx);
+    expect(filePaths).toEqual(["another.ts", "app.ts", "big.ts"]);
   });
 
   it("sorts files by name correctly", async () => {
     const response = await handler({ path: testDir, sort_by: "name" });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
-    const filePaths = result.files.map((f) => f.path);
-    const sortedPaths = [...filePaths].sort((a, b) => a.localeCompare(b));
-    expect(filePaths).toEqual(sortedPaths);
+    expect(result.files.map((f) => f.path)).toEqual(["another.ts", "app.ts", "big.ts"]);
   });
 });
 
 describe("filtering behavior", () => {
   it("filters out short functions when min_lines is provided", async () => {
     const response = await handler({ path: join(testDir, "app.ts"), min_lines: 5 });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     const file = result.files.find((entry) => entry.path.endsWith("app.ts"));
     expect(file?.functions.map((fn) => fn.name)).toEqual(["longFunc", "mediumFunc"]);
@@ -150,26 +143,22 @@ describe("filtering behavior", () => {
     await writeFile(join(testDir, "data.json"), '{"key": "value"}');
 
     const response = await handler({ path: testDir });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     // Should not include JSON file
-    const hasJson = result.files.some((f) => f.path.endsWith(".json"));
-    expect(hasJson).toBe(false);
+    expect(result.files.map((f) => f.path).sort()).toEqual(["another.ts", "app.ts", "big.ts"]);
   });
 
   it("handles extension filtering", async () => {
     const response = await handler({ path: testDir, extensions: [".ts"] });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
-    // All files should be .ts
-    for (const file of result.files) {
-      expect(file.path.endsWith(".ts")).toBe(true);
-    }
+    expect(result.files.map((f) => f.path).sort()).toEqual(["another.ts", "app.ts", "big.ts"]);
   });
 
   it("filters by grep keyword matching function names", async () => {
     const response = await handler({ path: testDir, grep: "long" });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     // Should find longFunc
     const appFile = result.files.find((f) => f.path.endsWith("app.ts"));
@@ -182,7 +171,7 @@ describe("filtering behavior", () => {
 
   it("grep filter matches file paths", async () => {
     const response = await handler({ path: testDir, grep: "big" });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     // Should include big.ts file (path matches)
     const bigFile = result.files.find((f) => f.path.endsWith("big.ts"));
@@ -194,7 +183,7 @@ describe("filtering behavior", () => {
 describe("metrics and thresholds", () => {
   it("counts functions over 50 lines correctly", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     // The bigFunction has 57 lines (1 + 55 + 1), so should count as over 50
     expect(result.summary.functions_over_50_lines).toBeGreaterThanOrEqual(1);
@@ -205,7 +194,7 @@ describe("metrics and thresholds", () => {
 
   it("handles single file path", async () => {
     const response = await handler({ path: join(testDir, "app.ts") });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     expect(result.is_directory).toBe(false);
     expect(result.files.length).toBe(1);
@@ -232,7 +221,7 @@ describe("line statistics", () => {
     );
 
     const response = await handler({ path: join(testDir, "commented.ts") });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
 
     const file = result.files.find((f) => f.path.includes("commented"));
     const fn = file?.functions.find((f) => f.name === "withCommentsAndBlanks");
@@ -259,7 +248,7 @@ export function trailingComment() {
     );
 
     const response = await handler({ path: join(testDir, "edgeComments.ts") });
-    const result = parseContent<FunctionLineCountsResult>(response);
+    const result = parseContent(response) as FunctionLineCountsResult;
     const file = result.files.find((f) => f.path.includes("edgeComments"));
 
     // Blank line inside a block comment counts once, as comment; code stays non-negative
@@ -275,7 +264,7 @@ export function trailingComment() {
     const response = await handler({ path: "/nonexistent/path/12345" });
     expect(response.isError).toBe(true);
 
-    const errorPayload = parseContent<{ error: { code: string } }>(response);
+    const errorPayload = parseContent(response) as { error: { code: string } };
     expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
   });
 });

@@ -11,7 +11,7 @@ const handler = getToolHandler(registerDeadCodeTool, "find_dead_code");
 /** Runs the tool over a directory and returns both lists concatenated. */
 async function findingsOf(path: string): Promise<DeadCodeItem[]> {
   const response = await handler({ path, limit: 100 });
-  const result = parseContent<DeadCodeResult>(response);
+  const result = parseContent(response) as DeadCodeResult;
   return [...result.dead_code, ...result.unreferenced_exports];
 }
 
@@ -87,7 +87,7 @@ describe("find_dead_code - Rust", () => {
 
   it("marks a pub(crate) Rust item as unreferenced_exports", async () => {
     const response = await handler({ path: join(dir, "basic"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.unreferenced_exports.some((item) => item.name === "crate_unused")).toBe(true);
     expect(result.dead_code.some((item) => item.name === "crate_unused")).toBe(false);
   });
@@ -109,7 +109,7 @@ describe("find_dead_code - Rust", () => {
 
   it("never treats a trait method or its trait impl as a candidate", async () => {
     const response = await handler({ path: join(dir, "traits"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     const findings = [...result.dead_code, ...result.unreferenced_exports];
 
     expect(findings.some((item) => item.name === "hello")).toBe(false);

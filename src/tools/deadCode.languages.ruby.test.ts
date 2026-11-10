@@ -43,13 +43,13 @@ instance = Widget.new
 
   it("marks a top-level def as unreferenced_exports", async () => {
     const response = await handler({ path: dir, limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.unreferenced_exports.some((item) => item.name === "top_level_unused")).toBe(true);
   });
 
   it("marks a private-section method as dead_code when scanning its directory", async () => {
     const response = await handler({ path: dir, limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.dead_code).toContainEqual(
       expect.objectContaining({ name: "hidden_unused", type: "method" })
     );
@@ -57,7 +57,7 @@ instance = Widget.new
 
   it("keeps a class alive when instantiated via .new", async () => {
     const response = await handler({ path: dir, limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     const findings = [...result.dead_code, ...result.unreferenced_exports];
     expect(findings.some((item) => item.name === "Widget")).toBe(false);
   });

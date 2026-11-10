@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  MAX_FILES_CEILING,
-  MAX_DEPTH_CEILING,
-  LIMIT_CEILING,
-  MAX_ARRAY_LENGTH,
   maxFilesSchema,
   maxDepthSchema,
   limitSchema,
@@ -13,9 +9,9 @@ import {
 
 describe("boundedInt schemas", () => {
   const cases = [
-    { name: "maxFilesSchema", schema: maxFilesSchema, ceiling: MAX_FILES_CEILING },
-    { name: "maxDepthSchema", schema: maxDepthSchema, ceiling: MAX_DEPTH_CEILING },
-    { name: "limitSchema", schema: limitSchema, ceiling: LIMIT_CEILING },
+    { name: "maxFilesSchema", schema: maxFilesSchema, ceiling: 10_000 },
+    { name: "maxDepthSchema", schema: maxDepthSchema, ceiling: 64 },
+    { name: "limitSchema", schema: limitSchema, ceiling: 5_000 },
   ];
 
   for (const { name, schema, ceiling } of cases) {
@@ -49,7 +45,7 @@ describe("ignorePatternsSchema", () => {
   });
 
   it("rejects an array one above the max length", () => {
-    const patterns = Array.from({ length: MAX_ARRAY_LENGTH + 1 }, (_, i) => `pattern-${String(i)}`);
+    const patterns = Array.from({ length: 101 }, (_, i) => `pattern-${String(i)}`);
     expect(ignorePatternsSchema.safeParse(patterns).success).toBe(false);
   });
 

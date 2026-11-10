@@ -22,7 +22,7 @@ afterAll(async () => {
 async function metricsFor(file: string, code: string): Promise<FileComplexity> {
   const path = join(testDir, file);
   await writeFile(path, code);
-  const result = parseContent<ComplexityMetricsResult>(await handler({ path }));
+  const result = parseContent(await handler({ path })) as ComplexityMetricsResult;
   return firstItem(result.files);
 }
 
@@ -30,7 +30,7 @@ async function metricsFor(file: string, code: string): Promise<FileComplexity> {
 async function mostComplexName(file: string, code: string): Promise<string | undefined> {
   const path = join(testDir, file);
   await writeFile(path, code);
-  const result = parseContent<ComplexityMetricsResult>(await handler({ path }));
+  const result = parseContent(await handler({ path })) as ComplexityMetricsResult;
   return result.summary.most_complex_function?.function;
 }
 
@@ -90,7 +90,8 @@ func f(a int) {
     );
 
     expect(withSelect.metrics.max_nesting_depth).toBe(withSwitch.metrics.max_nesting_depth);
-    expect(withSelect.metrics.cognitive_complexity).toBe(withSwitch.metrics.cognitive_complexity);
+    expect(withSelect.metrics.cognitive_complexity).toBe(1);
+    expect(withSwitch.metrics.cognitive_complexity).toBe(1);
     expect(withSelect.metrics.max_nesting_depth).toBe(1);
   });
 });

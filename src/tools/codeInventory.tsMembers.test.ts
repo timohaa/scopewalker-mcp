@@ -73,14 +73,14 @@ afterAll(async () => {
 /** Runs the tool over one fixture file and returns its items. */
 async function itemsOf(file: string): Promise<InventoryItem[]> {
   const response = await handler({ path: join(testDir, file), include_private: true });
-  const result = parseContent<CodeInventoryResult>(response);
+  const result = parseContent(response) as CodeInventoryResult;
   return result.inventory[0]?.items ?? [];
 }
 
 /** Reads one file's summary. */
 async function summaryOf(file: string): Promise<CodeInventoryResult["summary"]> {
   const response = await handler({ path: join(testDir, file), include_private: true });
-  return parseContent<CodeInventoryResult>(response).summary;
+  return (parseContent(response) as CodeInventoryResult).summary;
 }
 
 describe("codeInventory - TypeScript class members", () => {

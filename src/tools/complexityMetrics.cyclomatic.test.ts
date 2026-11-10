@@ -31,7 +31,7 @@ function fnWithDecisions(name: string, decisions: number): string {
 async function analyze(file: string, code: string): Promise<FileComplexity> {
   const path = join(testDir, file);
   await writeFile(path, code);
-  const result = parseContent<ComplexityMetricsResult>(await handler({ path }));
+  const result = parseContent(await handler({ path })) as ComplexityMetricsResult;
   return firstItem(result.files);
 }
 
@@ -201,7 +201,7 @@ describe("function summary statistics", () => {
     );
     await writeFile(join(dir, "one.ts"), fnWithDecisions("lonely", 40));
 
-    const result = parseContent<ComplexityMetricsResult>(await handler({ path: dir, limit: 1 }));
+    const result = parseContent(await handler({ path: dir, limit: 1 })) as ComplexityMetricsResult;
 
     expect(result.files).toHaveLength(1);
     expect(result.summary.high_complexity_functions).toBe(13);
@@ -218,7 +218,7 @@ describe("function summary statistics", () => {
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "empty.ts"), `export type Alias = string;\n`);
 
-    const result = parseContent<ComplexityMetricsResult>(await handler({ path: dir }));
+    const result = parseContent(await handler({ path: dir })) as ComplexityMetricsResult;
 
     expect(result.summary.high_complexity_functions).toBe(0);
     expect(result.summary.most_complex_function).toBeNull();

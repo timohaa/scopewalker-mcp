@@ -55,7 +55,7 @@ afterAll(async () => {
 describe("counting behavior", () => {
   it("returns function counts with language metadata", async () => {
     const response = await handler({ path: testDir, sort_by: "name" });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     const tsFile = result.files.find((file) => file.path.endsWith("utils.ts"));
 
@@ -72,7 +72,7 @@ describe("counting behavior", () => {
 
   it("summarizes analyzed files only", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     expect(result.summary.total_functions).toBeGreaterThanOrEqual(3);
     expect(result.summary.total_files_analyzed).toBe(2);
@@ -81,7 +81,7 @@ describe("counting behavior", () => {
 
   it("counts files with zero functions", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     const typesFile = result.files.find((file) => file.path.endsWith("types.ts"));
     expect(typesFile?.language).toBe("typescript");
@@ -91,7 +91,7 @@ describe("counting behavior", () => {
 
   it("sorts by count ascending", async () => {
     const response = await handler({ path: testDir, sort_by: "count_asc" });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     // Only supported language files should be included (unsupported files like .md are skipped)
     const tsFiles = result.files.filter((f) => f.language === "typescript");
@@ -110,7 +110,7 @@ describe("counting behavior", () => {
 describe("path handling and filtering", () => {
   it("handles single file path", async () => {
     const response = await handler({ path: join(testDir, "utils.ts") });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     expect(result.is_directory).toBe(false);
     expect(result.files).toHaveLength(1);
@@ -119,7 +119,7 @@ describe("path handling and filtering", () => {
 
   it("filters by grep keyword matching function names", async () => {
     const response = await handler({ path: testDir, grep: "add" });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     // Should find 'add' function
     const utilsFile = result.files.find((f) => f.path.endsWith("utils.ts"));
@@ -135,7 +135,7 @@ describe("path handling and filtering", () => {
 
   it("grep filter matches file paths", async () => {
     const response = await handler({ path: testDir, grep: "utils" });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     // Should include utils.ts file (path matches) with all its functions
     const utilsFile = result.files.find((f) => f.path.endsWith("utils.ts"));
@@ -147,7 +147,7 @@ describe("path handling and filtering", () => {
 describe("get_functions - request limits", () => {
   it("analyzes at most max_files files", async () => {
     const response = await handler({ path: testDir, extensions: ["ts"], max_files: 1 });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     expect(result.summary.total_files_analyzed).toBe(1);
   });
@@ -157,7 +157,7 @@ describe("get_functions - request limits", () => {
     // file (README.md here) is skipped without spending the budget. Slicing the
     // path list up front instead used to return an empty analysis.
     const response = await handler({ path: testDir, max_files: 1 });
-    const result = parseContent<FunctionCountsResult>(response);
+    const result = parseContent(response) as FunctionCountsResult;
 
     expect(result.summary.total_files_analyzed).toBe(1);
   });

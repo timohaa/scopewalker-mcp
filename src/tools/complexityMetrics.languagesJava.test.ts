@@ -33,7 +33,7 @@ public class Imports {
     );
 
     const response = await handler({ path: join(testDir, "Imports.java") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // import_declaration is shared with Go's grammar, whose handler used to
     // swallow every Java import looking for Go-only import_spec children
@@ -64,7 +64,7 @@ public class Imports {
     );
 
     const response = await handler({ path: join(testDir, "ElseIfChain.java") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Each else-if is a sibling branch, not nested control flow, so depth stays
     // far below the 5 levels a naive walk of this chain would count
@@ -98,7 +98,7 @@ public class Imports {
     );
 
     const response = await handler({ path: join(testDir, "TrueNesting.java") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // True nesting: if > for > if > while > if = 5 levels
     expect(result.files[0]?.metrics.max_nesting_depth).toBe(5);
@@ -130,7 +130,7 @@ describe("Java cognitive complexity", () => {
     );
 
     const response = await handler({ path: join(testDir, "SwitchCase.java") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Java names the node switch_expression, which nesting depth already counted
     // while cognitive complexity used to score it zero

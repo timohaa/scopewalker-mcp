@@ -53,22 +53,20 @@ class Widget:
 
   it("indexes Python module-level symbols as exported", async () => {
     const response = await pyHandler({ path: pyTestDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
+    // Module-level items in Python should be considered exported
     const pyFile = result.inventory.find((f) => f.file.endsWith("module.py"));
-    if (pyFile) {
-      // Module-level items in Python should be considered exported
-      const publicFunc = pyFile.items.find((i) => i.name === "public_function");
-      const publicClass = pyFile.items.find((i) => i.name === "PublicClass");
+    const publicFunc = pyFile?.items.find((i) => i.name === "public_function");
+    const publicClass = pyFile?.items.find((i) => i.name === "PublicClass");
 
-      expect(publicFunc?.exported).toBe(true);
-      expect(publicClass?.exported).toBe(true);
-    }
+    expect(publicFunc?.exported).toBe(true);
+    expect(publicClass?.exported).toBe(true);
   });
 
   it("indexes Python module-level defs as functions, distinct from class methods", async () => {
     const response = await pyHandler({ path: pyTestDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const pyFile = result.inventory.find((f) => f.file.endsWith("widget.py"));
     const topLevelFn = pyFile?.items.find((i) => i.name === "top_level");
@@ -83,7 +81,7 @@ class Widget:
 
   it("does not count defs nested inside method bodies as class methods", async () => {
     const response = await pyHandler({ path: pyTestDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const pyFile = result.inventory.find((f) => f.file.endsWith("widget.py"));
     const widgetClass = pyFile?.items.find((i) => i.name === "Widget");
@@ -92,7 +90,7 @@ class Widget:
 
   it("still treats an underscore-prefixed module-level def as private", async () => {
     const response = await pyHandler({ path: pyTestDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const pyFile = result.inventory.find((f) => f.file.endsWith("module.py"));
     expect(pyFile?.items.some((i) => i.name === "_private_function")).toBe(false);
@@ -136,7 +134,7 @@ class Holder:
   // export check and the class from its own methods.
   it("marks a decorated module-level class and def as exported", async () => {
     const response = await pyHandler({ path: pyTestDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const pyFile = result.inventory.find((f) => f.file.endsWith("decorated.py"));
     const byName = new Map((pyFile?.items ?? []).map((i) => [i.name, i]));
@@ -148,7 +146,7 @@ class Holder:
 
   it("nests a decorated method under its class instead of listing it top level", async () => {
     const response = await pyHandler({ path: pyTestDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const pyFile = result.inventory.find((f) => f.file.endsWith("decorated.py"));
     const holder = pyFile?.items.find((i) => i.name === "Holder");
@@ -184,7 +182,7 @@ void greet(void) {
 
   it("indexes C functions via their function_declarator names", async () => {
     const response = await cHandler({ path: cTestDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const cFile = result.inventory.find((f) => f.file.endsWith("math.c"));
     expect(cFile).toBeDefined();
@@ -229,7 +227,7 @@ end
 
   it("indexes Ruby module-level defs as functions, distinct from class methods", async () => {
     const response = await rbHandler({ path: rbTestDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const rbFile = result.inventory.find((f) => f.file.endsWith("calculator.rb"));
     const addFn = rbFile?.items.find((i) => i.name === "add");
@@ -244,7 +242,7 @@ end
 
   it("treats underscore-prefixed Ruby methods as private", async () => {
     const response = await rbHandler({ path: rbTestDir, include_private: true });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const rbFile = result.inventory.find((f) => f.file.endsWith("calculator.rb"));
     const calculatorClass = rbFile?.items.find((i) => i.name === "Calculator");

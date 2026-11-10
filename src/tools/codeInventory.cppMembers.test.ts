@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import { firstItem, getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { CodeInventoryResult, InventoryItem } from "../types/index.js";
 import { registerCodeInventoryTool } from "./codeInventory.js";
 
@@ -68,7 +68,7 @@ async function inventoryOf(file: string, includePrivate = false): Promise<CodeIn
     path: join(testDir, file),
     include_private: includePrivate,
   });
-  return parseContent<CodeInventoryResult>(response);
+  return parseContent(response) as CodeInventoryResult;
 }
 
 /** Finds one item of a single-file inventory by name. */
@@ -114,7 +114,7 @@ describe("codeInventory - C++ class members", () => {
 
   it("does not leak a private member through its out-of-line definition", async () => {
     const result = await inventoryOf("widget.cpp");
-    const names = (result.inventory[0]?.items ?? []).map((item) => item.name);
+    const names = firstItem(result.inventory).items.map((item) => item.name);
 
     expect(names).not.toContain("Widget::helper");
     expect(names).not.toContain("helper");

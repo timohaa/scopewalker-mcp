@@ -83,7 +83,7 @@ afterAll(async () => {
 describe("find_dead_code - scan mechanics", () => {
   it("applies limit to each list independently while summary counts the full lists", async () => {
     const response = await handler({ path: join(rootDir, "limit"), limit: 1 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.dead_code).toHaveLength(1);
     expect(result.unreferenced_exports).toHaveLength(1);
@@ -93,7 +93,7 @@ describe("find_dead_code - scan mechanics", () => {
 
   it("reports summary counts that match the scan", async () => {
     const response = await handler({ path: join(rootDir, "summary"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.summary).toEqual({
       files_scanned: 1,
@@ -110,7 +110,7 @@ describe("find_dead_code - scan mechanics", () => {
       path: join(rootDir, "singlefile", "lonely.ts"),
       limit: 100,
     });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.is_directory).toBe(false);
     expect(result.dead_code).toContainEqual(
@@ -129,7 +129,7 @@ describe("find_dead_code - scan mechanics", () => {
       limit: 100,
       max_files: 1,
     });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.summary.scan_complete).toBe(false);
     expect(result.summary.files_skipped).toBeGreaterThan(0);

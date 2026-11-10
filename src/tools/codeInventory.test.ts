@@ -91,7 +91,7 @@ afterAll(async () => {
 describe("codeInventory tool", () => {
   it("indexes exported symbols and methods by file", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const serviceFile = result.inventory.find((file) => file.file.endsWith("service.ts"));
     expect(serviceFile?.items.map((item) => item.name)).toEqual(
@@ -109,7 +109,7 @@ describe("codeInventory tool", () => {
 
   it("optionally includes private symbols", async () => {
     const response = await handler({ path: testDir, include_private: true });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const internalFile = result.inventory.find((file) => file.file.endsWith("private.ts"));
     expect(internalFile?.items.map((item) => item.name)).toContain("_internalUtility");
@@ -122,7 +122,7 @@ describe("codeInventory tool", () => {
   // so inline callbacks were once inventoried under that parameter's name.
   it("does not name inline callback arrows after their first parameter", async () => {
     const response = await handler({ path: join(testDir, "arrows.ts") });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const names = result.inventory[0]?.items.map((item) => item.name) ?? [];
     expect(names).not.toContain("n");
@@ -132,7 +132,7 @@ describe("codeInventory tool", () => {
 
   it("handles single file path", async () => {
     const response = await handler({ path: join(testDir, "service.ts") });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     expect(result.inventory).toHaveLength(1);
     expect(result.inventory[0]?.file).toContain("service.ts");
@@ -143,16 +143,16 @@ describe("codeInventory tool", () => {
     const response = await handler({ path: "/nonexistent/path/12345" });
     expect(response.isError).toBe(true);
 
-    const errorPayload = parseContent<{ error: { code: string } }>(response);
+    const errorPayload = parseContent(response) as { error: { code: string } };
     expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
   });
 
   it("caps scanned files with max_files", async () => {
     const full = await handler({ path: testDir });
-    const fullResult = parseContent<CodeInventoryResult>(full);
+    const fullResult = parseContent(full) as CodeInventoryResult;
 
     const response = await handler({ path: testDir, max_files: 1 });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     expect(result.inventory.length).toBeLessThan(fullResult.inventory.length);
   });
@@ -177,7 +177,7 @@ export enum Color {
     );
 
     const response = await handler({ path: join(testDir, "types-only.ts") });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const typesFile = result.inventory.find((f) => f.file.includes("types-only.ts"));
     expect(typesFile).toBeDefined();
@@ -187,7 +187,7 @@ export enum Color {
 
   it("filters by grep keyword matching symbol names", async () => {
     const response = await handler({ path: testDir, grep: "auth" });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     // Should find AuthService (matches "auth")
     const serviceFile = result.inventory.find((f) => f.file.endsWith("service.ts"));
@@ -200,7 +200,7 @@ export enum Color {
 
   it("grep filter matches file paths", async () => {
     const response = await handler({ path: testDir, grep: "service" });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     // Should include service.ts file (path matches) with all its items
     const serviceFile = result.inventory.find((f) => f.file.endsWith("service.ts"));
@@ -222,7 +222,7 @@ export const MAX_SIZE = 100;
     );
 
     const response = await handler({ path: join(testDir, "arrows.ts") });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const arrowsFile = result.inventory.find((f) => f.file.includes("arrows.ts"));
     const fetchData = arrowsFile?.items.find((i) => i.name === "fetchData");
@@ -246,7 +246,7 @@ describe("codeInventory tool - resilience", () => {
     const response = await handler({ path: testDir });
     expect(response.isError).toBeFalsy();
 
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
     expect(result.inventory.some((file) => file.file.endsWith("boom.ts"))).toBe(false);
 
     const serviceFile = result.inventory.find((file) => file.file.endsWith("service.ts"));

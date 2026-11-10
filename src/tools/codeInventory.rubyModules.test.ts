@@ -91,7 +91,7 @@ afterAll(async () => {
 async function inventoryOf(file: string, includePrivate = false): Promise<CodeInventoryResult> {
   const response = await handler({ path: join(testDir, file), include_private: includePrivate });
   expect(response.isError).toBeUndefined();
-  return parseContent<CodeInventoryResult>(response);
+  return parseContent(response) as CodeInventoryResult;
 }
 
 describe("codeInventory - Ruby modules", () => {
@@ -111,7 +111,7 @@ describe("codeInventory - Ruby modules", () => {
   it("adds only the direct module singleton to unreferenced exports", async () => {
     const response = await deadCodeHandler({ path: join(testDir, "nested.rb") });
     expect(response.isError).toBeUndefined();
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.summary.scan_complete).toBe(true);
     expect(result.dead_code).toEqual([]);
     expect(result.unreferenced_exports.map((item) => item.name).sort()).toEqual([

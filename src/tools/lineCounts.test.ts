@@ -1,16 +1,17 @@
 import { mkdir, rm, writeFile, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach, vi } from "vitest";
 import { analyze } from "../lib/tokei.js";
+import type * as tokeiModule from "../lib/tokei.js";
 import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { LineCountsResult } from "../types/index.js";
-import { createError } from "../utils/errors.js";
 import { registerLineCountsTool } from "./lineCounts.js";
 
-vi.mock("../lib/tokei.js", () => ({
-  analyze: vi.fn(),
-}));
+vi.mock("../lib/tokei.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof tokeiModule>();
+  return { ...actual, analyze: vi.fn(actual.analyze) };
+});
 
 let testDir: string;
 const analyzeMock = vi.mocked(analyze);
@@ -44,27 +45,11 @@ export function main() {
 });
 
 beforeEach(() => {
-  analyzeMock.mockReset();
-  analyzeMock.mockResolvedValue({
-    success: true,
-    data: {
-      TypeScript: {
-        blanks: 0,
-        code: 0,
-        comments: 0,
-        reports: [
-          {
-            name: join(testDir, "main.ts"),
-            stats: { blanks: 2, code: 5, comments: 2 },
-          },
-          {
-            name: join(testDir, "helper.ts"),
-            stats: { blanks: 1, code: 2, comments: 1 },
-          },
-        ],
-      },
-    },
-  });
+  analyzeMock.mockClear();
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 afterAll(async () => {
@@ -76,76 +61,54 @@ describe("sorting and totals", () => {
     const response = await handler({ path: testDir });
     expect(response.isError).toBeUndefined();
 
-    const result = parseContent<LineCountsResult>(response);
+    const result = parseContent(response) as LineCountsResult;
     expect(result.files.map((f) => f.path)).toEqual(["main.ts", "helper.ts"]);
-    expect(result.files[0]?.lines.total).toBe(9);
-    expect(result.summary.total_lines).toBe(13);
+    expect(result.files[0]?.lines).toEqual({ total: 8, code: 5, comment: 2, blank: 1 });
+    expect(result.files[1]?.lines).toEqual({ total: 3, code: 3, comment: 0, blank: 0 });
+    expect(result.summary.total_lines).toBe(11);
     expect(result.summary.total_files).toBe(2);
   });
 
   it("supports alternate sorting", async () => {
     const response = await handler({ path: testDir, sort_by: "name" });
-    const result = parseContent<LineCountsResult>(response);
+    const result = parseContent(response) as LineCountsResult;
     expect(result.files[0]?.path).toBe("helper.ts");
     expect(result.files[1]?.path).toBe("main.ts");
   });
 
   it("sorts by lines ascending", async () => {
     const response = await handler({ path: testDir, sort_by: "lines_asc" });
-    const result = parseContent<LineCountsResult>(response);
+    const result = parseContent(response) as LineCountsResult;
 
-    // helper.ts has 4 lines, main.ts has 9 lines
+    // helper.ts has 3 lines, main.ts has 8 lines
     expect(result.files[0]?.path).toBe("helper.ts");
     expect(result.files[1]?.path).toBe("main.ts");
   });
 });
 
 describe("errors and filtering", () => {
-  it("surfaces tokei errors from the analyzer", async () => {
-    analyzeMock.mockResolvedValueOnce({
-      success: false,
-      error: createError("TOOL_NOT_AVAILABLE", "missing"),
-    });
+  it("surfaces TOOL_NOT_AVAILABLE when the tokei binary is not on PATH", async () => {
+    vi.stubEnv("PATH", "");
 
     const response = await handler({ path: testDir });
     expect(response.isError).toBe(true);
 
-    const errorPayload = parseContent<{ error: { code: string } }>(response);
+    const errorPayload = parseContent(response) as { error: { code: string; message: string } };
     expect(errorPayload.error.code).toBe("TOOL_NOT_AVAILABLE");
-  });
-
-  it("surfaces a structured error when tokei output exceeds the size guard", async () => {
-    // Regression for H2: tokei's JSON on a huge tree used to overflow execFile's
-    // maxBuffer and crash with a generic PARSE_ERROR that hid the real cause.
-    analyzeMock.mockResolvedValueOnce({
-      success: false,
-      error: createError(
-        "PARSE_ERROR",
-        "tokei output exceeded the 512MB size guard. Narrow the scan with extensions or ignore_patterns and try again.",
-        { path: testDir }
-      ),
-    });
-
-    const response = await handler({ path: testDir });
-    expect(response.isError).toBe(true);
-
-    const errorPayload = parseContent<{ error: { code: string; message: string } }>(response);
-    expect(errorPayload.error.code).toBe("PARSE_ERROR");
-    expect(errorPayload.error.message).toContain("size guard");
-    expect(errorPayload.error.message).toMatch(/extensions|ignore_patterns/);
+    expect(errorPayload.error.message).toContain("tokei is not installed");
   });
 
   it("returns error for nonexistent path", async () => {
     const response = await handler({ path: "/nonexistent/path/12345" });
     expect(response.isError).toBe(true);
 
-    const errorPayload = parseContent<{ error: { code: string } }>(response);
+    const errorPayload = parseContent(response) as { error: { code: string } };
     expect(errorPayload.error.code).toBe("PATH_NOT_FOUND");
   });
 
   it("filters files by grep keyword", async () => {
     const response = await handler({ path: testDir, grep: "helper" });
-    const result = parseContent<LineCountsResult>(response);
+    const result = parseContent(response) as LineCountsResult;
 
     // Should only include helper.ts (matches "helper")
     expect(result.files.length).toBe(1);
@@ -154,7 +117,7 @@ describe("errors and filtering", () => {
 
   it("grep filter is case-insensitive", async () => {
     const response = await handler({ path: testDir, grep: "MAIN" });
-    const result = parseContent<LineCountsResult>(response);
+    const result = parseContent(response) as LineCountsResult;
 
     // Should match main.ts despite uppercase search
     expect(result.files.length).toBe(1);

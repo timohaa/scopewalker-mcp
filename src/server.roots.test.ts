@@ -21,6 +21,7 @@ afterEach(async () => {
   await client?.close();
   client = undefined;
   delete process.env.SCOPEWALKER_ALLOWED_ROOTS;
+  vi.restoreAllMocks();
 });
 
 afterAll(async () => {
@@ -82,7 +83,6 @@ describe("client roots", () => {
 
     expect(await errorCodeFor(client, process.cwd())).toBeUndefined();
     expect(stderr).toHaveBeenCalledWith(expect.stringContaining("client roots"), expect.anything());
-    stderr.mockRestore();
   });
 
   it("lets SCOPEWALKER_ALLOWED_ROOTS override the client's roots", async () => {

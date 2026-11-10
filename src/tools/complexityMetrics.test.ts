@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type Parser from "tree-sitter";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import type * as TreeSitterModule from "../lib/treeSitter.js";
-import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import { firstItem, getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { ComplexityMetricsResult, SupportedLanguage } from "../types/index.js";
 import { registerComplexityMetricsTool } from "./complexityMetrics.js";
 
@@ -97,7 +97,7 @@ afterAll(async () => {
 describe("core metrics", () => {
   it("reports hotspots for nesting and parameter counts", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const nestingFile = result.files.find((file) => file.path.endsWith("nested.ts"));
     const paramsFile = result.files.find((file) => file.path.endsWith("manyParams.ts"));
@@ -108,7 +108,7 @@ describe("core metrics", () => {
 
   it("summarizes overall complexity metrics", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.summary.files_analyzed).toBe(3);
     expect(result.summary.total_hotspots).toBeGreaterThanOrEqual(2);
@@ -123,7 +123,7 @@ describe("output options", () => {
   it("respects limit parameter", async () => {
     // Use extension filter to ensure predictable results (TypeScript files only)
     const response = await handler({ path: testDir, limit: 1, extensions: [".ts"] });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files).toHaveLength(1);
     // Should return the most complex TypeScript file
@@ -132,7 +132,7 @@ describe("output options", () => {
 
   it("returns summary only when requested", async () => {
     const response = await handler({ path: testDir, summary_only: true });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.summary.files_analyzed).toBeGreaterThan(0);
     expect(result.files).toHaveLength(0);
@@ -152,7 +152,7 @@ export const withParams = (a: number, b: number) => a + b;
     );
 
     const response = await handler({ path: join(testDir, "arrows.ts") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Should not throw, should analyze both functions
     expect(result.files[0]?.metrics).toBeDefined();
@@ -165,7 +165,7 @@ export const withParams = (a: number, b: number) => a + b;
     await writeFile(join(testDir, "bareArrow.ts"), `export const dbl = x => x * 2;\n`);
 
     const response = await handler({ path: join(testDir, "bareArrow.ts") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.max_parameters).toBe(1);
   });
@@ -189,11 +189,12 @@ export const withParams = (a: number, b: number) => a + b;
     );
 
     const response = await handler({ path: join(testDir, "nestingParity.ts") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Pre-fix the arrow counted its own node (depth 5) and produced a hotspot
-    const nestingHotspots =
-      result.files[0]?.hotspots.filter((h) => h.issue === "nesting_depth") ?? [];
+    const nestingHotspots = firstItem(result.files).hotspots.filter(
+      (h) => h.issue === "nesting_depth"
+    );
     expect(nestingHotspots).toHaveLength(0);
   });
 
@@ -217,7 +218,7 @@ export const withParams = (a: number, b: number) => a + b;
     );
 
     const response = await handler({ path: join(testDir, "nestingParityDeep.ts") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const nestingHotspots =
       result.files[0]?.hotspots.filter((h) => h.issue === "nesting_depth") ?? [];
@@ -231,7 +232,7 @@ export const withParams = (a: number, b: number) => a + b;
     await mkdir(emptyDir, { recursive: true });
 
     const response = await handler({ path: emptyDir });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files).toHaveLength(0);
     expect(result.summary.files_analyzed).toBe(0);
@@ -242,16 +243,16 @@ export const withParams = (a: number, b: number) => a + b;
 describe("get_complexity_metrics - request limits and path validation", () => {
   it("analyzes at most max_files files", async () => {
     const response = await handler({ path: testDir, max_files: 1 });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.summary.files_analyzed).toBe(1);
   });
 
   it("analyzes every file when max_files exceeds the file count", async () => {
-    const capped = parseContent<ComplexityMetricsResult>(
+    const capped = parseContent(
       await handler({ path: testDir, max_files: 99 })
-    );
-    const uncapped = parseContent<ComplexityMetricsResult>(await handler({ path: testDir }));
+    ) as ComplexityMetricsResult;
+    const uncapped = parseContent(await handler({ path: testDir })) as ComplexityMetricsResult;
 
     expect(capped.summary.files_analyzed).toBe(uncapped.summary.files_analyzed);
     expect(capped.summary.files_analyzed).toBeGreaterThan(1);
@@ -261,7 +262,7 @@ describe("get_complexity_metrics - request limits and path validation", () => {
     const response = await handler({ path: join(testDir, "does-not-exist-12345") });
 
     expect(response.isError).toBe(true);
-    const failure = parseContent<{ error: { code: string } }>(response);
+    const failure = parseContent(response) as { error: { code: string } };
     expect(failure.error.code).toBe("PATH_NOT_FOUND");
   });
 });
@@ -276,7 +277,7 @@ describe("get_complexity_metrics - resilience", () => {
     const response = await handler({ path: testDir });
     expect(response.isError).toBeFalsy();
 
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
     expect(result.files.some((file) => file.path.endsWith("boom.ts"))).toBe(false);
     expect(result.files.some((file) => file.path.endsWith("nested.ts"))).toBe(true);
   });

@@ -11,7 +11,7 @@ const handler = getToolHandler(registerDeadCodeTool, "find_dead_code");
 /** Runs the tool over a single file and returns both lists concatenated. */
 async function findingsOf(path: string): Promise<DeadCodeItem[]> {
   const response = await handler({ path, limit: 100 });
-  const result = parseContent<DeadCodeResult>(response);
+  const result = parseContent(response) as DeadCodeResult;
   return [...result.dead_code, ...result.unreferenced_exports];
 }
 

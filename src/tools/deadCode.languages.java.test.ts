@@ -11,7 +11,7 @@ const handler = getToolHandler(registerDeadCodeTool, "find_dead_code");
 /** Runs the tool over a directory and returns both lists concatenated. */
 async function findingsOf(path: string): Promise<DeadCodeItem[]> {
   const response = await handler({ path, limit: 100 });
-  const result = parseContent<DeadCodeResult>(response);
+  const result = parseContent(response) as DeadCodeResult;
   return [...result.dead_code, ...result.unreferenced_exports];
 }
 
@@ -46,20 +46,20 @@ public class Holder {
 
   it("marks a private method as dead_code only on a directory scan", async () => {
     const dirResponse = await handler({ path: dir, limit: 100 });
-    const dirResult = parseContent<DeadCodeResult>(dirResponse);
+    const dirResult = parseContent(dirResponse) as DeadCodeResult;
     expect(dirResult.dead_code).toContainEqual(
       expect.objectContaining({ name: "secretUnused", type: "method" })
     );
 
     const fileResponse = await handler({ path: join(dir, "Acct.java"), limit: 100 });
-    const fileResult = parseContent<DeadCodeResult>(fileResponse);
+    const fileResult = parseContent(fileResponse) as DeadCodeResult;
     expect(fileResult.dead_code.some((item) => item.name === "secretUnused")).toBe(false);
     expect(fileResult.unreferenced_exports.some((item) => item.name === "secretUnused")).toBe(true);
   });
 
   it("marks a package-private top-level class as dead_code when scanning its directory", async () => {
     const response = await handler({ path: dir, limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.dead_code.some((item) => item.name === "PackagePrivateClass")).toBe(true);
   });
 

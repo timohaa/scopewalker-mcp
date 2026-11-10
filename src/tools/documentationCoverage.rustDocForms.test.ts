@@ -51,7 +51,7 @@ pub fn after_blank() {}
 
   it("accepts ///, /** */ and #[doc] but not a plain block comment or a detached doc", async () => {
     const response = await handler({ path: join(rustDir, "forms.rs") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     const names = result.undocumented_items.map((item) => item.name);
     expect(names).toEqual(["plain_block", "after_blank"]);
@@ -60,7 +60,7 @@ pub fn after_blank() {}
   // `//!` documents the module it sits in, so it can never document the item below it.
   it("never credits a //! inner doc comment to the following item", async () => {
     const response = await handler({ path: join(rustDir, "inner.rs") });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.undocumented_items.map((item) => item.name)).toEqual(["undocumented_helper"]);
   });

@@ -29,7 +29,7 @@ async function measure(
     Object.entries(sources).map(([file, code]) => writeFile(join(dir, file), code))
   );
 
-  const result = parseContent<ComplexityMetricsResult>(await handler({ path: dir }));
+  const result = parseContent(await handler({ path: dir })) as ComplexityMetricsResult;
   expect(result.files).toHaveLength(Object.keys(sources).length);
 
   return Object.fromEntries(result.files.map((f) => [f.path, f.metrics]));

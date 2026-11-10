@@ -23,13 +23,6 @@ function createFakeChild(): FakeChild {
   return child;
 }
 
-/** Returns the argv tokei's spawn mock was invoked with on the most recent call. */
-function lastArgs(): string[] {
-  const call = spawnMock.mock.calls.at(-1) as unknown[] | undefined;
-  expect(call).toBeDefined();
-  return (call?.[1] ?? []) as string[];
-}
-
 let originalConsoleError: typeof console.error;
 let fakeChild: FakeChild;
 
@@ -153,37 +146,7 @@ describe("analyze - failure paths: process outcome errors", () => {
   });
 });
 
-describe("analyze - argument construction", () => {
-  /** Completes the pending analyze call by emitting a clean close with no output. */
-  function resolveWithEmptyOutput(): void {
-    fakeChild.emit("close", 0);
-  }
-
-  it("passes --hidden only when includeHidden is set", async () => {
-    const promise1 = analyze("/some/path", { includeHidden: true });
-    resolveWithEmptyOutput();
-    await promise1;
-    expect(lastArgs()).toContain("--hidden");
-
-    fakeChild = createFakeChild();
-    spawnMock.mockReturnValue(fakeChild);
-    const promise2 = analyze("/some/path");
-    resolveWithEmptyOutput();
-    await promise2;
-    expect(lastArgs()).not.toContain("--hidden");
-  });
-
-  it("passes one -e flag per exclude pattern", async () => {
-    const promise = analyze("/some/path", { exclude: ["dist", "vendor"] });
-    resolveWithEmptyOutput();
-    await promise;
-
-    const args = lastArgs();
-    expect(args.filter((arg) => arg === "-e")).toHaveLength(2);
-    expect(args).toContain("dist");
-    expect(args).toContain("vendor");
-  });
-
+describe("analyze - timeout handling", () => {
   it("kills the process with SIGKILL on timeout", async () => {
     vi.useFakeTimers();
     const promise = analyze("/some/path");

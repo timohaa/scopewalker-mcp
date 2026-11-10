@@ -78,7 +78,7 @@ walkNode(tree.rootNode, (node) => {
 ```typescript
 const handler = getToolHandler(registerMyTool, "tool_name");
 const response = await handler({ path: testDir });
-const result = parseContent<ResultType>(response);
+const result = parseContent(response) as ResultType;
 ```
 
 `getToolHandler` registers the tool on a real `McpServer` with no client roots, reads its handler from the SDK's private `_registeredTools` registry, and calls it directly, so it does not validate `outputSchema`. Use `firstItem(list)` instead of `list[0]` when a test needs the first element. Cover schema conformance in `src/server.outputSchema.test.ts` and root resolution in `src/server.roots.test.ts`.

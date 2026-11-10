@@ -49,10 +49,9 @@ export function getToolHandler(
   return (args) => tool.handler(args, {});
 }
 
-/** Parses JSON content from a tool response. */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T used for caller's type inference
-export function parseContent<T>(response: ToolResponse): T {
-  return JSON.parse(firstItem(response.content).text) as T;
+/** Parses JSON content from a tool response; callers assert the result type they expect. */
+export function parseContent(response: ToolResponse): unknown {
+  return JSON.parse(firstItem(response.content).text);
 }
 
 /** Returns the first item, failing the test when the list is empty. */

@@ -40,7 +40,7 @@ describe("hotspots across grammars", () => {
     );
 
     const response = await handler({ path: join(testDir, "deep.rs") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     expect(result.files[0]?.metrics.max_nesting_depth).toBe(4);
     expect(result.files[0]?.metrics.cognitive_complexity).toBeGreaterThan(0);
@@ -72,7 +72,7 @@ end
     );
 
     const response = await handler({ path: join(testDir, "deep.rb") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // if > while > case > begin > unless
     expect(result.files[0]?.metrics.max_nesting_depth).toBe(5);
@@ -98,7 +98,7 @@ func (p *Point) Move(a, b, c, d, e, f int) {
     );
 
     const response = await handler({ path: join(testDir, "point.go") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const paramHotspot = result.files[0]?.hotspots.find((h) => h.issue === "parameters");
     expect(paramHotspot?.function).toBe("Move");

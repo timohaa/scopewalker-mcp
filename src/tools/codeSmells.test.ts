@@ -49,7 +49,7 @@ afterAll(async () => {
 describe("core functionality", () => {
   it("detects all code smell types", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.is_directory).toBe(true);
     expect(result.summary.total_files_scanned).toBe(2);
@@ -64,7 +64,7 @@ describe("core functionality", () => {
 
   it("returns correct line numbers and text when explicitly requested", async () => {
     const response = await handler({ path: join(testDir, "sample.ts"), include_text: true });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     const todoSmell = result.files[0]?.smells.find((s) => s.type === "todo");
     expect(todoSmell).toBeDefined();
@@ -74,7 +74,7 @@ describe("core functionality", () => {
 
   it("redacts comment text by default", async () => {
     const response = await handler({ path: join(testDir, "sample.ts") });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     const todoSmell = result.files[0]?.smells.find((s) => s.type === "todo");
     expect(todoSmell?.text).toBe("<redacted>");
@@ -87,7 +87,7 @@ describe("filtering", () => {
       path: testDir,
       types: ["todo", "fixme"],
     });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.by_type.todo).toBeGreaterThanOrEqual(1);
     expect(result.summary.by_type.fixme).toBeGreaterThanOrEqual(1);
@@ -101,7 +101,7 @@ describe("filtering", () => {
       path: testDir,
       extensions: [".js"], // No .js files exist
     });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.total_files_scanned).toBe(0);
   });
@@ -113,7 +113,7 @@ describe("filtering", () => {
     await writeFile(join(testDir, "file3.ts"), "// HACK: workaround");
 
     const response = await handler({ path: testDir, limit: 1 });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     // Should only return 1 file despite multiple files having smells
     expect(result.files.length).toBe(1);
@@ -125,7 +125,7 @@ describe("filtering", () => {
 describe("path handling", () => {
   it("handles single file path", async () => {
     const response = await handler({ path: join(testDir, "sample.ts") });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.is_directory).toBe(false);
     expect(result.summary.total_files_scanned).toBe(1);
@@ -164,7 +164,7 @@ function parseReport(input: string) {
     );
 
     const response = await handler({ path: join(testDir, "false_positives.ts") });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     // Should only find the TODO in the actual comment
     expect(result.summary.total_smells).toBe(1);
@@ -187,14 +187,14 @@ func x() {}
     );
 
     const response = await handler({ path: join(testDir, "prose.go") });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.total_smells).toBe(0);
   });
 
   it("returns empty results for clean files", async () => {
     const response = await handler({ path: join(testDir, "clean.ts") });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.total_smells).toBe(0);
     expect(result.files.length).toBe(0);
@@ -214,7 +214,7 @@ HACK: Temporary workaround
     );
 
     const response = await handler({ path: join(testDir, "notes.txt") });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     // Unsupported file types should be skipped - no smells detected
     expect(result.summary.total_smells).toBe(0);
@@ -225,7 +225,7 @@ HACK: Temporary workaround
 describe("get_code_smells - request limits", () => {
   it("scans at most max_files files", async () => {
     const response = await handler({ path: testDir, max_files: 1 });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.total_files_scanned).toBe(1);
   });

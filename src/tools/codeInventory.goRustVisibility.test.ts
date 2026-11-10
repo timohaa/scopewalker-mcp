@@ -59,7 +59,7 @@ afterAll(async () => {
 describe("codeInventory tool - Go and Rust visibility", () => {
   it("reads Go export status from identifier capitalization", async () => {
     const response = await visHandler({ path: join(visTestDir, "shapes.go") });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const byName = new Map((result.inventory[0]?.items ?? []).map((i) => [i.name, i]));
 
@@ -70,14 +70,14 @@ describe("codeInventory tool - Go and Rust visibility", () => {
 
   it("treats lowercase Go symbols as private", async () => {
     const excluded = await visHandler({ path: join(visTestDir, "shapes.go") });
-    const withoutPrivate = parseContent<CodeInventoryResult>(excluded);
+    const withoutPrivate = parseContent(excluded) as CodeInventoryResult;
     expect(withoutPrivate.inventory[0]?.items.some((i) => i.name === "unexported")).toBe(false);
 
     const included = await visHandler({
       path: join(visTestDir, "shapes.go"),
       include_private: true,
     });
-    const withPrivate = parseContent<CodeInventoryResult>(included);
+    const withPrivate = parseContent(included) as CodeInventoryResult;
     const unexported = withPrivate.inventory[0]?.items.find((i) => i.name === "unexported");
 
     expect(unexported?.exported).toBe(false);
@@ -88,7 +88,7 @@ describe("codeInventory tool - Go and Rust visibility", () => {
       path: join(visTestDir, "shapes.go"),
       include_private: true,
     });
-    const result = parseContent<CodeInventoryResult>(response);
+    const result = parseContent(response) as CodeInventoryResult;
 
     const point = result.inventory[0]?.items.find((i) => i.name === "Point");
     const byName = new Map((point?.methods ?? []).map((m) => [m.name, m.visibility]));
@@ -104,7 +104,7 @@ describe("codeInventory tool - Go and Rust visibility", () => {
         path: join(visTestDir, "widget.rs"),
         include_private: includePrivate,
       });
-      const result = parseContent<CodeInventoryResult>(response);
+      const result = parseContent(response) as CodeInventoryResult;
 
       const exports = Object.fromEntries(
         (result.inventory[0]?.items ?? []).map((item) => [item.name, item.exported])

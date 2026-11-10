@@ -14,7 +14,7 @@ async function findingsOf(
   extra: Record<string, unknown> = {}
 ): Promise<DeadCodeItem[]> {
   const response = await handler({ path, limit: 100, ...extra });
-  const result = parseContent<DeadCodeResult>(response);
+  const result = parseContent(response) as DeadCodeResult;
   return [...result.dead_code, ...result.unreferenced_exports];
 }
 
@@ -63,13 +63,13 @@ def decorated_unused():
 
   it("marks an underscore-prefixed module-level function as dead_code on a directory scan", async () => {
     const response = await handler({ path: dir, limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.dead_code.some((item) => item.name === "_private_unused")).toBe(true);
   });
 
   it("marks a public module-level function as unreferenced_exports", async () => {
     const response = await handler({ path: dir, limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.unreferenced_exports.some((item) => item.name === "public_unused")).toBe(true);
   });
 
@@ -142,20 +142,20 @@ func caller() int {
 
   it("marks an unexported unused function as dead_code on a directory scan", async () => {
     const response = await handler({ path: dir, limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.dead_code.some((item) => item.name === "unexportedUnused")).toBe(true);
   });
 
   it("marks the same unexported function as unreferenced_exports on a single-file scan", async () => {
     const response = await handler({ path: join(dir, "main.go"), limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.dead_code.some((item) => item.name === "unexportedUnused")).toBe(false);
     expect(result.unreferenced_exports.some((item) => item.name === "unexportedUnused")).toBe(true);
   });
 
   it("collects an unexported receiver method as a dead method candidate", async () => {
     const response = await handler({ path: dir, limit: 100 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
     expect(result.dead_code).toContainEqual(
       expect.objectContaining({ name: "hidden", type: "method" })
     );
@@ -168,7 +168,7 @@ func caller() int {
 
   it("moves a package-scoped finding to unreferenced_exports when max_depth is set on a directory scan", async () => {
     const response = await handler({ path: dir, limit: 100, max_depth: 5 });
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.summary.scan_complete).toBe(true);
     expect(result.dead_code.some((item) => item.name === "unexportedUnused")).toBe(false);

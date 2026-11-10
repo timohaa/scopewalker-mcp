@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
+import { firstItem, getToolHandler, parseContent } from "../testUtils/toolTestHarness.js";
 import type { ComplexityMetricsResult } from "../types/index.js";
 import { registerComplexityMetricsTool } from "./complexityMetrics.js";
 
@@ -38,7 +38,7 @@ describe("complexityMetrics JSX props - detection thresholds", () => {
     );
 
     const response = await handler({ path: join(testDir, "manyProps.tsx") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
     expect(hotspots).toHaveLength(1);
@@ -57,9 +57,9 @@ describe("complexityMetrics JSX props - detection thresholds", () => {
     );
 
     const response = await handler({ path: join(testDir, "fewProps.tsx") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
-    const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
+    const hotspots = firstItem(result.files).hotspots.filter((h) => h.issue === "jsx_props");
     expect(hotspots).toHaveLength(0);
   });
 
@@ -83,9 +83,9 @@ describe("complexityMetrics JSX props - detection thresholds", () => {
     );
 
     const response = await handler({ path: join(testDir, "htmlAttrs.tsx") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
-    const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
+    const hotspots = firstItem(result.files).hotspots.filter((h) => h.issue === "jsx_props");
     expect(hotspots).toHaveLength(0);
   });
 });
@@ -103,7 +103,7 @@ describe("complexityMetrics JSX props - metrics integration", () => {
     );
 
     const response = await handler({ path: join(testDir, "propsMetrics.tsx") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     // Widget has 8 props, App function has 0 params => max should be 8
     expect(result.files[0]?.metrics.max_parameters).toBe(8);
@@ -126,7 +126,7 @@ describe("complexityMetrics JSX props - metrics integration", () => {
     );
 
     const response = await handler({ path: join(testDir, "bothTypes.tsx") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
     expect(hotspots).toHaveLength(2);
@@ -151,7 +151,7 @@ export function App() {
     );
 
     const response = await handler({ path: join(testDir, "mixed.tsx") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const paramHotspots = result.files[0]?.hotspots.filter((h) => h.issue === "parameters") ?? [];
     const jsxHotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
@@ -171,7 +171,7 @@ describe("complexityMetrics JSX props - additional patterns", () => {
     );
 
     const response = await handler({ path: join(testDir, "spreadProps.tsx") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
     expect(hotspots).toHaveLength(1);
@@ -197,7 +197,7 @@ describe("complexityMetrics JSX props - additional patterns", () => {
     );
 
     const response = await handler({ path: join(testDir, "namespaced.tsx") });
-    const result = parseContent<ComplexityMetricsResult>(response);
+    const result = parseContent(response) as ComplexityMetricsResult;
 
     const hotspots = result.files[0]?.hotspots.filter((h) => h.issue === "jsx_props") ?? [];
     expect(hotspots).toHaveLength(1);

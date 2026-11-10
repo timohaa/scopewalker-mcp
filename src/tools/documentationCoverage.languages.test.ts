@@ -69,7 +69,7 @@ void another_undoc(void);
 
   it("detects JSDoc documentation in C header files", async () => {
     const response = await handler({ path: testDir, extensions: [".h"] });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     // example_create and example_destroy are documented, undocumented_func is not
     expect(result.coverage.documented).toBe(2);
@@ -123,7 +123,7 @@ class DocumentedClass:
 
   it("detects Python docstrings", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.coverage.documented).toBe(3); // documented_func, DocumentedClass, documented_method
     expect(result.coverage.undocumented).toBe(2); // undocumented_func, undocumented_method
@@ -163,7 +163,7 @@ struct DocumentedStruct {
 
   it("detects Rust doc comments", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.coverage.documented).toBeGreaterThanOrEqual(1);
     expect(result.coverage.undocumented).toBeGreaterThanOrEqual(1);
@@ -205,7 +205,7 @@ type Calculator struct {
 
   it("detects Go comments as documentation", async () => {
     const response = await handler({ path: testDir });
-    const result = parseContent<DocumentationCoverageResult>(response);
+    const result = parseContent(response) as DocumentationCoverageResult;
 
     expect(result.coverage.documented).toBeGreaterThanOrEqual(1);
     expect(result.coverage.undocumented).toBeGreaterThanOrEqual(1);

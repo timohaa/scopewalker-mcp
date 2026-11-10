@@ -37,7 +37,7 @@ const value = someObj as unknown as SomeType;
       path: join(testDir, "unsafe_casts.ts"),
       types: ["unsafe_cast"],
     });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.by_type.unsafe_cast).toBe(2);
     expect(result.files.length).toBe(1);
@@ -56,7 +56,7 @@ const value = someObj as unknown as SomeType;
       path: join(testDir, "any_casts.ts"),
       types: ["unsafe_cast"],
     });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.by_type.unsafe_cast).toBe(1);
   });
@@ -72,7 +72,7 @@ const value = someObj as unknown as SomeType;
       path: join(testDir, "array_type_cast.ts"),
       types: ["unsafe_cast"],
     });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.by_type.unsafe_cast).toBe(0);
   });
@@ -93,7 +93,7 @@ const str = "hello" as string; // Simple assertion
       path: join(testDir, "safe_casts.ts"),
       types: ["unsafe_cast"],
     });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.summary.by_type.unsafe_cast).toBe(0);
   });
@@ -112,7 +112,7 @@ describe("get_code_smells - unsafe_cast detection - text handling", () => {
       types: ["unsafe_cast"],
       include_text: true,
     });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.files[0]?.smells[0]?.text).toContain("as unknown as");
   });
@@ -128,7 +128,7 @@ describe("get_code_smells - unsafe_cast detection - text handling", () => {
       path: join(testDir, "cast_redacted.ts"),
       types: ["unsafe_cast"],
     });
-    const result = parseContent<CodeSmellsResult>(response);
+    const result = parseContent(response) as CodeSmellsResult;
 
     expect(result.files[0]?.smells[0]?.text).toBe("<redacted>");
   });

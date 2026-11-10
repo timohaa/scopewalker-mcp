@@ -61,7 +61,7 @@ async function inventoryOf(file: string, includePrivate = false): Promise<CodeIn
     path: join(testDir, file),
     include_private: includePrivate,
   });
-  return parseContent<CodeInventoryResult>(response);
+  return parseContent(response) as CodeInventoryResult;
 }
 
 /** Finds one item of a single-file inventory by name. */

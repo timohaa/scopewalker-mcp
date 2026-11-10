@@ -66,7 +66,7 @@ afterAll(async () => {
 async function inventoryOf(path: string, includePrivate = false): Promise<CodeInventoryResult> {
   const response = await handler({ path: join(testDir, path), include_private: includePrivate });
   expect(response.isError).toBeUndefined();
-  return parseContent<CodeInventoryResult>(response);
+  return parseContent(response) as CodeInventoryResult;
 }
 
 describe("codeInventory - grouped Go types", () => {
@@ -129,7 +129,7 @@ describe("codeInventory - grouped Go types", () => {
   it("discovers every grouped type in dead-code analysis with its own scope and line", async () => {
     const response = await deadCodeHandler({ path: join(testDir, "unused") });
     expect(response.isError).toBeUndefined();
-    const result = parseContent<DeadCodeResult>(response);
+    const result = parseContent(response) as DeadCodeResult;
 
     expect(result.summary.scan_complete).toBe(true);
     expect(result.dead_code).toEqual([
