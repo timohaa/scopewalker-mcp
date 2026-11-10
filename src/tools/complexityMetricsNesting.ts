@@ -1,7 +1,21 @@
 import type Parser from "tree-sitter";
 import { MAX_WALK_DEPTH } from "../lib/astWalker.js";
+import { getFunctionNodeTypes } from "../lib/treeSitter.js";
 import type { SupportedLanguage } from "../types/index.js";
 import { isElseIf } from "./complexityMetricsElseIf.js";
+
+// The five names anonymous functions carry across the nine grammars.
+const ANONYMOUS_FUNCTION_TYPES = [
+  "lambda_expression", // Java and C++ lambdas
+  "arrow_function", // TypeScript and JavaScript arrows
+  "lambda", // Python `lambda x:` and Ruby's stabby `->(x){}`
+  "func_literal", // Go function literals
+  "closure_expression", // Rust closures
+];
+
+// A call's argument list: `arguments` in TypeScript, JavaScript and Rust,
+// `argument_list` in the other grammars.
+const ARGUMENT_LIST_TYPES = ["arguments", "argument_list"];
 
 // Rust models control flow as expressions; Ruby names its nodes after the
 // keyword. Ruby's two block forms are absent from this list on purpose and are
@@ -26,15 +40,11 @@ export const NESTING_TYPES = [
   "type_switch_statement", // Go type switches
   "select_statement", // Go select; one level, like the two switches above
   "match_expression",
-  "lambda_expression", // Java and C++ lambdas
-  "arrow_function", // TypeScript and JavaScript arrows
-  "lambda", // Python `lambda x:` and Ruby's stabby `->(x){}`
-  "func_literal", // Go function literals
+  ...ANONYMOUS_FUNCTION_TYPES,
   "if_expression",
   "for_expression",
   "while_expression",
   "loop_expression",
-  "closure_expression",
   "if",
   "unless",
   "while",
@@ -114,28 +124,41 @@ function isNestingNode(node: Parser.SyntaxNode, language: SupportedLanguage): bo
  * ggml-vulkan.cpp that cost about 30 seconds for one file. A node's depth is its
  * deepest child's depth plus its own level, so a single post-order pass produces
  * the identical list.
+ *
+ * One node is left out on purpose. An anonymous function that nothing encloses is
+ * a definition (`const f = () => {}`, a class field, a Go `var f = func() {}`), and
+ * its own node adds no level, the same as a function declaration's. It counts once
+ * it sits inside a function, a nesting construct, or a call's arguments, which
+ * keeps every callback a level.
  */
 export function collectSubtreeNestingDepths(
   rootNode: Parser.SyntaxNode,
   language: SupportedLanguage
 ): number[] {
   const depths: number[] = [];
+  // Hoisted: getFunctionNodeTypes rebuilds the array on every call.
+  const enclosingTypes = [...getFunctionNodeTypes(language), ...ARGUMENT_LIST_TYPES];
 
   /** Returns the node's own nesting depth and records its children's. */
-  function visit(node: Parser.SyntaxNode, depth: number): number {
+  function visit(node: Parser.SyntaxNode, depth: number, enclosed: boolean): number {
+    const nesting = isNestingNode(node, language);
+    const enclosesChildren =
+      enclosed || nesting || (node.isNamed && enclosingTypes.includes(node.type));
+
     let childMax = 0;
     for (const child of node.children) {
-      childMax = Math.max(childMax, visit(child, depth + 1));
+      childMax = Math.max(childMax, visit(child, depth + 1, enclosesChildren));
     }
 
     // Matches calculateNestingDepth, which never counts the starting node itself,
     // and the MAX_WALK_DEPTH cut-off of the walk this replaced.
     if (childMax > 0 && depth <= MAX_WALK_DEPTH) depths.push(childMax);
 
-    return isNestingNode(node, language) ? childMax + 1 : childMax;
+    const isDefinition = !enclosed && ANONYMOUS_FUNCTION_TYPES.includes(node.type);
+    return nesting && !isDefinition ? childMax + 1 : childMax;
   }
 
-  visit(rootNode, 0);
+  visit(rootNode, 0, false);
   return depths;
 }
 
