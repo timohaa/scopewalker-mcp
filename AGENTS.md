@@ -34,6 +34,10 @@ MCP server providing codebase analysis tools for AI assistants. `npm run check` 
 
 ## Topic files
 
+Read the writing style every session. Claude Code and Gemini import it:
+
+@docs/writing-style.md
+
 - [docs/agent-workflow.md](./docs/agent-workflow.md): commands, method, navigation, skills and agents
 - [docs/writing-style.md](./docs/writing-style.md): required for chat, commits, PRs, and docs
 - [docs/codex-workflows.md](./docs/codex-workflows.md): Codex entrypoints and adapters
