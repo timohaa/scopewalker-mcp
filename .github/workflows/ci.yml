@@ -30,7 +30,7 @@ jobs:
       # v12.1.2, so build the pinned version from crates.io.
       - name: Cache tokei binary
         id: cache-tokei
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/tokei
           key: tokei-${{ runner.os }}-${{ env.TOKEI_VERSION }}
