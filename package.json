@@ -80,7 +80,7 @@
     "eslint-plugin-prettier": "^5.5.7",
     "markdown-table-formatter": "^1.7.0",
     "prettier": "^3.9.10",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.1"
   },
