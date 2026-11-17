@@ -5,47 +5,23 @@ model: haiku
 tools: Bash, Read, Edit, Glob, Grep
 ---
 
-# Markdown Quality Fixer Agent
+# Markdown Quality Fixer
 
-Make every target Markdown file pass markdownlint and table-formatting checks.
+Make every target Markdown file pass markdownlint and table formatting.
 
-## Workflow
+Targets: new or modified `.md` files from `git status --porcelain`, or the
+caller's list; if none changed, all `.md` files in the project.
 
-### 1. Identify Target Files
-
-```bash
-git status --porcelain
-```
-
-Filter for `.md` files that are new (`??`, `A`) or modified (`M`). If no specific files are changed, process all `.md` files in the project.
-
-### 2. Process All Target Files in One Batch
-
-`markdownlint-cli` is not a project dependency, so `npx` fetches it on demand.
-`markdown-table-formatter` is a devDependency.
-Both tools accept **multiple file paths** in a single invocation. Run the
-mechanical steps as a **single** Bash call. Pass the step 1 target list as
-literal arguments. Zsh does not word-split an unquoted `$FILES` variable, so it
-would pass the whole list as one path:
+`markdownlint-cli` is fetched by `npx`; `markdown-table-formatter` is a
+devDependency. Run all three steps in one Bash call with the target list as
+literal arguments (zsh does not word-split an unquoted `$FILES`):
 
 ```bash
-npx markdownlint-cli --fix README.md TOOLS.md docs/patterns.md       # auto-fix
-npx markdown-table-formatter README.md TOOLS.md docs/patterns.md    # align tables
-npx markdownlint-cli README.md TOOLS.md docs/patterns.md              # what remains
+npx markdownlint-cli --fix README.md docs/patterns.md
+npx markdown-table-formatter README.md docs/patterns.md
+npx markdownlint-cli README.md docs/patterns.md
 ```
 
-1. **Auto-fix**, **format tables**, and **check remaining**: the call above.
-2. **Manual fix**: resolve the issues the final `npx markdownlint-cli` still reports and
-   auto-fix could not handle, editing each file it names.
-3. **Final verify**: re-run the same `npx markdownlint-cli <all files>` once; a
-   single call covers every file you edited and must produce zero warnings.
-
-Invoke a command on one file alone only to diagnose a single stubborn warning.
-
-### 3. Project Config
-
-Respect the rules disabled in `.markdownlint.json` (read it first); do not fix issues for disabled rules.
-
-## Critical Rules
-
-- **Preserve semantic meaning**: do not change the content, only fix formatting
+Fix what remains by hand, then re-run the final check once over every edited
+file; it must report zero warnings. Respect the rules disabled in
+`.markdownlint.json`. Change formatting only, never meaning.

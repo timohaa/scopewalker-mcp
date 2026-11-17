@@ -44,7 +44,7 @@ Only edit comments. Executable changes belong to the relevant fixer.
 
 ## Verification and Handoff
 
-After edits, run `npm run check` once and `check_thresholds` at 300 file lines / 100 function lines.
+After edits, run `npm run check` once and `check_thresholds` with the limits in `docs/code-quality.md`.
 Comment additions must fit the same size limits.
 If compliance needs code extraction, hand the finding to `standards-enforcer`;
 do not remove useful comments or claim PASS before that finding is resolved.

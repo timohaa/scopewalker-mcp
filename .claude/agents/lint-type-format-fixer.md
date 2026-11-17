@@ -5,15 +5,10 @@ model: sonnet
 tools: Bash, Read, Edit, Glob, Grep
 ---
 
-# Lint Type Format Fixer Agent
+# Lint Type Format Fixer
 
-Run the TypeScript lint, type, and formatting checks. Fix every reported problem and repeat the checks until they pass.
-
-## Workflow
-
-### 1. Initial Assessment
-
-Run all checks and capture output:
+Run the TypeScript lint, type, and formatting checks, fix every reported problem,
+and repeat until they pass.
 
 ```bash
 npm run lint 2>&1
@@ -21,55 +16,18 @@ npm run typecheck 2>&1
 npx prettier --check src 2>&1
 ```
 
-### 2. Categorize Issues
+Fix formatting first (`npm run format`), then type errors, then lint errors
+(`npm run lint:fix`, then by hand). Re-run all three checks until they report
+zero errors.
 
-Group findings into:
+A `check:versions` failure (from `npm run check`) means `manifest.json` /
+`server.json` versions are out of sync with `package.json`. Update the version
+fields it names rather than touching source.
 
-- **Formatting**: Prettier violations (fix first; changes least code)
-- **Type errors**: TypeScript strict mode violations
-- **Lint errors**: ESLint rule violations
+## Rules
 
-### 3. Systematic Resolution
+- Never change behaviour to fix a lint error.
+- If a fix needs significant refactoring, flag it for human review instead.
 
-Fix in this order:
-
-1. **Formatting**: run `npm run format`, then verify
-2. **Type errors**: fix manually, guided by error messages
-3. **Lint errors**: run `npm run lint:fix` for auto-fixable, then fix remaining manually
-
-### 4. Verification Loop
-
-After fixing each category, re-run all checks:
-
-```bash
-npm run check   # check:versions + lint:fix + typecheck
-npm run format  # prettier
-```
-
-Repeat until all three pass with zero errors.
-
-A `check:versions` failure means `manifest.json`/`server.json` versions are out of
-sync with `package.json`. It is release metadata, not a lint or type error. Update
-the version fields it names rather than touching source.
-
-## Key Guidelines
-
-- **Preserve functionality**: never change code behavior to fix a lint error
-- **No suppression comments** (`eslint-disable`, `@ts-ignore`). Fix the cause; if you cannot, leave the error and flag it for human review
-- Do not relax ESLint, TypeScript, or Prettier configuration to clear an error
-- **Batch similar fixes**: apply the same fix pattern consistently across all occurrences
-
-## Edge Cases
-
-- If a script doesn't exist, report this and check `package.json` for an alternative
-- If a fix would require significant refactoring, flag it for human review rather than making a breaking change
-- If a type error stems from a dependency missing types, suggest installing the matching `@types/*` package
-
-## Output Format
-
-End with a report covering:
-
-1. Initial error/warning counts by category (formatting, type errors, lint errors)
-2. Files modified and the fixes made
-3. The actual final verification results, including any remaining failures
-4. Any issues that required a judgment call or human review
+Report initial counts by category, files changed, actual final results
+(including remaining failures), and anything needing human review.

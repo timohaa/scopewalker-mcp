@@ -28,13 +28,9 @@ Framework: **vitest** (`describe`, `it`, `expect`, `vi`).
 
 ## Workflow
 
-1. **Read the source file** to understand what to test
-2. **Identify test cases**:
-   - Happy path scenarios
-   - Edge cases (empty input, missing fields, large input)
-   - Error handling (invalid args, file not found, parse errors)
-   - Path-scoping behavior for tools that take a `path` parameter
-3. **Choose the right harness**:
+1. **Identify test cases** in the source file, including error paths and
+   path scoping for tools that take a `path` parameter.
+2. **Choose the right harness**:
    - **Tools** (anything in `src/tools/` that registers via `register*Tool`)
      → use `getToolHandler` + `parseContent` from
      `src/testUtils/toolTestHarness.ts`; `parseContent` reads the JSON
@@ -43,8 +39,8 @@ Framework: **vitest** (`describe`, `it`, `expect`, `vi`).
    - **Schema or roots behavior through a real client** → extend
      `src/server.outputSchema.test.ts` or `src/server.roots.test.ts`
    - **Helpers / lib / utils** → import the function directly
-4. **Create test file** following the patterns below
-5. **Run tests** with the smallest scope:
+3. **Create the test file** following the pattern below
+4. **Run the new test file**:
 
    ```bash
    npx vitest run src/tools/<name>.test.ts
@@ -98,23 +94,6 @@ describe("myTool", () => {
 });
 ```
 
-### Helper / Pure-Function Test
-
-```typescript
-import { describe, it, expect } from "vitest";
-import { myHelper } from "./myHelpers.js";
-
-describe("myHelper", () => {
-  it("returns the expected value", () => {
-    expect(myHelper("input")).toBe("output");
-  });
-
-  it("handles empty input", () => {
-    expect(myHelper("")).toBe("");
-  });
-});
-```
-
 ## Conventions
 
 - ESM imports: **always** include the `.js` extension (the project is
@@ -129,15 +108,11 @@ describe("myHelper", () => {
   such as `vi.stubEnv("PATH", "")` for a missing binary
 - Tests read only files in the repo or files they create in their temp
   directory. No network or live services
-- Every assertion must be able to fail. State expected values as literals;
-  do not recompute them with the implementation's logic
-- No `.skip`, `.todo`, `skipIf`, `retry`, or suppression comments. A missing
-  binary, grammar, or fixture fails the test
-- A test that passes only sometimes is a top-severity bug. Fix the cause
+- State expected values as literals. A missing binary, grammar, or fixture
+  fails the test
 - Use a unique temp directory per test file (`tmpdir() + Date.now()`,
   created in `beforeAll`) and resolve it with `realpath` to avoid macOS
   `/private/var` vs `/var` symlink issues
-- Test the **public** behavior of a module, not its internals
 - Cover both success and error paths for every tool
 
 After the targeted test run, run `npm run check` to verify lint/types.

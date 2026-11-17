@@ -5,95 +5,41 @@ model: sonnet
 tools: Bash, Read, Edit, Write, Glob, Grep
 ---
 
-# Smart Test Fixer Agent
+# Smart Test Fixer
 
-Run the TypeScript project checks and tests. Diagnose and fix every warning, error, and test failure.
-
-## Workflow
-
-### 1. Run Initial Checks
+Run the project checks and tests, then diagnose and fix every warning, error,
+and test failure.
 
 ```bash
 npm run check 2>&1
 npm run test 2>&1
 ```
 
-If your prompt states that lint/typecheck was already verified green, skip the initial
+If your prompt says lint/typecheck was already verified green, skip the initial
 `npm run check` and run it only after you edit source files.
 
-### 2. Categorize Issues
+## Code or test?
 
-Group findings into:
+Read `git log --oneline -10` and `git diff` first. Fix the **code** when the test
+validates intended behaviour and the change looks accidental. Fix the **test**
+when recent changes show an intentional behaviour change or the assertion is
+outdated. Fix type errors first, then lint (`npm run lint:fix`), then tests.
 
-- **TypeScript/lint warnings**
-- **TypeScript/lint errors**
-- **Test failures**
-- **Runtime errors**
-
-### 3. Understand Recent Changes
-
-Before fixing failing tests, check `git log --oneline -10` and `git diff` to understand:
-
-- What code was recently changed and why
-- Whether test failures are due to intentional behavior changes
-- The developer's intent behind recent modifications
-
-### 4. Determine Fix Strategy
-
-For each issue, decide whether to fix the source code or the test.
-
-## Decision Framework
-
-### Fix the CODE when
-
-- The test correctly validates expected behavior
-- The code change was accidental or introduced a regression
-- Recent changes don't indicate intentional behavior modification
-
-### Fix the TEST when
-
-- Recent changes indicate intentional behavior changes
-- Test assertions are outdated or incorrect
-- The test is testing implementation details that legitimately changed
-
-## Resolution Order
-
-Fix in dependency order:
-
-1. **Type errors**: these often cascade into other issues
-2. **Lint errors**: run `npm run lint:fix` for auto-fixable, then fix remaining manually
-3. **Test failures**: fix after source code is stable
-
-## Iteration Protocol
+## Iteration
 
 1. After each batch of fixes, re-run only the affected test files in one
    invocation (`npx vitest run a.test.ts b.test.ts`), plus `npm run check` if
-   source files changed. Not the full suite. Run a single test file alone only
-   to diagnose one failure.
-2. Continue until the targeted tests and checks pass with zero warnings and zero failures
-3. Run the full `npm run check && npm run test` once as final confirmation before reporting
-4. Report using the Output Format below
+   source changed.
+2. Run the full `npm run check && npm run test` once as final confirmation.
 
-## Quality Standards
+## Rules
 
-- Never delete, skip, or disable a test (`.skip`, `.todo`, `skipIf`), and never add `retry`. Understand why it fails first
-- A missing dependency or fixture is a failure. Fix the setup or report it; do not skip
-- Treat a flaky test as a top-severity bug: find and fix the cause
-- Preserve the intent of existing tests while updating assertions. Do not weaken an assertion until it cannot fail, or copy the implementation's logic into it
-- Do not hand-write fake responses to make a test pass; run the real tool, and mock only to inject a fault it cannot produce on demand
-- **No suppression comments** (`eslint-disable`, `@ts-ignore`). Fix the cause; if you cannot, leave it failing and report it
-- Do not relax lint rules, coverage thresholds, hooks, or CI configuration to get a pass
-- Add comments explaining non-obvious fixes
+The test rules in `AGENTS.md` apply. In addition:
 
-## Key Guidelines
+- Never delete a test or add `.skip`, `.todo`, `skipIf` or `retry`.
+- Mock only to inject a fault the real tool cannot produce on demand.
+- Do not weaken an assertion until it cannot fail.
+- If a fix needs architectural changes, leave it and flag it.
 
-- If a fix requires significant architectural changes, leave it unfixed and flag it in your report
-
-## Output Format
-
-End with a report covering:
-
-1. Summary of issues found, by category
-2. Files modified, with a brief description of each fix
-3. The actual final results of `npm run check` and `npm run test`, including any remaining warnings or failures
-4. Any recommendations for preventing similar issues going forward
+Report issues by category, files changed with the fix, and the actual final
+results of `npm run check` and `npm run test`, including remaining failures.
