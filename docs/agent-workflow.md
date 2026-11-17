@@ -4,28 +4,15 @@ Working method for agents in this repository. The rules in [AGENTS.md](../AGENTS
 
 ## Commands
 
-```bash
-npm run build          # Build
-npm run check          # Version sync + lint + typecheck (run before committing)
-npm run test           # Run tests
-npm run test:coverage  # Tests with coverage
-```
-
-Pass every target file to one command (`npx vitest run a.test.ts b.test.ts`, `npx markdownlint-cli f1 f2`, or one `grep -nE` across all files).
+Scripts are in `package.json`. Pass every target file to one command (`npx vitest run a.test.ts b.test.ts`, `npx markdownlint-cli f1 f2`, or one `grep -nE` across all files).
 
 ## Method
 
 - For ambiguous requests, sketch a short plan and state assumptions and tradeoffs before editing.
-- Write the minimum code that solves the problem. Avoid speculative abstractions, drive-by renames, and unrelated cleanup.
 - Define a success criterion before starting and loop until it passes. Verify tool output with the tool itself or its tests; `npm run check` alone is insufficient.
 - **Never create `_enhanced`, `_v2`, or `_new` duplicate file variants**; edit the original file.
 - Use the project's own MCP tools to understand and validate code.
 - If LSP tools are available in your session, prefer them (`workspaceSymbol`, `findReferences`, `goToDefinition`, `hover`) over Grep/Read for code navigation; otherwise use Grep for text/pattern searches.
-
-## Code Quality
-
-For source/test changes, enforce [code-quality.md](./code-quality.md) before completion or committing.
-Fix actionable findings in scope and rerun the detecting tools; unresolved findings or incomplete scans cannot pass.
 
 ## Tests
 
