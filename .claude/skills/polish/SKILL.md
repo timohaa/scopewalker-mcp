@@ -28,6 +28,7 @@ and wait for both. Restrict 4a to source comments and 4b to documentation files.
 |------|--------------------------|-------------------------------------------------------------------------------------------------|
 | 1    | `lint-type-format-fixer` | Fix lint, type, and formatting failures.                                                        |
 | 2    | `smart-test-fixer`       | Fix test failures. Pass step 1's verification so unchanged checks are not repeated.             |
+| 2b   | `test-quality-enforcer`  | Audit and prune the in-scope tests on step 2's green suite. Same scope as step 2.               |
 | 3    | `standards-enforcer`     | Resolve all actionable size, complexity, smell, prop-drilling, and dead-code findings in scope. |
 | 4a   | `comment-fixer`          | Resolve documentation findings in the assigned source files. Pass `full` only for full mode.    |
 | 4b   | `docs-reality-sync`      | Sync affected docs and workflow references, including `.agents/skills/` and `.codex/agents/`.   |
@@ -41,7 +42,7 @@ the failure into the final verdict.
 ## Verify the Final State
 
 - Rerun Scopewalker checks affected by edits after step 3. Comment additions can exceed size limits.
-- If executable code changed after the last successful tests, rerun the relevant tests and required final checks.
+- If executable code or tests changed after the last successful tests (including step 2b), rerun the relevant tests and required final checks.
 - Reuse successful verification only while relevant inputs and requirements remain unchanged. Changes to dependencies, configuration, imports, or consumers can invalidate earlier results.
 - If a rescan finds violations, return them to the responsible fixer and reverify its edits.
 - Recheck every outstanding handoff. A promised fix or suggested follow-up cannot count as resolved.

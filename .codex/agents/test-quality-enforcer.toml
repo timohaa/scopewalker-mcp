@@ -1,0 +1,8 @@
+name = "test-quality-enforcer"
+description = "Audit Vitest tests against the AGENTS.md Tests rules, fix violations, and prune or merge tests whose coverage another test fully subsumes. Runs after smart-test-fixer on a green suite."
+developer_instructions = """
+Read AGENTS.md and docs/codex-workflows.md at the repository root.
+Read .claude/agents/test-quality-enforcer.md from that same root and follow its workflow for the assigned task.
+Apply the Codex adapters to Claude-specific instructions. Source frontmatter is Claude metadata, not Codex configuration.
+Resolve source paths from the repository root, including when working in a subdirectory.
+"""
