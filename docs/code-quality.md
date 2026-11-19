@@ -11,6 +11,9 @@ Scopewalker findings require a disposition before the scoped work can pass.
 - Report findings outside the task scope separately; do not silently expand an ordinary change into a repository refactor.
 - Documentation-only work needs Markdown and reference validation; mark code scans **N/A** when no source/test files changed.
 
+`npm run check` runs `lint:fix`. A read-only review uses the non-fixing scripts instead:
+`check:versions`, `lint`, `typecheck`, `npx prettier --check src`, and `test`.
+
 ## Required Checks
 
 Pass `extensions: [".ts"]`. Keep tests and fixtures in size checks.

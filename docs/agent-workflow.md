@@ -20,12 +20,11 @@ Scripts are in `package.json`. Pass every target file to one command (`npx vites
 - Tool tests run the real `tokei` binary and real parsers on files they write. Do not mock a success payload; wrap the real function in a spy (`vi.fn(actual.analyze)`) when a test needs call arguments.
 - Mock only to inject a fault the real tool cannot produce on demand (spawn error, timeout, oversized output). Prefer a real failure where one exists, such as `vi.stubEnv("PATH", "")` for a missing binary.
 - Recorded inputs live in `src/__fixtures__/`.
-- Follow `.claude/skills/create-test` for layout, naming, and harness selection.
+- Follow the Testing and Adding a Tool sections of [patterns.md](./patterns.md) for layout and harness selection.
 
 ## Reference
 
 - [TOOLS.md](../TOOLS.md): tool reference
 - [docs/](./): tool documentation and enforcement requirements; check [known-bugs.md](./known-bugs.md) before chasing unexpected output
-- `.claude/skills/create-tool`, `.claude/skills/create-test`: workflows and code examples for adding tools/tests
-- `/polish`, `/review-changes`: quality-pipeline slash commands (see `.claude/skills/` for the rest)
+- `/polish`: quality-pipeline slash command
 - `.claude/agents/`: specialized agents for standards, testing, docs, and code-quality enforcement (see directory for the full list)

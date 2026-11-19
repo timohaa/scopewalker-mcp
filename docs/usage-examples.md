@@ -82,9 +82,8 @@ End with PASS, FAIL, or BLOCKED under the shared policy.
 Do not recommend committing while actionable findings remain unresolved.
 ```
 
-In this repository, `npm run check` invokes `lint:fix`.
-The [review workflow](../.claude/skills/review-changes/SKILL.md) uses separate
-non-fixing scripts and also validates changed documentation.
+In this repository, `npm run check` invokes `lint:fix`, so reviews use separate
+non-fixing scripts ([code-quality.md](code-quality.md)).
 
 ## Fixer Agent: Resolve and Rescan
 

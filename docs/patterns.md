@@ -67,6 +67,15 @@ walkNode(tree.rootNode, (node) => {
 
 `createServer` in `src/server.ts` registers every tool and calls `applySchemaStrippingOverride`. The override removes `$schema` from each emitted JSON Schema. Zod v4 emits it, and some API providers silently reject tool definitions that include it. It replaces the SDK's `tools/list` handler and reads the private `_registeredTools` field. An upstream field rename would therefore break tool listing. `src/server.test.ts` checks the advertised names, absent `$schema`, and preserved descriptions. The override automatically covers each new `register*` call.
 
+## Adding a Tool
+
+A new tool touches, besides `src/tools/[toolName].ts` and its test:
+
+- `src/types/[concern].ts` (Zod schema + `z.infer` type), exported from `src/types/index.ts`
+- the `register*Tool(server, context)` call in `createServer()` in `src/server.ts`
+- `EXPECTED_TOOLS` in `src/server.test.ts` and `CALLS` in `src/server.outputSchema.test.ts`
+- `TOOLS.md` quick reference, the matching `docs/tools-*.md`, and the tool list and count in `README.md` and `docs/tools-overview.md`
+
 ## Error Handling
 
 - Structured errors built with `createError(code, message, details)`, shaped `{ error: { code, message, path?, ...details } }`
@@ -82,3 +91,5 @@ const result = parseContent(response) as ResultType;
 ```
 
 `getToolHandler` registers the tool on a real `McpServer` with no client roots, reads its handler from the SDK's private `_registeredTools` registry, and calls it directly, so it does not validate `outputSchema`. Use `firstItem(list)` instead of `list[0]` when a test needs the first element. Cover schema conformance in `src/server.outputSchema.test.ts` and root resolution in `src/server.roots.test.ts`.
+
+Keep setup (temp dir, handler, `beforeAll`/`afterAll`) at module top level. Use a unique temp directory per test file and resolve it with `realpath`, or macOS `/private/var` vs `/var` breaks path assertions.

@@ -2,7 +2,7 @@
 
 Codex entrypoints live in `.agents/skills/` and `.codex/agents/`.
 They load the shared workflows in `.claude/`; edit those sources to update behavior.
-Use `$create-tool`, `$create-test <file-path>`, `$review-changes [full]`, or `$polish [full]`.
+Use `$polish [full]`.
 Polish remains explicit-only. Ask for a specialized agent by its filename stem.
 If new entrypoints do not appear, restart Codex in this repository.
 
