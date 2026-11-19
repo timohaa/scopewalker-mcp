@@ -10,6 +10,7 @@ MCP server providing codebase analysis tools for AI assistants. `npm run check` 
 - Tests run only on recorded data in the repo, never against live systems.
 - Don't hand-write fake responses. Record the real response as a fixture and test against it.
 - A flaky test is a top-severity bug: fix the cause, don't retry or disable.
+- Failure handling and fixtures: [docs/testing.md](docs/testing.md).
 
 ## Code
 
